@@ -17,7 +17,7 @@
       <div class="tabla-contenedor" role="region" aria-label="Listado de campañas" tabindex="0">
         <table>
           <caption>Campañas, de la más reciente a la más antigua</caption>
-          <thead><tr><th scope="col">Nombre</th><th scope="col">Objetivo</th><th scope="col">Canal</th><th scope="col">Estado</th><th scope="col">Inicio</th><th scope="col">Fin</th></tr></thead>
+          <thead><tr><th scope="col">Nombre</th><th scope="col">Objetivo</th><th scope="col">Canal</th><th scope="col">Estado</th><th scope="col">Inicio</th><th scope="col">Fin</th><th scope="col">Acciones</th></tr></thead>
           <tbody>
             <% for (const campana of campanas) { %>
               <tr>
@@ -27,6 +27,11 @@
                 <td><%= estados[campana.estado] || 'Sin definir' %></td>
                 <td><%= formatearFecha(campana.fechaInicio) %></td>
                 <td><%= formatearFecha(campana.fechaFin) %></td>
+                <td><nav aria-label="Acciones de <%= campana.nombre %>">
+                  <a href="/campanas/<%= campana._id %>">Detalle</a>
+                  <a href="/campanas/<%= campana._id %>/editar">Editar</a>
+                  <a href="/campanas/<%= campana._id %>/eliminar">Eliminar</a>
+                </nav></td>
               </tr>
             <% } %>
           </tbody>

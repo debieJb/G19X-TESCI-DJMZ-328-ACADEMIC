@@ -26,10 +26,11 @@ app.use((req, res) => {
 
 app.use((error, req, res, next) => {
   if (res.headersSent) return next(error);
-  const status = [400, 413, 503].includes(error.status) ? error.status : 500;
+  const status = [400, 404, 413, 503].includes(error.status) ? error.status : 500;
   if (status >= 500) console.error('Error al procesar la solicitud.');
   const mensajes = {
     400: 'La solicitud no tiene un formato válido.',
+    404: 'La campaña no existe o fue eliminada.',
     413: 'La solicitud supera el tamaño permitido.',
     503: 'La base de datos no está disponible. Intenta de nuevo más tarde.',
     500: 'Ocurrió un error inesperado. Intenta de nuevo más tarde.'

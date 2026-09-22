@@ -10,46 +10,7 @@
   <main>
     <nav aria-label="Navegación principal"><a href="/">Inicio</a><a href="/campanas">Campañas</a></nav>
     <h1><%= titulo %></h1>
-    <% if (mensaje || Object.keys(errores).length) { %>
-      <div class="aviso-error" role="alert"><%= mensaje || 'Corrige los campos indicados antes de guardar.' %></div>
-    <% } %>
-    <form action="/campanas" method="post">
-      <p>Nombre y objetivo son obligatorios. Canal y fechas son opcionales.</p>
-      <% for (const [campo, etiqueta] of [['nombre', 'Nombre'], ['objetivo', 'Objetivo']]) { %>
-        <div class="campo">
-          <label for="<%= campo %>"><%= etiqueta %> (obligatorio)</label>
-          <% if (campo === 'objetivo') { %>
-            <textarea id="<%= campo %>" name="<%= campo %>" required rows="4" aria-invalid="<%= !!errores[campo] %>" aria-describedby="<%= campo %>-error"><%= datos[campo] %></textarea>
-          <% } else { %>
-            <input id="<%= campo %>" name="<%= campo %>" value="<%= datos[campo] %>" required aria-invalid="<%= !!errores[campo] %>" aria-describedby="<%= campo %>-error">
-          <% } %>
-          <span class="error-campo" id="<%= campo %>-error"><%= errores[campo] || '' %></span>
-        </div>
-      <% } %>
-      <% for (const [campo, etiqueta, opciones] of [['canal', 'Canal', canales], ['estado', 'Estado', estados]]) { %>
-        <div class="campo">
-          <label for="<%= campo %>"><%= etiqueta %></label>
-          <select id="<%= campo %>" name="<%= campo %>" aria-invalid="<%= !!errores[campo] %>" aria-describedby="<%= campo %>-error">
-            <% if (campo === 'canal') { %><option value="">Sin definir</option><% } %>
-            <% if (datos[campo] && !Object.hasOwn(opciones, datos[campo])) { %>
-              <option value="<%= datos[campo] %>" selected>Valor no válido: <%= datos[campo] %></option>
-            <% } %>
-            <% for (const [valor, texto] of Object.entries(opciones)) { %>
-              <option value="<%= valor %>" <%= datos[campo] === valor ? 'selected' : '' %>><%= texto %></option>
-            <% } %>
-          </select>
-          <span class="error-campo" id="<%= campo %>-error"><%= errores[campo] || '' %></span>
-        </div>
-      <% } %>
-      <% for (const [campo, etiqueta] of [['fechaInicio', 'Fecha de inicio'], ['fechaFin', 'Fecha de fin']]) { %>
-        <div class="campo">
-          <label for="<%= campo %>"><%= etiqueta %> (opcional)</label>
-          <input type="<%= errores[campo] ? 'text' : 'date' %>" id="<%= campo %>" name="<%= campo %>" value="<%= datos[campo] %>" placeholder="AAAA-MM-DD" aria-invalid="<%= !!errores[campo] %>" aria-describedby="<%= campo %>-error">
-          <span class="error-campo" id="<%= campo %>-error"><%= errores[campo] || '' %></span>
-        </div>
-      <% } %>
-      <div class="acciones"><button type="submit">Guardar campaña</button><a href="/campanas">Cancelar</a></div>
-    </form>
+    <%- include('_formulario') %>
   </main>
 </body>
 </html>
