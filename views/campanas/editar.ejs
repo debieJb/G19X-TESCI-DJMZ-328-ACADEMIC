@@ -7,8 +7,8 @@
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-  <main>
-    <nav aria-label="Navegación principal"><a href="/">Inicio</a><a href="/campanas">Campañas</a></nav>
+  <%- include('../partials/_encabezado', { seccion: 'campanas' }) %>
+  <main id="contenido" tabindex="-1" class="formulario-pagina">
     <h1><%= titulo %></h1>
     <%- include('_formulario') %>
   </main>

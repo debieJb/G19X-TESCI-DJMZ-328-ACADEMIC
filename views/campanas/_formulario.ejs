@@ -1,10 +1,10 @@
     <% if (mensaje || Object.keys(errores).length) { %>
       <div class="aviso-error" role="alert"><%= mensaje || 'Corrige los campos indicados antes de guardar.' %></div>
     <% } %>
-    <form action="<%= accion %>" method="post">
+    <form class="formulario" action="<%= accion %>" method="post">
       <p>Nombre y objetivo son obligatorios. Canal y fechas son opcionales.</p>
       <% for (const [campo, etiqueta] of [['nombre', 'Nombre'], ['objetivo', 'Objetivo']]) { %>
-        <div class="campo">
+        <div class="campo campo-amplio">
           <label for="<%= campo %>"><%= etiqueta %> (obligatorio)</label>
           <% if (campo === 'objetivo') { %>
             <textarea id="<%= campo %>" name="<%= campo %>" required rows="4" aria-invalid="<%= !!errores[campo] %>" aria-describedby="<%= campo %>-error"><%= datos[campo] %></textarea>
@@ -36,5 +36,5 @@
           <span class="error-campo" id="<%= campo %>-error"><%= errores[campo] || '' %></span>
         </div>
       <% } %>
-      <div class="acciones"><button type="submit">Guardar campaña</button><a href="<%= cancelar %>">Cancelar</a></div>
+      <div class="acciones"><button type="submit">Guardar campaña</button><a class="boton secundario" href="<%= cancelar %>">Cancelar</a></div>
     </form>

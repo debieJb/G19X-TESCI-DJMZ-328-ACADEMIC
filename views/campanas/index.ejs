@@ -7,12 +7,14 @@
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-  <main>
-    <nav aria-label="Navegación principal"><a href="/">Inicio</a></nav>
-    <h1><%= titulo %></h1>
-    <p><a class="boton" href="/campanas/nueva">Crear campaña</a></p>
+  <%- include('../partials/_encabezado', { seccion: 'campanas' }) %>
+  <main id="contenido" tabindex="-1">
+    <div class="cabecera-pagina">
+      <div><p class="sobrelinea">Tu espacio de trabajo</p><h1><%= titulo %></h1><p class="muted"><%= campanas.length %> campañas en tu panel</p></div>
+      <a class="boton" href="/campanas/nueva">Crear campaña</a>
+    </div>
     <% if (!campanas.length) { %>
-      <p>Aún no hay campañas. Crea la primera para comenzar.</p>
+      <section class="vacio"><h2>Tu próxima campaña empieza aquí</h2><p>Aún no hay campañas. Crea la primera para comenzar.</p><a class="boton" href="/campanas/nueva">Crear campaña</a></section>
     <% } else { %>
       <div class="tabla-contenedor" role="region" aria-label="Listado de campañas" tabindex="0">
         <table>
@@ -24,19 +26,38 @@
                 <td><%= campana.nombre %></td>
                 <td><%= campana.objetivo %></td>
                 <td><%= canales[campana.canal] || 'Sin definir' %></td>
-                <td><%= estados[campana.estado] || 'Sin definir' %></td>
+                <td><span class="insignia estado-<%= campana.estado %>"><%= estados[campana.estado] || 'Sin definir' %></span></td>
                 <td><%= formatearFecha(campana.fechaInicio) %></td>
                 <td><%= formatearFecha(campana.fechaFin) %></td>
-                <td><nav aria-label="Acciones de <%= campana.nombre %>">
-                  <a href="/campanas/<%= campana._id %>">Detalle</a>
-                  <a href="/campanas/<%= campana._id %>/editar">Editar</a>
-                  <a href="/campanas/<%= campana._id %>/eliminar">Eliminar</a>
+                <td><nav class="tabla-acciones" aria-label="Acciones de <%= campana.nombre %>">
+                  <a class="boton secundario" href="/campanas/<%= campana._id %>">Detalle</a>
+                  <a class="boton editar" href="/campanas/<%= campana._id %>/editar">Editar</a>
+                  <a class="boton eliminar" href="/campanas/<%= campana._id %>/eliminar">Eliminar</a>
                 </nav></td>
               </tr>
             <% } %>
           </tbody>
         </table>
       </div>
+      <section class="tarjetas" aria-label="Listado de campañas">
+        <% for (const campana of campanas) { %>
+          <article class="tarjeta">
+            <span class="insignia estado-<%= campana.estado %>"><%= estados[campana.estado] || 'Sin definir' %></span>
+            <h2><%= campana.nombre %></h2>
+            <p><%= campana.objetivo %></p>
+            <dl>
+              <div><dt>Canal</dt><dd><%= canales[campana.canal] || 'Sin definir' %></dd></div>
+              <div><dt>Inicio</dt><dd><%= formatearFecha(campana.fechaInicio) %></dd></div>
+              <div><dt>Fin</dt><dd><%= formatearFecha(campana.fechaFin) %></dd></div>
+            </dl>
+            <nav class="acciones" aria-label="Acciones de <%= campana.nombre %>">
+              <a class="boton secundario" href="/campanas/<%= campana._id %>">Detalle</a>
+              <a class="boton editar" href="/campanas/<%= campana._id %>/editar">Editar</a>
+              <a class="boton eliminar" href="/campanas/<%= campana._id %>/eliminar">Eliminar</a>
+            </nav>
+          </article>
+        <% } %>
+      </section>
     <% } %>
   </main>
 </body>

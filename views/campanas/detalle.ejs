@@ -7,21 +7,21 @@
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-  <main>
-    <nav aria-label="Navegación principal"><a href="/">Inicio</a><a href="/campanas">Campañas</a></nav>
+  <%- include('../partials/_encabezado', { seccion: 'campanas' }) %>
+  <main id="contenido" tabindex="-1">
     <h1><%= campana.nombre %></h1>
     <dl class="detalle">
-      <dt>Objetivo</dt><dd><%= campana.objetivo %></dd>
-      <dt>Canal</dt><dd><%= canales[campana.canal] || 'Sin definir' %></dd>
-      <dt>Estado</dt><dd><%= estados[campana.estado] || 'Sin definir' %></dd>
-      <dt>Fecha de inicio</dt><dd><%= formatearFecha(campana.fechaInicio) %></dd>
-      <dt>Fecha de fin</dt><dd><%= formatearFecha(campana.fechaFin) %></dd>
-      <dt>Fecha de creación (UTC)</dt><dd><%= formatearFecha(campana.createdAt) %></dd>
-      <dt>Última actualización (UTC)</dt><dd><%= formatearFecha(campana.updatedAt) %></dd>
+      <div class="objetivo"><dt>Objetivo</dt><dd><%= campana.objetivo %></dd></div>
+      <div><dt>Canal</dt><dd><%= canales[campana.canal] || 'Sin definir' %></dd></div>
+      <div><dt>Estado</dt><dd><span class="insignia estado-<%= campana.estado %>"><%= estados[campana.estado] || 'Sin definir' %></span></dd></div>
+      <div><dt>Fecha de inicio</dt><dd><%= formatearFecha(campana.fechaInicio) %></dd></div>
+      <div><dt>Fecha de fin</dt><dd><%= formatearFecha(campana.fechaFin) %></dd></div>
+      <div><dt>Fecha de creación (UTC)</dt><dd><%= formatearFecha(campana.createdAt) %></dd></div>
+      <div><dt>Última actualización (UTC)</dt><dd><%= formatearFecha(campana.updatedAt) %></dd></div>
     </dl>
     <nav aria-label="Acciones de campaña">
-      <a class="boton" href="/campanas/<%= campana._id %>/editar">Editar</a>
-      <a href="/campanas/<%= campana._id %>/eliminar">Eliminar</a>
+      <a class="boton editar" href="/campanas/<%= campana._id %>/editar">Editar</a>
+      <a class="boton eliminar" href="/campanas/<%= campana._id %>/eliminar">Eliminar</a>
       <a href="/campanas">Volver al listado</a>
     </nav>
   </main>

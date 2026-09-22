@@ -7,7 +7,8 @@
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-  <main>
+  <%- include('../partials/_encabezado', { seccion: 'campanas' }) %>
+  <main id="contenido" tabindex="-1" class="zona-peligro">
     <h1><%= titulo %></h1>
     <p>Vas a eliminar la campaña <strong><%= campana.nombre %></strong>.</p>
     <p>Esta acción es permanente y no se puede deshacer.</p>
@@ -16,7 +17,7 @@
       <label class="confirmacion"><input type="checkbox" name="confirmacion" value="eliminar" required> Confirmo que quiero eliminar esta campaña.</label>
       <div class="acciones">
         <button class="peligro" type="submit">Eliminar definitivamente</button>
-        <a href="/campanas/<%= campana._id %>">Cancelar</a>
+        <a class="boton secundario" href="/campanas/<%= campana._id %>">Cancelar</a>
       </div>
     </form>
   </main>
