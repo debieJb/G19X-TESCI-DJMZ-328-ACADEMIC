@@ -11,6 +11,7 @@ for (const [objeto, metodo] of [[dotenv, 'config'], [mongoose, 'connect'], [mong
 const app = require('../app');
 const request = require('supertest');
 const Campana = require('../models/Campana');
+const automatizacion = require('../services/automatizacionService');
 const id = '507f1f77bcf86cd799439011';
 const ausente = '507f1f77bcf86cd799439012';
 const base = { nombre: 'Conservar', objetivo: 'Objetivo', estado: 'pausada' };
@@ -43,6 +44,78 @@ afterEach(() => {
 
 const post = (ruta, datos) => request(app).post(ruta).type('form').send(datos);
 const editar = datos => post(`/campanas/${id}/editar`, datos);
+
+test('automatización: botón POST solo para activas; GET no ejecuta', async t => {
+  const ejecutar = t.mock.method(automatizacion, 'ejecutarCampana', async () => {});
+  for (const estado of ['borrador', 'programada', 'activa', 'pausada', 'finalizada']) {
+    documento.estado = estado;
+    const respuesta = await request(app).get(`/campanas/${id}`).expect(200);
+    assert.equal(respuesta.text.includes('Ejecutar automatización'), estado === 'activa');
+    if (estado === 'activa') assert.ok(respuesta.text.includes(`action="/campanas/${id}/ejecutar" method="post"`));
+  }
+  await request(app).get(`/campanas/${id}/ejecutar`).expect(404);
+  assert.equal(ejecutar.mock.callCount(), 0);
+});
+
+test('automatización: usa datos persistidos, ignora el cuerpo y no guarda cambios', async t => {
+  const ejecutar = t.mock.method(automatizacion, 'ejecutarCampana', async () => {});
+  const anterior = documento.toObject();
+  const respuesta = await post(`/campanas/${id}/ejecutar`, {
+    nombre: 'MANIPULADO', estado: 'finalizada', _id: ausente, N8N_WEBHOOK_URL: 'http://malicioso.invalid'
+  }).expect(303).expect('Location', `/campanas/${id}?automatizacion=enviada`);
+  assert.equal(ejecutar.mock.callCount(), 1);
+  assert.equal(ejecutar.mock.calls[0].arguments[0], documento);
+  assert.deepEqual(documento.toObject(), anterior);
+  for (const metodo of [guardar, crear, borrar]) assert.equal(metodo.mock.callCount(), 0);
+  const detalle = await request(app).get(respuesta.headers.location).expect(200);
+  assert.match(detalle.text, /Solicitud enviada a la automatización/);
+  assert.ok(!detalle.text.includes('malicioso.invalid'));
+  assert.equal(ejecutar.mock.callCount(), 1);
+});
+
+test('automatización: valida id, existencia y estado sin llamar al servicio', async t => {
+  const ejecutar = t.mock.method(automatizacion, 'ejecutarCampana', async () => {});
+  await post('/campanas/invalido/ejecutar', {}).expect(400);
+  assert.equal(buscar.mock.callCount(), 0);
+  await post(`/campanas/${ausente}/ejecutar`, {}).expect(404);
+  for (const estado of ['borrador', 'programada', 'pausada', 'finalizada']) {
+    documento.estado = estado;
+    const respuesta = await post(`/campanas/${id}/ejecutar`, { estado: 'activa' }).expect(422);
+    assert.match(respuesta.text, /Solo puedes ejecutar campañas activas/);
+  }
+  assert.equal(ejecutar.mock.callCount(), 0);
+});
+
+test('automatización: errores del servicio se muestran sin filtrar detalles externos', async t => {
+  const ejecutar = t.mock.method(automatizacion, 'ejecutarCampana', async () => {});
+  const anterior = documento.toObject();
+  for (const [codigo, status, mensaje] of [
+    ['CONFIGURACION', 503, 'no está configurada'], ['CONEXION', 502, 'No se pudo confirmar'],
+    ['TIMEOUT', 504, 'no respondió a tiempo'], ['RESPUESTA', 502, 'devolvió un error']
+  ]) {
+    ejecutar.mock.mockImplementation(async () => {
+      const error = new automatizacion.ErrorAutomatizacion(codigo);
+      error.message = 'https://secreto.invalid/webhook';
+      throw error;
+    });
+    const respuesta = await post(`/campanas/${id}/ejecutar`, {}).expect(status);
+    assert.ok(respuesta.text.includes(mensaje));
+    assert.ok(!respuesta.text.includes('secreto.invalid'));
+    assert.match(respuesta.text, /role="alert"/);
+  }
+  assert.deepEqual(documento.toObject(), anterior);
+  assert.equal(guardar.mock.callCount(), 0);
+});
+
+test('automatización: fallos de MongoDB e inesperados mantienen el manejo existente', async t => {
+  t.mock.method(console, 'error', () => {});
+  const ejecutar = t.mock.method(automatizacion, 'ejecutarCampana', async () => { throw new Error('SECRETO'); });
+  const respuesta = await post(`/campanas/${id}/ejecutar`, {}).expect(500);
+  assert.ok(!respuesta.text.includes('SECRETO'));
+  buscar.mock.mockImplementation(async () => { throw Object.assign(new Error(), { name: 'MongoNetworkError' }); });
+  await post(`/campanas/${id}/ejecutar`, {}).expect(503);
+  assert.equal(ejecutar.mock.callCount(), 1);
+});
 
 test('crear: rechaza estados distintos de borrador sin guardar', async () => {
   for (const estado of ['programada', 'activa', 'pausada', 'finalizada', 'desconocido']) {

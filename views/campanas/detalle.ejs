@@ -10,6 +10,9 @@
   <%- include('../partials/_encabezado', { seccion: 'campanas' }) %>
   <main id="contenido" tabindex="-1">
     <h1><%= campana.nombre %></h1>
+    <% if (mensaje) { %>
+      <p class="<%= errorAutomatizacion ? 'aviso-error' : 'panel' %>" role="<%= errorAutomatizacion ? 'alert' : 'status' %>"><%= mensaje %></p>
+    <% } %>
     <% if (campana.estado === 'finalizada') { %><p>Esta campaña está finalizada y no puede volver a otro estado.</p><% } %>
     <dl class="detalle">
       <div class="objetivo"><dt>Objetivo</dt><dd><%= campana.objetivo %></dd></div>
@@ -20,6 +23,11 @@
       <div><dt>Fecha de creación (UTC)</dt><dd><%= formatearFecha(campana.createdAt) %></dd></div>
       <div><dt>Última actualización (UTC)</dt><dd><%= formatearFecha(campana.updatedAt) %></dd></div>
     </dl>
+    <% if (campana.estado === 'activa') { %>
+      <form action="/campanas/<%= campana._id %>/ejecutar" method="post">
+        <button type="submit">Ejecutar automatización</button>
+      </form>
+    <% } %>
     <nav aria-label="Acciones de campaña">
       <a class="boton editar" href="/campanas/<%= campana._id %>/editar">Editar</a>
       <a class="boton eliminar" href="/campanas/<%= campana._id %>/eliminar">Eliminar</a>

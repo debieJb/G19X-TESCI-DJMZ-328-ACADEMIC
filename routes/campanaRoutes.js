@@ -8,6 +8,7 @@ router.get('/:id/editar', controller.mostrarFormularioEdicion);
 router.post('/:id/editar', controller.actualizarCampana);
 router.get('/:id/eliminar', controller.mostrarConfirmacionEliminacion);
 router.post('/:id/eliminar', controller.eliminarCampana);
+router.post('/:id/ejecutar', controller.ejecutarAutomatizacion);
 router.get('/:id', controller.mostrarDetalle);
 
 module.exports = router;

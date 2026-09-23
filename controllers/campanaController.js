@@ -1,4 +1,5 @@
 const Campana = require('../models/Campana');
+const automatizacionService = require('../services/automatizacionService');
 
 const canales = { email: 'Correo electrónico', redes_sociales: 'Redes sociales', sms: 'SMS', otro: 'Otro' };
 const estados = { borrador: 'Borrador', programada: 'Programada', activa: 'Activa', pausada: 'Pausada', finalizada: 'Finalizada' };
@@ -132,7 +133,9 @@ const consultarCampana = (vista, titulo) => async (req, res, next) => {
       }
       return mostrarFormulario(res, datos, {}, '', 200, req.params.id, campana.estado);
     }
-    return res.render(`campanas/${vista}`, { titulo, campana, canales, estados, formatearFecha, mensaje: '' });
+    const mensaje = vista === 'detalle' && req.query.automatizacion === 'enviada'
+      ? 'Solicitud enviada a la automatización. Esto confirma la recepción, no la finalización del flujo.' : '';
+    return res.render(`campanas/${vista}`, { titulo, campana, canales, estados, formatearFecha, mensaje, errorAutomatizacion: false });
   } catch (error) {
     if ([400, 404].includes(error.status)) return responderErrorRecurso(res, error);
     if (esErrorConexion(error)) error.status = 503;
@@ -185,7 +188,34 @@ const eliminarCampana = async (req, res, next) => {
   }
 };
 
+const ejecutarAutomatizacion = async (req, res, next) => {
+  let campana;
+  const mostrarError = (status, mensaje) => res.status(status).render('campanas/detalle', {
+    titulo: 'Detalle de campaña', campana, canales, estados, formatearFecha, mensaje, errorAutomatizacion: true
+  });
+  try {
+    campana = await buscarCampana(req.params.id);
+    if (campana.estado !== 'activa') return mostrarError(422, 'Solo puedes ejecutar campañas activas.');
+    // Los datos y el destino nunca se toman del cuerpo del formulario.
+    await automatizacionService.ejecutarCampana(campana);
+    return res.redirect(303, `/campanas/${req.params.id}?automatizacion=enviada`);
+  } catch (error) {
+    if ([400, 404].includes(error.status)) return responderErrorRecurso(res, error);
+    if (error instanceof automatizacionService.ErrorAutomatizacion) {
+      const errores = {
+        CONFIGURACION: [503, 'La automatización no está configurada correctamente.'],
+        CONEXION: [502, 'No se pudo confirmar la recepción de la solicitud. Revisa n8n antes de repetir.'],
+        TIMEOUT: [504, 'La automatización no respondió a tiempo. Revisa n8n antes de repetir.'],
+        RESPUESTA: [502, 'La automatización devolvió un error. Revisa n8n antes de repetir.']
+      };
+      if (errores[error.codigo]) return mostrarError(...errores[error.codigo]);
+    }
+    if (esErrorConexion(error)) error.status = 503;
+    return next(error);
+  }
+};
+
 module.exports = {
   listarCampanas, mostrarFormularioCreacion, crearCampana, mostrarDetalle,
-  mostrarFormularioEdicion, actualizarCampana, mostrarConfirmacionEliminacion, eliminarCampana
+  mostrarFormularioEdicion, actualizarCampana, mostrarConfirmacionEliminacion, eliminarCampana, ejecutarAutomatizacion
 };
