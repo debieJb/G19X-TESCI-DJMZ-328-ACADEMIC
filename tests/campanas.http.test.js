@@ -128,7 +128,7 @@ test('crear: rechaza estados distintos de borrador sin guardar', async () => {
 });
 
 const destinos = {
-  borrador: ['borrador', 'programada'],
+  borrador: ['borrador', 'programada', 'activa'],
   programada: ['programada', 'activa'],
   activa: ['activa', 'pausada', 'finalizada'],
   pausada: ['pausada', 'activa', 'finalizada'],
@@ -157,6 +157,17 @@ for (const [origen, permitidos] of Object.entries(destinos)) {
     });
   }
 }
+
+test('ciclo de vida: borrador → activa sin fechaInicio', async () => {
+  documento.estado = 'borrador';
+  documento.fechaInicio = undefined;
+  documento.fechaFin = undefined;
+  await editar({ ...base, estado: 'activa' })
+    .expect(303).expect('Location', `/campanas/${id}`);
+  assert.equal(guardar.mock.callCount(), 1);
+  assert.equal(documento.estado, 'activa');
+  assert.equal(documento.fechaInicio, undefined);
+});
 
 test('programar: exige inicio al entrar y al conservar el estado, sin cambios parciales', async () => {
   for (const origen of ['borrador', 'programada']) {

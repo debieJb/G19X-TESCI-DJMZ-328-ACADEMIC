@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const transiciones = {
-  borrador: ['programada'],
+  borrador: ['programada', 'activa'],
   programada: ['activa'],
   activa: ['pausada', 'finalizada'],
   pausada: ['activa', 'finalizada'],
