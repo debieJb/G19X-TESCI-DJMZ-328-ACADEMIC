@@ -2,7 +2,7 @@
       <div class="aviso-error" role="alert"><%= mensaje || 'Corrige los campos indicados antes de guardar.' %></div>
     <% } %>
     <form class="formulario" action="<%= accion %>" method="post">
-      <p>Nombre y objetivo son obligatorios. Canal y fechas son opcionales.</p>
+      <p>Nombre y objetivo son obligatorios. La fecha de inicio es obligatoria para una campaña programada. Canal y fecha de fin son opcionales. Los cambios de estado son manuales.</p>
       <% for (const [campo, etiqueta] of [['nombre', 'Nombre'], ['objetivo', 'Objetivo']]) { %>
         <div class="campo campo-amplio">
           <label for="<%= campo %>"><%= etiqueta %> (obligatorio)</label>
@@ -14,7 +14,25 @@
           <span class="error-campo" id="<%= campo %>-error"><%= errores[campo] || '' %></span>
         </div>
       <% } %>
-      <% for (const [campo, etiqueta, opciones] of [['canal', 'Canal', canales], ['estado', 'Estado', estados]]) { %>
+      <div class="campo">
+        <% if (accion === '/campanas') { %>
+          <p>Estado inicial: Borrador</p>
+        <% } else if (estadoActual === 'finalizada') { %>
+          <p>Estado: Finalizada. Esta campaña no puede volver a otro estado.</p>
+          <input type="hidden" name="estado" value="finalizada">
+        <% } else { %>
+          <p>Estado actual: <%= estados[estadoActual] || 'No disponible' %></p>
+          <label for="estado">Estado al guardar</label>
+          <select id="estado" name="estado" required aria-invalid="<%= !!errores.estado %>" aria-describedby="estado-error">
+            <% if (!estadosPermitidos.includes(datos.estado)) { %><option value="" selected>Selecciona un estado permitido</option><% } %>
+            <% for (const estado of estadosPermitidos) { %>
+              <option value="<%= estado %>" <%= datos.estado === estado ? 'selected' : '' %>><%= estados[estado] %></option>
+            <% } %>
+          </select>
+        <% } %>
+        <span class="error-campo" id="estado-error"><%= errores.estado || '' %></span>
+      </div>
+      <% for (const [campo, etiqueta, opciones] of [['canal', 'Canal', canales]]) { %>
         <div class="campo">
           <label for="<%= campo %>"><%= etiqueta %></label>
           <select id="<%= campo %>" name="<%= campo %>" aria-invalid="<%= !!errores[campo] %>" aria-describedby="<%= campo %>-error">
@@ -31,7 +49,7 @@
       <% } %>
       <% for (const [campo, etiqueta] of [['fechaInicio', 'Fecha de inicio'], ['fechaFin', 'Fecha de fin']]) { %>
         <div class="campo">
-          <label for="<%= campo %>"><%= etiqueta %> (opcional)</label>
+          <label for="<%= campo %>"><%= etiqueta %> (<%= campo === 'fechaInicio' ? 'obligatoria si está programada' : 'opcional' %>)</label>
           <input type="<%= errores[campo] ? 'text' : 'date' %>" id="<%= campo %>" name="<%= campo %>" value="<%= datos[campo] %>" placeholder="AAAA-MM-DD" aria-invalid="<%= !!errores[campo] %>" aria-describedby="<%= campo %>-error">
           <span class="error-campo" id="<%= campo %>-error"><%= errores[campo] || '' %></span>
         </div>

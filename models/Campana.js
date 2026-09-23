@@ -1,5 +1,13 @@
 const mongoose = require('mongoose');
 
+const transiciones = {
+  borrador: ['programada'],
+  programada: ['activa'],
+  activa: ['pausada', 'finalizada'],
+  pausada: ['activa', 'finalizada'],
+  finalizada: []
+};
+
 const campanaSchema = new mongoose.Schema({
   nombre: { type: String, required: true, trim: true },
   objetivo: { type: String, required: true, trim: true },
@@ -9,10 +17,18 @@ const campanaSchema = new mongoose.Schema({
   },
   estado: {
     type: String,
+    required: true,
     enum: ['borrador', 'programada', 'activa', 'pausada', 'finalizada'],
-    default: 'borrador'
+    default: 'borrador',
+    validate: {
+      validator: function (estado) { return !this.isNew || estado === 'borrador'; },
+      message: 'Toda campaña nueva debe comenzar en borrador.'
+    }
   },
-  fechaInicio: { type: Date },
+  fechaInicio: {
+    type: Date,
+    required: [function () { return this.estado === 'programada'; }, 'Una campaña programada debe tener fecha de inicio.']
+  },
   fechaFin: {
     type: Date,
     validate: {
@@ -23,5 +39,10 @@ const campanaSchema = new mongoose.Schema({
     }
   }
 }, { timestamps: true });
+
+// El controlador compara el estado persistido con el solicitado antes de modificar el documento.
+campanaSchema.statics.estadosPermitidos = function (estado) {
+  return Object.hasOwn(transiciones, estado) ? [estado, ...transiciones[estado]] : [];
+};
 
 module.exports = mongoose.model('Campana', campanaSchema);

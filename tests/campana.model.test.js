@@ -32,11 +32,26 @@ test('modelo: enums de canal y estado', async () => {
     await new Campana({ ...base, canal }).validate();
   }
   for (const estado of ['borrador', 'programada', 'activa', 'pausada', 'finalizada']) {
-    await new Campana({ ...base, estado }).validate();
+    await Campana.hydrate({ ...base, estado, fechaInicio: new Date('2026-09-21') }).validate();
   }
   for (const campo of ['canal', 'estado']) {
     await assert.rejects(new Campana({ ...base, [campo]: 'desconocido' }).validate(), error => error.errors[campo].kind === 'enum');
   }
+});
+
+test('modelo: un documento nuevo solo puede comenzar en borrador', async () => {
+  for (const estado of ['programada', 'activa', 'pausada', 'finalizada', null, '']) {
+    await assert.rejects(new Campana({ ...base, estado }).validate(), error => !!error.errors.estado);
+  }
+});
+
+test('modelo: una campaña programada requiere y conserva fechaInicio', async () => {
+  const documento = Campana.hydrate({ ...base, estado: 'programada' });
+  await assert.rejects(documento.validate(), error => error.errors.fechaInicio.kind === 'required');
+  documento.fechaInicio = new Date('2026-09-21');
+  await documento.validate();
+  documento.fechaInicio = undefined;
+  await assert.rejects(documento.validate(), error => error.errors.fechaInicio.kind === 'required');
 });
 
 test('modelo: fechas opcionales, iguales, posteriores e inválidas', async () => {

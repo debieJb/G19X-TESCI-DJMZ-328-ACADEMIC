@@ -5,9 +5,10 @@ const estados = { borrador: 'Borrador', programada: 'Programada', activa: 'Activ
 const campos = ['nombre', 'objetivo', 'canal', 'estado', 'fechaInicio', 'fechaFin'];
 const etiquetas = { nombre: 'Nombre', objetivo: 'Objetivo', canal: 'Canal', estado: 'Estado', fechaInicio: 'Fecha de inicio', fechaFin: 'Fecha de fin' };
 
-const mostrarFormulario = (res, datos, errores = {}, mensaje = '', status = 200, id = null) =>
+const mostrarFormulario = (res, datos, errores = {}, mensaje = '', status = 200, id = null, estadoActual = null) =>
   res.status(status).render(id ? 'campanas/editar' : 'campanas/nueva', {
     titulo: id ? 'Editar campaña' : 'Nueva campaña', datos, errores, mensaje, canales, estados,
+    estadoActual, estadosPermitidos: estadoActual ? Campana.estadosPermitidos(estadoActual) : [],
     accion: id ? `/campanas/${id}/editar` : '/campanas',
     cancelar: id ? `/campanas/${id}` : '/campanas'
   });
@@ -58,10 +59,13 @@ const validarFormulario = (entrada = {}, editar = false) => {
   }
   const valores = {
     nombre: datos.nombre.trim(), objetivo: datos.objetivo.trim(),
-    canal: datos.canal || undefined, estado: editar ? datos.estado : (datos.estado || 'borrador'),
+    canal: datos.canal || undefined, estado: editar ? datos.estado : 'borrador',
     fechaInicio: undefined, fechaFin: undefined
   };
-  if (!editar) datos.estado ||= 'borrador';
+  if (!editar) {
+    if (datos.estado && datos.estado !== 'borrador') errores.estado = 'Toda campaña nueva debe comenzar en borrador.';
+    datos.estado = 'borrador';
+  }
   for (const campo of ['nombre', 'objetivo']) {
     if (!valores[campo]) errores[campo] = `${etiquetas[campo]} es obligatorio.`;
   }
@@ -81,10 +85,13 @@ const validarFormulario = (entrada = {}, editar = false) => {
   if (valores.fechaInicio && valores.fechaFin && valores.fechaFin < valores.fechaInicio) {
     errores.fechaFin = 'La fecha de fin no puede ser anterior a la fecha de inicio.';
   }
+  if (valores.estado === 'programada' && !valores.fechaInicio && !errores.fechaInicio) {
+    errores.fechaInicio = 'Una campaña programada debe tener fecha de inicio.';
+  }
   return { datos, errores, valores };
 };
 
-const responderErrorFormulario = (res, error, datos, id = null) => {
+const responderErrorFormulario = (res, error, datos, id = null, estadoActual = null) => {
   const errores = {};
   if (error.name === 'ValidationError') {
     for (const campo of campos) {
@@ -92,14 +99,14 @@ const responderErrorFormulario = (res, error, datos, id = null) => {
         ? 'La fecha de fin debe ser válida y no anterior a la fecha de inicio.'
         : `Revisa el campo ${etiquetas[campo].toLowerCase()}: su valor no es válido.`;
     }
-    return mostrarFormulario(res, datos, errores, 'Revisa los datos de la campaña.', 422, id);
+    return mostrarFormulario(res, datos, errores, 'Revisa los datos de la campaña.', 422, id, estadoActual);
   }
   // No registrar el cuerpo del formulario ni mensajes que puedan incluir credenciales.
   console.error('Error al guardar una campaña.');
   const status = esErrorConexion(error) ? 503 : 500;
   return mostrarFormulario(res, datos, {}, status === 503
     ? 'La base de datos no está disponible. Tus datos se conservan en el formulario; intenta más tarde.'
-    : 'No se pudo confirmar el guardado. Consulta el listado antes de volver a intentarlo.', status, id);
+    : 'No se pudo confirmar el guardado. Consulta el listado antes de volver a intentarlo.', status, id, estadoActual);
 };
 
 const crearCampana = async (req, res) => {
@@ -123,7 +130,7 @@ const consultarCampana = (vista, titulo) => async (req, res, next) => {
           ? (campana[campo] ? campana[campo].toISOString().slice(0, 10) : '')
           : (campana[campo] || '');
       }
-      return mostrarFormulario(res, datos, {}, '', 200, req.params.id);
+      return mostrarFormulario(res, datos, {}, '', 200, req.params.id, campana.estado);
     }
     return res.render(`campanas/${vista}`, { titulo, campana, canales, estados, formatearFecha, mensaje: '' });
   } catch (error) {
@@ -139,9 +146,14 @@ const mostrarConfirmacionEliminacion = consultarCampana('eliminar', 'Eliminar ca
 
 const actualizarCampana = async (req, res) => {
   const { datos, errores, valores } = validarFormulario(req.body, true);
+  let estadoActual = null;
   try {
     const campana = await buscarCampana(req.params.id);
-    if (Object.keys(errores).length) return mostrarFormulario(res, datos, errores, '', 422, req.params.id);
+    estadoActual = campana.estado;
+    if (!errores.estado && !Campana.estadosPermitidos(estadoActual).includes(valores.estado)) {
+      errores.estado = `No puedes pasar de ${estadoActual} a ${valores.estado}.`;
+    }
+    if (Object.keys(errores).length) return mostrarFormulario(res, datos, errores, '', 422, req.params.id, estadoActual);
     for (const campo of campos) campana[campo] = valores[campo];
     // Validar el documento completo, incluso cuando solo cambia fechaInicio.
     await campana.validate();
@@ -151,7 +163,7 @@ const actualizarCampana = async (req, res) => {
     if (error.name === 'DocumentNotFoundError') error.status = 404;
     if (error.status === 404) return responderErrorRecurso(res, errorRecurso(404, 'La campaña no existe o fue eliminada.'));
     if (error.status === 400) return responderErrorRecurso(res, error);
-    return responderErrorFormulario(res, error, datos, req.params.id);
+    return responderErrorFormulario(res, error, datos, req.params.id, estadoActual);
   }
 };
 

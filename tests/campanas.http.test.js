@@ -17,7 +17,7 @@ const base = { nombre: 'Conservar', objetivo: 'Objetivo', estado: 'pausada' };
 let documento, crear, guardar, borrar, buscar, listar;
 
 beforeEach(() => {
-  documento = new Campana({
+  documento = Campana.hydrate({
     _id: id, nombre: '<script>alert(1)</script>', objetivo: 'Objetivo', canal: 'email', estado: 'activa',
     fechaInicio: '2026-09-21', fechaFin: '2026-09-22', createdAt: '2026-09-20', updatedAt: '2026-09-20'
   });
@@ -44,6 +44,77 @@ afterEach(() => {
 const post = (ruta, datos) => request(app).post(ruta).type('form').send(datos);
 const editar = datos => post(`/campanas/${id}/editar`, datos);
 
+test('crear: rechaza estados distintos de borrador sin guardar', async () => {
+  for (const estado of ['programada', 'activa', 'pausada', 'finalizada', 'desconocido']) {
+    const respuesta = await post('/campanas', { ...base, estado, fechaInicio: '2026-09-21' }).expect(422);
+    assert.match(respuesta.text, /Toda campaña nueva debe comenzar en borrador/);
+  }
+  assert.equal(crear.mock.callCount(), 0);
+  await post('/campanas', { ...base, estado: 'borrador' }).expect(303);
+  assert.equal(crear.mock.calls[0].arguments[0].estado, 'borrador');
+});
+
+const destinos = {
+  borrador: ['borrador', 'programada'],
+  programada: ['programada', 'activa'],
+  activa: ['activa', 'pausada', 'finalizada'],
+  pausada: ['pausada', 'activa', 'finalizada'],
+  finalizada: ['finalizada']
+};
+
+for (const [origen, permitidos] of Object.entries(destinos)) {
+  for (const destino of Object.keys(destinos)) {
+    test(`ciclo de vida: ${origen} → ${destino}`, async () => {
+      documento.estado = origen;
+      const anterior = documento.toObject();
+      const valido = permitidos.includes(destino);
+      const respuesta = await editar({ ...base, estado: destino, fechaInicio: '2026-09-21' }).expect(valido ? 303 : 422);
+      if (valido) {
+        assert.equal(guardar.mock.callCount(), 1);
+        assert.equal(documento.estado, destino);
+        assert.equal(documento.nombre, base.nombre);
+      } else {
+        assert.equal(guardar.mock.callCount(), 0);
+        assert.deepEqual(documento.toObject(), anterior);
+        assert.ok(respuesta.text.includes(`No puedes pasar de ${origen} a ${destino}.`));
+        assert.match(respuesta.text, /value="Conservar"/);
+        const selector = respuesta.text.match(/<select id="estado"[^>]*>([\s\S]*?)<\/select>/);
+        if (selector) assert.ok(!selector[1].includes(`value="${destino}"`));
+      }
+    });
+  }
+}
+
+test('programar: exige inicio al entrar y al conservar el estado, sin cambios parciales', async () => {
+  for (const origen of ['borrador', 'programada']) {
+    documento.estado = origen;
+    const anterior = documento.toObject();
+    for (const fechaInicio of ['', undefined, '2026-02-30']) {
+      const respuesta = await editar({ ...base, estado: 'programada', fechaInicio }).expect(422);
+      assert.match(respuesta.text, /fecha de inicio|fecha válida/);
+      assert.deepEqual(documento.toObject(), anterior);
+    }
+  }
+  assert.equal(guardar.mock.callCount(), 0);
+});
+
+test('edición: solo ofrece el estado actual y sus transiciones válidas', async () => {
+  for (const [origen, permitidos] of Object.entries(destinos)) {
+    documento.estado = origen;
+    const respuesta = await request(app).get(`/campanas/${id}/editar`).expect(200);
+    const selector = respuesta.text.match(/<select id="estado"[^>]*>([\s\S]*?)<\/select>/);
+    if (origen === 'finalizada') {
+      assert.equal(selector, null);
+      assert.match(respuesta.text, /no puede volver a otro estado/);
+      assert.match(respuesta.text, /name="estado" value="finalizada"/);
+    } else {
+      assert.ok(selector);
+      const opciones = [...selector[1].matchAll(/<option value="([^"]+)"/g)].map(coincidencia => coincidencia[1]);
+      assert.deepEqual(opciones, permitidos);
+    }
+  }
+});
+
 test('listado vacío/con datos y formulario nuevo; salida escapada', async () => {
   const respuesta = await request(app).get('/campanas').expect(200).expect('Content-Type', /html/);
   assert.match(respuesta.text, /&lt;script&gt;/);
@@ -51,7 +122,9 @@ test('listado vacío/con datos y formulario nuevo; salida escapada', async () =>
   assert.ok(respuesta.text.includes(`/campanas/${id}/editar`));
   listar.mock.mockImplementation(() => ({ sort: () => ({ lean: async () => [] }) }));
   assert.match((await request(app).get('/campanas').expect(200)).text, /Aún no hay campañas/);
-  assert.match((await request(app).get('/campanas/nueva').expect(200)).text, /value="borrador" selected/);
+  const formulario = (await request(app).get('/campanas/nueva').expect(200)).text;
+  assert.match(formulario, /Estado inicial: Borrador/);
+  assert.ok(!formulario.includes('name="estado"'));
   assert.equal(buscar.mock.callCount(), 0);
 });
 
@@ -69,7 +142,7 @@ test('crear: 303, campos permitidos, borrador y opcionales vacíos', async () =>
 test('crear/editar: 422, sin persistencia y datos conservados', async () => {
   for (const cambios of [{ objetivo: '' }, { canal: 'invalid' }, { estado: 'invalid' }, { fechaInicio: '2026-02-30' }, { fechaInicio: '2026-09-23', fechaFin: '2026-09-22' }, { 'canal[]': 'email' }]) {
     for (const ruta of ['/campanas', `/campanas/${id}/editar`]) {
-      const respuesta = await post(ruta, { ...base, ...cambios }).expect(422);
+      const respuesta = await post(ruta, { ...base, estado: ruta === '/campanas' ? 'borrador' : base.estado, ...cambios }).expect(422);
       assert.match(respuesta.text, /value="Conservar"/);
       assert.match(respuesta.text, /Corrige los campos/);
     }
@@ -150,7 +223,7 @@ test('fallos de persistencia: 500/503, sin detalles internos y conservando formu
     borrar.mock.mockImplementation(fallar);
     listar.mock.mockImplementation(fallar);
     for (const ruta of ['/campanas', `/campanas/${id}/editar`]) {
-      const respuesta = await post(ruta, base).expect(status);
+      const respuesta = await post(ruta, { ...base, estado: ruta === '/campanas' ? 'borrador' : base.estado }).expect(status);
       assert.match(respuesta.text, /value="Conservar"/);
       assert.ok(!respuesta.text.includes('SECRETO INTERNO'));
     }

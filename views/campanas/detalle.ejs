@@ -10,6 +10,7 @@
   <%- include('../partials/_encabezado', { seccion: 'campanas' }) %>
   <main id="contenido" tabindex="-1">
     <h1><%= campana.nombre %></h1>
+    <% if (campana.estado === 'finalizada') { %><p>Esta campaña está finalizada y no puede volver a otro estado.</p><% } %>
     <dl class="detalle">
       <div class="objetivo"><dt>Objetivo</dt><dd><%= campana.objetivo %></dd></div>
       <div><dt>Canal</dt><dd><%= canales[campana.canal] || 'Sin definir' %></dd></div>
