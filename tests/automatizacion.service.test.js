@@ -2,6 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const { ejecutarCampana, ErrorAutomatizacion } = require('../services/automatizacionService');
+const emailService = require('../services/emailService');
 
 const campana = {
   _id: '507f1f77bcf86cd799439011', nombre: 'Campaña', objetivo: 'Objetivo',
@@ -38,6 +39,19 @@ const codigo = esperado => error => {
   return true;
 };
 
+test('selector y manejador email: canales no disponibles nunca hacen peticiones', async t => {
+  const webhook = t.mock.method(global, 'fetch', () => { throw new Error('Acceso externo prohibido'); });
+  const email = t.mock.method(emailService, 'ejecutarCampana');
+  for (const canal of ['redes_sociales', 'sms', 'otro', undefined, null, '', 'desconocido', 'constructor', '__proto__']) {
+    await assert.rejects(ejecutarCampana({ ...campana, canal }), codigo('CANAL_NO_DISPONIBLE'));
+  }
+  assert.equal(email.mock.callCount(), 0);
+  for (const canal of ['redes_sociales', 'sms', 'otro', undefined, null, '', 'desconocido']) {
+    await assert.rejects(emailService.ejecutarCampana({ ...campana, canal }), codigo('CANAL_NO_DISPONIBLE'));
+  }
+  assert.equal(webhook.mock.callCount(), 0);
+});
+
 test('servicio: POST JSON real con payload explícito y fechas UTC; acepta 204', async t => {
   const peticiones = [];
   const url = await servidor(t, async (req, res) => {
@@ -63,8 +77,9 @@ test('servicio: opcionales ausentes se envían como null y acepta 202 sin JSON',
     res.writeHead(202).end('Recibido');
   });
   configurar(t, url);
-  await ejecutarCampana({ ...campana, canal: undefined, fechaInicio: undefined, fechaFin: undefined });
-  for (const campo of ['canal', 'fechaInicio', 'fechaFin']) assert.equal(recibido[campo], null);
+  await ejecutarCampana({ ...campana, fechaInicio: undefined, fechaFin: undefined });
+  assert.equal(recibido.canal, 'email');
+  for (const campo of ['fechaInicio', 'fechaFin']) assert.equal(recibido[campo], null);
 });
 
 test('servicio: configuración inválida impide cualquier petición', async t => {

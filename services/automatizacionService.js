@@ -1,50 +1,20 @@
-class ErrorAutomatizacion extends Error {
-  constructor(codigo) {
-    super(codigo);
-    this.name = 'ErrorAutomatizacion';
-    this.codigo = codigo;
-  }
-}
+const emailService = require('./emailService');
+const ErrorAutomatizacion = require('./ErrorAutomatizacion');
 
-const ejecutarCampana = async (campana) => {
-  let url;
-  const timeout = Number(process.env.N8N_WEBHOOK_TIMEOUT_MS ?? 10000);
-  try {
-    url = new URL(process.env.N8N_WEBHOOK_URL);
-    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password
-      || !Number.isInteger(timeout) || timeout <= 0 || timeout > 2147483647) throw new Error();
-  } catch {
-    throw new ErrorAutomatizacion('CONFIGURACION');
-  }
+// Solo los canales registrados pueden ejecutar una integración. No hay alternativa por defecto.
+const integraciones = new Map([['email', emailService]]);
 
-  const payload = {
-    id: String(campana._id),
-    nombre: campana.nombre,
-    objetivo: campana.objetivo,
-    canal: campana.canal || null,
-    estado: campana.estado,
-    fechaInicio: campana.fechaInicio ? campana.fechaInicio.toISOString() : null,
-    fechaFin: campana.fechaFin ? campana.fechaFin.toISOString() : null
-  };
-  const abort = new AbortController();
-  const timer = setTimeout(() => abort.abort(), timeout);
-  try {
-    const respuesta = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: abort.signal,
-      redirect: 'manual'
-    });
-    // Solo interesa el código HTTP; no exponer ni almacenar la respuesta externa.
-    if (respuesta.body) await respuesta.body.cancel();
-    if (!respuesta.ok) throw new ErrorAutomatizacion('RESPUESTA');
-  } catch (error) {
-    if (error instanceof ErrorAutomatizacion) throw error;
-    throw new ErrorAutomatizacion(abort.signal.aborted ? 'TIMEOUT' : 'CONEXION');
-  } finally {
-    clearTimeout(timer);
-  }
+const mensajeCanalNoDisponible = (canal) => {
+  if (integraciones.has(canal)) return '';
+  return canal == null || canal === ''
+    ? 'Selecciona un canal para ejecutar la campaña.'
+    : 'Canal aún no disponible.';
 };
 
-module.exports = { ejecutarCampana, ErrorAutomatizacion };
+const ejecutarCampana = async (campana) => {
+  const integracion = integraciones.get(campana.canal);
+  if (!integracion) throw new ErrorAutomatizacion('CANAL_NO_DISPONIBLE');
+  return integracion.ejecutarCampana(campana);
+};
+
+module.exports = { ejecutarCampana, mensajeCanalNoDisponible, ErrorAutomatizacion };

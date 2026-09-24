@@ -135,7 +135,8 @@ const consultarCampana = (vista, titulo) => async (req, res, next) => {
     }
     const mensaje = vista === 'detalle' && req.query.automatizacion === 'enviada'
       ? 'Solicitud enviada a la automatización. Esto confirma la recepción, no la finalización del flujo.' : '';
-    return res.render(`campanas/${vista}`, { titulo, campana, canales, estados, formatearFecha, mensaje, errorAutomatizacion: false });
+    return res.render(`campanas/${vista}`, { titulo, campana, canales, estados, formatearFecha, mensaje, errorAutomatizacion: false,
+      mensajeCanal: automatizacionService.mensajeCanalNoDisponible(campana.canal) });
   } catch (error) {
     if ([400, 404].includes(error.status)) return responderErrorRecurso(res, error);
     if (esErrorConexion(error)) error.status = 503;
@@ -191,11 +192,14 @@ const eliminarCampana = async (req, res, next) => {
 const ejecutarAutomatizacion = async (req, res, next) => {
   let campana;
   const mostrarError = (status, mensaje) => res.status(status).render('campanas/detalle', {
-    titulo: 'Detalle de campaña', campana, canales, estados, formatearFecha, mensaje, errorAutomatizacion: true
+    titulo: 'Detalle de campaña', campana, canales, estados, formatearFecha, mensaje, errorAutomatizacion: true,
+    mensajeCanal: automatizacionService.mensajeCanalNoDisponible(campana.canal)
   });
   try {
     campana = await buscarCampana(req.params.id);
     if (campana.estado !== 'activa') return mostrarError(422, 'Solo puedes ejecutar campañas activas.');
+    const mensajeCanal = automatizacionService.mensajeCanalNoDisponible(campana.canal);
+    if (mensajeCanal) return mostrarError(422, mensajeCanal);
     // Los datos y el destino nunca se toman del cuerpo del formulario.
     await automatizacionService.ejecutarCampana(campana);
     return res.redirect(303, `/campanas/${req.params.id}?automatizacion=enviada`);
@@ -203,6 +207,7 @@ const ejecutarAutomatizacion = async (req, res, next) => {
     if ([400, 404].includes(error.status)) return responderErrorRecurso(res, error);
     if (error instanceof automatizacionService.ErrorAutomatizacion) {
       const errores = {
+        CANAL_NO_DISPONIBLE: [422, 'Canal aún no disponible.'],
         CONFIGURACION: [503, 'La automatización no está configurada correctamente.'],
         CONEXION: [502, 'No se pudo confirmar la recepción de la solicitud. Revisa n8n antes de repetir.'],
         TIMEOUT: [504, 'La automatización no respondió a tiempo. Revisa n8n antes de repetir.'],

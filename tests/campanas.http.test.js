@@ -61,7 +61,7 @@ test('automatización: usa datos persistidos, ignora el cuerpo y no guarda cambi
   const ejecutar = t.mock.method(automatizacion, 'ejecutarCampana', async () => {});
   const anterior = documento.toObject();
   const respuesta = await post(`/campanas/${id}/ejecutar`, {
-    nombre: 'MANIPULADO', estado: 'finalizada', _id: ausente, N8N_WEBHOOK_URL: 'http://malicioso.invalid'
+    nombre: 'MANIPULADO', estado: 'finalizada', canal: 'redes_sociales', _id: ausente, N8N_WEBHOOK_URL: 'http://malicioso.invalid'
   }).expect(303).expect('Location', `/campanas/${id}?automatizacion=enviada`);
   assert.equal(ejecutar.mock.callCount(), 1);
   assert.equal(ejecutar.mock.calls[0].arguments[0], documento);
@@ -84,6 +84,35 @@ test('automatización: valida id, existencia y estado sin llamar al servicio', a
     assert.match(respuesta.text, /Solo puedes ejecutar campañas activas/);
   }
   assert.equal(ejecutar.mock.callCount(), 0);
+});
+
+test('automatización: rechaza canales distintos de email sin llamar al webhook', async t => {
+  const ejecutar = t.mock.method(automatizacion, 'ejecutarCampana', async () => {});
+  const webhook = t.mock.method(global, 'fetch', () => { throw new Error('Webhook externo prohibido en esta prueba'); });
+  for (const canal of ['redes_sociales', 'sms', 'otro', undefined, null, '', 'desconocido', 'constructor', '__proto__']) {
+    documento.canal = canal;
+    const respuesta = await post(`/campanas/${id}/ejecutar`, { canal: 'email' }).expect(422);
+    assert.match(respuesta.text, canal ? /Canal aún no disponible/ : /Selecciona un canal/);
+    assert.match(respuesta.text, /role="alert"/);
+  }
+  assert.equal(ejecutar.mock.callCount(), 0);
+  assert.equal(webhook.mock.callCount(), 0);
+  assert.equal(guardar.mock.callCount(), 0);
+});
+
+test('automatización: detalle indica canales no disponibles y no ofrece ejecutar', async t => {
+  const webhook = t.mock.method(global, 'fetch', () => { throw new Error('Acceso externo prohibido'); });
+  for (const estado of ['activa', 'borrador', 'pausada', 'finalizada']) {
+    documento.estado = estado;
+    for (const canal of ['redes_sociales', 'sms', 'otro', undefined, null, '', 'desconocido']) {
+      documento.canal = canal;
+      const respuesta = await request(app).get(`/campanas/${id}`).expect(200);
+      assert.match(respuesta.text, canal ? /Canal aún no disponible/ : /Selecciona un canal/);
+      assert.ok(!respuesta.text.includes('Ejecutar automatización'));
+      assert.ok(!respuesta.text.includes(`action="/campanas/${id}/ejecutar"`));
+    }
+  }
+  assert.equal(webhook.mock.callCount(), 0);
 });
 
 test('automatización: errores del servicio se muestran sin filtrar detalles externos', async t => {
