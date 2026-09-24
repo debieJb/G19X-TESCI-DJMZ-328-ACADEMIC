@@ -44,7 +44,7 @@ test('selector y manejador email: canales no disponibles nunca hacen peticiones'
   const webhook = t.mock.method(global, 'fetch', () => { throw new Error('Acceso externo prohibido'); });
   const email = t.mock.method(emailService, 'ejecutarCampana');
   for (const canal of ['redes_sociales', 'sms', 'otro', undefined, null, '', 'desconocido', 'constructor', '__proto__']) {
-    await assert.rejects(ejecutarCampana({ ...campana, canal }), codigo('CANAL_NO_DISPONIBLE'));
+    await assert.rejects(ejecutarCampana({ ...campana, canal }), codigo(canal === 'redes_sociales' ? 'CUENTAS_REDES_NO_CONECTADAS' : 'CANAL_NO_DISPONIBLE'));
   }
   assert.equal(email.mock.callCount(), 0);
   for (const canal of ['redes_sociales', 'sms', 'otro', undefined, null, '', 'desconocido']) {

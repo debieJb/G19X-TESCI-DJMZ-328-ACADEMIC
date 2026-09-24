@@ -93,7 +93,7 @@ test('automatización: rechaza canales distintos de email sin llamar al webhook'
   for (const canal of ['redes_sociales', 'sms', 'otro', undefined, null, '', 'desconocido', 'constructor', '__proto__']) {
     documento.canal = canal;
     const respuesta = await post(`/campanas/${id}/ejecutar`, { canal: 'email' }).expect(422);
-    assert.match(respuesta.text, canal ? /Canal aún no disponible/ : /Selecciona un canal/);
+    assert.match(respuesta.text, canal === 'redes_sociales' ? /Conecta Facebook y LinkedIn para publicar/ : canal ? /Canal aún no disponible/ : /Selecciona un canal/);
     assert.match(respuesta.text, /role="alert"/);
   }
   assert.equal(ejecutar.mock.callCount(), 0);
@@ -108,7 +108,7 @@ test('automatización: detalle indica canales no disponibles y no ofrece ejecuta
     for (const canal of ['redes_sociales', 'sms', 'otro', undefined, null, '', 'desconocido']) {
       documento.canal = canal;
       const respuesta = await request(app).get(`/campanas/${id}`).expect(200);
-      assert.match(respuesta.text, canal ? /Canal aún no disponible/ : /Selecciona un canal/);
+      assert.match(respuesta.text, canal === 'redes_sociales' ? /Conecta Facebook y LinkedIn para publicar/ : canal ? /Canal aún no disponible/ : /Selecciona un canal/);
       assert.ok(!respuesta.text.includes('Ejecutar automatización'));
       assert.ok(!respuesta.text.includes(`action="/campanas/${id}/ejecutar"`));
     }
@@ -246,7 +246,7 @@ test('crear: 303, campos permitidos, borrador y opcionales vacíos', async () =>
   await post('/campanas', { nombre: ' Nueva ', objetivo: ' Objetivo ', canal: '', fechaInicio: '', fechaFin: '', admin: 'true', _id: ausente })
     .expect(303).expect('Location', '/campanas');
   const valores = crear.mock.calls[0].arguments[0];
-  assert.deepEqual(Object.keys(valores).sort(), ['nombre', 'objetivo', 'canal', 'estado', 'fechaInicio', 'fechaFin', 'asunto', 'cuerpoTexto'].sort());
+  assert.deepEqual(Object.keys(valores).sort(), ['nombre', 'objetivo', 'canal', 'estado', 'fechaInicio', 'fechaFin', 'asunto', 'cuerpoTexto', 'publicacion'].sort());
   assert.equal(valores.nombre, 'Nueva');
   assert.equal(valores.objetivo, 'Objetivo');
   assert.equal(valores.estado, 'borrador');
@@ -290,6 +290,35 @@ test('formulario: guardar cambios de canal conserva el contenido de email', asyn
     assert.equal(documento.asunto, 'Asunto guardado');
     assert.equal(documento.cuerpoTexto, 'Texto guardado');
   }
+});
+
+test('redes: publicación se guarda, se conserva al cambiar canal y se muestra solo para redes', async () => {
+  const publicacion = ' Hola\n</textarea><script>texto</script>';
+  await post('/campanas', { nombre: 'Redes', objetivo: 'Objetivo', canal: 'redes_sociales', publicacion }).expect(303);
+  assert.equal(crear.mock.calls[0].arguments[0].publicacion, publicacion);
+  await editar({ ...base, canal: 'redes_sociales', publicacion }).expect(303);
+  assert.equal(documento.publicacion, publicacion);
+  for (const canal of ['email', 'sms', 'redes_sociales']) {
+    await editar({ ...base, canal }).expect(303);
+    assert.equal(documento.publicacion, publicacion);
+    const detalle = await request(app).get(`/campanas/${id}`).expect(200);
+    assert.equal(detalle.text.includes('<dt>Publicación</dt>'), canal === 'redes_sociales');
+    assert.ok(!detalle.text.includes('<script>'));
+    const formulario = await request(app).get(`/campanas/${id}/editar`).expect(200);
+    assert.equal(/hidden/.test(formulario.text.match(/<section id="contenido-redes"[^>]*>/)[0]), canal !== 'redes_sociales');
+    assert.ok(formulario.text.includes(' Hola\n&lt;/textarea&gt;&lt;script&gt;texto&lt;/script&gt;</textarea>'));
+  }
+  const nuevo = await request(app).get('/campanas/nueva').expect(200);
+  assert.match(nuevo.text, /<section id="contenido-redes"[^>]*hidden/);
+  for (const canal of ['email', 'redes_sociales', 'sms']) {
+    for (const ruta of ['/campanas', `/campanas/${id}/editar`]) {
+      const error = await post(ruta, { nombre: 'Redes', objetivo: '', canal, publicacion }).expect(422);
+      assert.equal(/hidden/.test(error.text.match(/<section id="contenido-redes"[^>]*>/)[0]), canal !== 'redes_sociales');
+      assert.ok(error.text.includes(' Hola\n&lt;/textarea&gt;&lt;script&gt;texto&lt;/script&gt;</textarea>'));
+    }
+  }
+  await editar({ ...base, canal: 'redes_sociales', 'publicacion[]': 'inválido' }).expect(422);
+  assert.equal(documento.publicacion, publicacion);
 });
 
 test('email: crear y editar guardan contenido y permiten borradores incompletos', async () => {
@@ -368,7 +397,7 @@ test('email: ejecutar sin contenido guardado devuelve 422 y no llama al webhook'
   for (const canal of ['redes_sociales', 'sms', 'otro']) {
     documento.canal = canal;
     const respuesta = await post(`/campanas/${id}/ejecutar`, {}).expect(422);
-    assert.match(respuesta.text, /Canal aún no disponible/);
+    assert.match(respuesta.text, canal === 'redes_sociales' ? /Conecta Facebook y LinkedIn para publicar/ : /Canal aún no disponible/);
   }
   assert.equal(webhook.mock.callCount(), 0);
   assert.equal(guardar.mock.callCount(), 0);

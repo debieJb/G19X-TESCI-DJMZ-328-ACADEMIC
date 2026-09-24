@@ -3,8 +3,8 @@ const automatizacionService = require('../services/automatizacionService');
 
 const canales = { email: 'Correo electrónico', redes_sociales: 'Redes sociales', sms: 'SMS', otro: 'Otro' };
 const estados = { borrador: 'Borrador', programada: 'Programada', activa: 'Activa', pausada: 'Pausada', finalizada: 'Finalizada' };
-const campos = ['nombre', 'objetivo', 'canal', 'estado', 'fechaInicio', 'fechaFin', 'asunto', 'cuerpoTexto'];
-const etiquetas = { nombre: 'Nombre', objetivo: 'Objetivo', canal: 'Canal', estado: 'Estado', fechaInicio: 'Fecha de inicio', fechaFin: 'Fecha de fin', asunto: 'Asunto', cuerpoTexto: 'Cuerpo de texto' };
+const campos = ['nombre', 'objetivo', 'canal', 'estado', 'fechaInicio', 'fechaFin', 'asunto', 'cuerpoTexto', 'publicacion'];
+const etiquetas = { nombre: 'Nombre', objetivo: 'Objetivo', canal: 'Canal', estado: 'Estado', fechaInicio: 'Fecha de inicio', fechaFin: 'Fecha de fin', asunto: 'Asunto', cuerpoTexto: 'Cuerpo de texto', publicacion: 'Publicación' };
 
 const mostrarFormulario = (res, datos, errores = {}, mensaje = '', status = 200, id = null, estadoActual = null) =>
   res.status(status).render(id ? 'campanas/editar' : 'campanas/nueva', {
@@ -46,7 +46,7 @@ const listarCampanas = async (req, res, next) => {
 };
 
 const mostrarFormularioCreacion = (req, res) => mostrarFormulario(res, {
-  nombre: '', objetivo: '', canal: '', estado: 'borrador', fechaInicio: '', fechaFin: '', asunto: '', cuerpoTexto: ''
+  nombre: '', objetivo: '', canal: '', estado: 'borrador', fechaInicio: '', fechaFin: '', asunto: '', cuerpoTexto: '', publicacion: ''
 });
 
 const validarFormulario = (entrada = {}, editar = false) => {
@@ -62,7 +62,8 @@ const validarFormulario = (entrada = {}, editar = false) => {
     nombre: datos.nombre.trim(), objetivo: datos.objetivo.trim(),
     canal: datos.canal || undefined, estado: editar ? datos.estado : 'borrador',
     fechaInicio: undefined, fechaFin: undefined,
-    asunto: datos.asunto.trim() || undefined, cuerpoTexto: datos.cuerpoTexto || undefined
+    asunto: datos.asunto.trim() || undefined, cuerpoTexto: datos.cuerpoTexto || undefined,
+    publicacion: datos.publicacion || undefined
   };
   if (!editar) {
     if (datos.estado && datos.estado !== 'borrador') errores.estado = 'Toda campaña nueva debe comenzar en borrador.';
@@ -156,7 +157,7 @@ const actualizarCampana = async (req, res) => {
     const campana = await buscarCampana(req.params.id);
     estadoActual = campana.estado;
     // Formularios anteriores que omitan estos campos no deben borrar contenido guardado.
-    for (const campo of ['asunto', 'cuerpoTexto']) {
+    for (const campo of ['asunto', 'cuerpoTexto', 'publicacion']) {
       if (!Object.hasOwn(req.body || {}, campo)) {
         valores[campo] = campana[campo];
         datos[campo] = campana[campo] || '';
@@ -216,6 +217,7 @@ const ejecutarAutomatizacion = async (req, res, next) => {
     if (error instanceof automatizacionService.ErrorAutomatizacion) {
       const errores = {
         CANAL_NO_DISPONIBLE: [422, 'Canal aún no disponible.'],
+        CUENTAS_REDES_NO_CONECTADAS: [422, 'Conecta Facebook y LinkedIn para publicar'],
         CONTENIDO_EMAIL_INCOMPLETO: [422, 'Completa el asunto y el cuerpo de texto antes de ejecutar la campaña de email.'],
         CONFIGURACION: [503, 'La automatización no está configurada correctamente.'],
         CONEXION: [502, 'No se pudo confirmar la recepción de la solicitud. Revisa n8n antes de repetir.'],

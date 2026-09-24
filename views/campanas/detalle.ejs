@@ -21,6 +21,9 @@
         <div><dt>Asunto</dt><dd><%= campana.asunto || 'Sin definir' %></dd></div>
         <div class="objetivo"><dt>Mensaje</dt><dd style="white-space: pre-wrap; overflow-wrap: anywhere;"><%= campana.cuerpoTexto || 'Sin definir' %></dd></div>
       <% } %>
+      <% if (campana.canal === 'redes_sociales') { %>
+        <div class="objetivo"><dt>Publicación</dt><dd><%= campana.publicacion || 'Sin definir' %></dd></div>
+      <% } %>
       <div><dt>Estado</dt><dd><span class="insignia estado-<%= campana.estado %>"><%= estados[campana.estado] || 'Sin definir' %></span></dd></div>
       <div><dt>Fecha de inicio</dt><dd><%= formatearFecha(campana.fechaInicio) %></dd></div>
       <div><dt>Fecha de fin</dt><dd><%= formatearFecha(campana.fechaFin) %></dd></div>

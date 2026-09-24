@@ -13,6 +13,7 @@ const campanaSchema = new mongoose.Schema({
   objetivo: { type: String, required: true, trim: true },
   asunto: { type: String, trim: true },
   cuerpoTexto: { type: String },
+  publicacion: { type: String },
   canal: {
     type: String,
     enum: ['email', 'redes_sociales', 'sms', 'otro']

@@ -68,6 +68,14 @@
         </div>
       <% } %>
       </section>
+      <section id="contenido-redes" class="campo-amplio" <%= datos.canal === 'redes_sociales' ? '' : 'hidden' %>>
+        <p>El mismo texto se publicará en Facebook y LinkedIn. Conecta Facebook y LinkedIn para publicar.</p>
+        <div class="campo">
+          <label for="publicacion">Publicación</label>
+          <textarea id="publicacion" name="publicacion" rows="8" aria-invalid="<%= !!errores.publicacion %>" aria-describedby="publicacion-error"><%= datos.publicacion || '' %></textarea>
+          <span class="error-campo" id="publicacion-error"><%= errores.publicacion || '' %></span>
+        </div>
+      </section>
       <div class="acciones"><button type="submit">Guardar campaña</button><a class="boton secundario" href="<%= cancelar %>">Cancelar</a></div>
     </form>
     <script src="/js/campanaFormulario.js" defer></script>
