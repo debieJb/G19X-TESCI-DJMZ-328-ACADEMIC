@@ -253,6 +253,45 @@ test('crear: 303, campos permitidos, borrador y opcionales vacíos', async () =>
   for (const campo of ['canal', 'fechaInicio', 'fechaFin']) assert.equal(valores[campo], undefined);
 });
 
+test('formulario: visibilidad inicial y tras errores depende del canal, conservando contenido', async () => {
+  const verificar = (html, canal) => {
+    const seccion = html.match(/<section id="contenido-email"[^>]*>/);
+    assert.ok(seccion);
+    assert.equal(/\bhidden\b/.test(seccion[0]), canal !== 'email');
+    assert.match(html, /<label for="cuerpoTexto">Mensaje/);
+    assert.match(html, /<script src="\/js\/campanaFormulario.js" defer><\/script>/);
+    assert.ok(!/<(?:input|textarea)[^>]*name="(?:asunto|cuerpoTexto)"[^>]*disabled/.test(html));
+  };
+  verificar((await request(app).get('/campanas/nueva').expect(200)).text, '');
+  await request(app).get('/js/campanaFormulario.js').expect(200).expect('Content-Type', /javascript/);
+  for (const canal of ['email', 'redes_sociales', 'sms', 'otro', '']) {
+    documento.canal = canal || undefined;
+    const edicion = await request(app).get(`/campanas/${id}/editar`).expect(200);
+    verificar(edicion.text, canal);
+    assert.match(edicion.text, /value="Asunto guardado"/);
+    assert.match(edicion.text, />Texto guardado<\/textarea>/);
+    for (const ruta of ['/campanas', `/campanas/${id}/editar`]) {
+      const error = await post(ruta, { nombre: 'Conservar', objetivo: '', estado: 'borrador', canal, asunto: 'Escrito', cuerpoTexto: 'Mensaje\nEscrito' }).expect(422);
+      verificar(error.text, canal);
+      assert.match(error.text, /value="Escrito"/);
+      assert.ok(error.text.includes('Mensaje\nEscrito</textarea>'));
+    }
+    const detalle = await request(app).get(`/campanas/${id}`).expect(200);
+    assert.equal(detalle.text.includes('<dt>Asunto</dt>'), canal === 'email');
+    assert.equal(detalle.text.includes('<dt>Mensaje</dt>'), canal === 'email');
+  }
+  assert.equal(guardar.mock.callCount(), 0);
+  assert.equal(crear.mock.callCount(), 0);
+});
+
+test('formulario: guardar cambios de canal conserva el contenido de email', async () => {
+  for (const canal of ['redes_sociales', 'email']) {
+    await editar({ ...base, estado: 'activa', canal, asunto: 'Asunto guardado', cuerpoTexto: 'Texto guardado' }).expect(303);
+    assert.equal(documento.asunto, 'Asunto guardado');
+    assert.equal(documento.cuerpoTexto, 'Texto guardado');
+  }
+});
+
 test('email: crear y editar guardan contenido y permiten borradores incompletos', async () => {
   const cuerpoTexto = ' Hola\n\n  Segunda línea\n';
   await post('/campanas', { nombre: 'Nueva', objetivo: 'Objetivo', canal: 'email', asunto: ' Asunto ', cuerpoTexto }).expect(303);
