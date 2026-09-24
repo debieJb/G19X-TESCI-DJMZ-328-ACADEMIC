@@ -7,6 +7,7 @@ const emailService = require('../services/emailService');
 const campana = {
   _id: '507f1f77bcf86cd799439011', nombre: 'Campaña', objetivo: 'Objetivo',
   canal: 'email', estado: 'activa', fechaInicio: new Date('2026-10-01'),
+  asunto: 'Asunto de prueba', cuerpoTexto: 'Hola,\n\nContenido de prueba.',
   fechaFin: new Date('2026-10-05'), privado: 'NO ENVIAR'
 };
 
@@ -64,6 +65,7 @@ test('servicio: POST JSON real con payload explícito y fechas UTC; acepta 204',
   await ejecutarCampana(campana);
   assert.deepEqual(peticiones, [{ method: 'POST', type: 'application/json', body: {
     id: campana._id, nombre: 'Campaña', objetivo: 'Objetivo', canal: 'email', estado: 'activa',
+    asunto: campana.asunto, cuerpoTexto: campana.cuerpoTexto,
     fechaInicio: '2026-10-01T00:00:00.000Z', fechaFin: '2026-10-05T00:00:00.000Z'
   } }]);
 });
@@ -80,6 +82,18 @@ test('servicio: opcionales ausentes se envían como null y acepta 202 sin JSON',
   await ejecutarCampana({ ...campana, fechaInicio: undefined, fechaFin: undefined });
   assert.equal(recibido.canal, 'email');
   for (const campo of ['fechaInicio', 'fechaFin']) assert.equal(recibido[campo], null);
+});
+
+test('email: contenido ausente, vacío o inválido impide peticiones incluso al invocar el manejador directamente', async t => {
+  const webhook = t.mock.method(global, 'fetch', () => { throw new Error('Acceso externo prohibido'); });
+  for (const ejecutar of [ejecutarCampana, emailService.ejecutarCampana]) {
+    for (const campo of ['asunto', 'cuerpoTexto']) {
+      for (const valor of [undefined, null, '', ' \n\t ', 12, {}]) {
+        await assert.rejects(ejecutar({ ...campana, [campo]: valor }), codigo('CONTENIDO_EMAIL_INCOMPLETO'));
+      }
+    }
+  }
+  assert.equal(webhook.mock.callCount(), 0);
 });
 
 test('servicio: configuración inválida impide cualquier petición', async t => {

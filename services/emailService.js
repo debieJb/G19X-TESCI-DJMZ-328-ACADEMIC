@@ -2,6 +2,9 @@ const ErrorAutomatizacion = require('./ErrorAutomatizacion');
 
 const ejecutarCampana = async (campana) => {
   if (campana.canal !== 'email') throw new ErrorAutomatizacion('CANAL_NO_DISPONIBLE');
+  if (['asunto', 'cuerpoTexto'].some(campo => typeof campana[campo] !== 'string' || !campana[campo].trim())) {
+    throw new ErrorAutomatizacion('CONTENIDO_EMAIL_INCOMPLETO');
+  }
   let url;
   const timeout = Number(process.env.N8N_WEBHOOK_TIMEOUT_MS ?? 10000);
   try {
@@ -16,6 +19,8 @@ const ejecutarCampana = async (campana) => {
     id: String(campana._id),
     nombre: campana.nombre,
     objetivo: campana.objetivo,
+    asunto: campana.asunto,
+    cuerpoTexto: campana.cuerpoTexto,
     canal: campana.canal || null,
     estado: campana.estado,
     fechaInicio: campana.fechaInicio ? campana.fechaInicio.toISOString() : null,

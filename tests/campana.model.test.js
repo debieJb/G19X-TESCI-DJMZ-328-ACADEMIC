@@ -16,6 +16,20 @@ test('modelo: trim, estado predeterminado y campos opcionales', async () => {
   assert.equal(Campana.schema.options.timestamps, true);
 });
 
+test('modelo: email permite borradores incompletos y documentos existentes sin contenido', async () => {
+  for (const contenido of [{}, { asunto: 'Asunto' }, { cuerpoTexto: 'Texto' }, { asunto: '', cuerpoTexto: '' }]) {
+    await new Campana({ ...base, canal: 'email', ...contenido }).validate();
+  }
+  const existente = Campana.hydrate({ ...base, canal: 'email', estado: 'activa' });
+  await existente.validate();
+  assert.equal(existente.asunto, undefined);
+  assert.equal(existente.cuerpoTexto, undefined);
+  const documento = new Campana({ ...base, asunto: ' Asunto ', cuerpoTexto: ' Hola\n\n  Adiós\n' });
+  await documento.validate();
+  assert.equal(documento.asunto, 'Asunto');
+  assert.equal(documento.cuerpoTexto, ' Hola\n\n  Adiós\n');
+});
+
 test('modelo: nombre y objetivo son obligatorios incluso con espacios', async () => {
   for (const campo of ['nombre', 'objetivo']) {
     for (const valor of [undefined, '', '   ']) {

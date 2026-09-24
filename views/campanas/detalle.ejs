@@ -17,6 +17,10 @@
     <dl class="detalle">
       <div class="objetivo"><dt>Objetivo</dt><dd><%= campana.objetivo %></dd></div>
       <div><dt>Canal</dt><dd><%= canales[campana.canal] || 'Sin definir' %></dd></div>
+      <% if (campana.canal === 'email') { %>
+        <div><dt>Asunto</dt><dd><%= campana.asunto || 'Sin definir' %></dd></div>
+        <div class="objetivo"><dt>Cuerpo de texto</dt><dd style="white-space: pre-wrap; overflow-wrap: anywhere;"><%= campana.cuerpoTexto || 'Sin definir' %></dd></div>
+      <% } %>
       <div><dt>Estado</dt><dd><span class="insignia estado-<%= campana.estado %>"><%= estados[campana.estado] || 'Sin definir' %></span></dd></div>
       <div><dt>Fecha de inicio</dt><dd><%= formatearFecha(campana.fechaInicio) %></dd></div>
       <div><dt>Fecha de fin</dt><dd><%= formatearFecha(campana.fechaFin) %></dd></div>

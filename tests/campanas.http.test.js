@@ -20,6 +20,7 @@ let documento, crear, guardar, borrar, buscar, listar;
 beforeEach(() => {
   documento = Campana.hydrate({
     _id: id, nombre: '<script>alert(1)</script>', objetivo: 'Objetivo', canal: 'email', estado: 'activa',
+    asunto: 'Asunto guardado', cuerpoTexto: 'Texto guardado',
     fechaInicio: '2026-09-21', fechaFin: '2026-09-22', createdAt: '2026-09-20', updatedAt: '2026-09-20'
   });
   guardar = mock.method(documento, 'save', async () => documento);
@@ -245,11 +246,93 @@ test('crear: 303, campos permitidos, borrador y opcionales vacíos', async () =>
   await post('/campanas', { nombre: ' Nueva ', objetivo: ' Objetivo ', canal: '', fechaInicio: '', fechaFin: '', admin: 'true', _id: ausente })
     .expect(303).expect('Location', '/campanas');
   const valores = crear.mock.calls[0].arguments[0];
-  assert.deepEqual(Object.keys(valores).sort(), ['nombre', 'objetivo', 'canal', 'estado', 'fechaInicio', 'fechaFin'].sort());
+  assert.deepEqual(Object.keys(valores).sort(), ['nombre', 'objetivo', 'canal', 'estado', 'fechaInicio', 'fechaFin', 'asunto', 'cuerpoTexto'].sort());
   assert.equal(valores.nombre, 'Nueva');
   assert.equal(valores.objetivo, 'Objetivo');
   assert.equal(valores.estado, 'borrador');
   for (const campo of ['canal', 'fechaInicio', 'fechaFin']) assert.equal(valores[campo], undefined);
+});
+
+test('email: crear y editar guardan contenido y permiten borradores incompletos', async () => {
+  const cuerpoTexto = ' Hola\n\n  Segunda línea\n';
+  await post('/campanas', { nombre: 'Nueva', objetivo: 'Objetivo', canal: 'email', asunto: ' Asunto ', cuerpoTexto }).expect(303);
+  assert.equal(crear.mock.calls[0].arguments[0].asunto, 'Asunto');
+  assert.equal(crear.mock.calls[0].arguments[0].cuerpoTexto, cuerpoTexto);
+  for (const contenido of [{}, { asunto: 'Solo asunto' }, { cuerpoTexto: 'Solo texto' }, { asunto: '', cuerpoTexto: '' }]) {
+    await post('/campanas', { nombre: 'Nueva', objetivo: 'Objetivo', canal: 'email', ...contenido }).expect(303);
+  }
+  documento.estado = 'borrador';
+  await editar({ ...base, estado: 'borrador', canal: 'email', asunto: ' Editado ', cuerpoTexto }).expect(303);
+  assert.equal(documento.asunto, 'Editado');
+  assert.equal(documento.cuerpoTexto, cuerpoTexto);
+  await editar({ ...base, estado: 'borrador', canal: 'email', asunto: '', cuerpoTexto: '' }).expect(303);
+  assert.equal(documento.asunto, undefined);
+  assert.equal(documento.cuerpoTexto, undefined);
+});
+
+test('email: formularios y detalle escapan contenido y conservan entradas tras errores', async () => {
+  documento.asunto = '<script>asunto</script>';
+  documento.cuerpoTexto = '</textarea><script>texto</script>\nOtra línea';
+  for (const ruta of [`/campanas/${id}`, `/campanas/${id}/editar`]) {
+    const respuesta = await request(app).get(ruta).expect(200);
+    assert.ok(respuesta.text.includes('&lt;script&gt;asunto&lt;/script&gt;'));
+    assert.ok(respuesta.text.includes('&lt;/textarea&gt;&lt;script&gt;texto&lt;/script&gt;\nOtra línea'));
+    assert.ok(!respuesta.text.includes('<script>'));
+  }
+  const formulario = await request(app).get('/campanas/nueva').expect(200);
+  for (const campo of ['asunto', 'cuerpoTexto']) {
+    const elemento = formulario.text.match(new RegExp(`<[^>]+name="${campo}"[^>]*>`))[0];
+    assert.ok(!elemento.includes('required'));
+  }
+  for (const ruta of ['/campanas', `/campanas/${id}/editar`]) {
+    const respuesta = await post(ruta, { ...base, objetivo: '', asunto: documento.asunto, cuerpoTexto: documento.cuerpoTexto }).expect(422);
+    assert.ok(respuesta.text.includes('&lt;script&gt;asunto&lt;/script&gt;'));
+    assert.ok(respuesta.text.includes('&lt;/textarea&gt;&lt;script&gt;texto&lt;/script&gt;\nOtra línea'));
+    for (const campo of ['asunto', 'cuerpoTexto']) {
+      const invalida = await post(ruta, { ...base, estado: ruta === '/campanas' ? 'borrador' : base.estado, [`${campo}[]`]: 'No es texto' }).expect(422);
+      assert.match(invalida.text, /debe contener un valor de texto/);
+    }
+  }
+  assert.equal(crear.mock.callCount(), 0);
+  assert.equal(guardar.mock.callCount(), 0);
+});
+
+test('email: documentos antiguos y formularios sin campos nuevos conservan sus datos', async () => {
+  await editar({ ...base, canal: 'redes_sociales' }).expect(303);
+  assert.equal(documento.asunto, 'Asunto guardado');
+  assert.equal(documento.cuerpoTexto, 'Texto guardado');
+  documento.asunto = undefined;
+  documento.cuerpoTexto = undefined;
+  documento.canal = 'email';
+  for (const ruta of [`/campanas/${id}`, `/campanas/${id}/editar`]) await request(app).get(ruta).expect(200);
+  await editar({ ...base, canal: 'email' }).expect(303);
+  assert.equal(documento.asunto, undefined);
+  assert.equal(documento.cuerpoTexto, undefined);
+  assert.equal(String(documento._id), id);
+  assert.equal(documento.objetivo, base.objetivo);
+});
+
+test('email: ejecutar sin contenido guardado devuelve 422 y no llama al webhook', async t => {
+  const webhook = t.mock.method(global, 'fetch', () => { throw new Error('Acceso externo prohibido'); });
+  for (const campo of ['asunto', 'cuerpoTexto']) {
+    for (const valor of [undefined, null, '', ' \n\t ']) {
+      documento.asunto = 'Asunto';
+      documento.cuerpoTexto = 'Texto';
+      documento[campo] = valor;
+      const anterior = documento.toObject();
+      const respuesta = await post(`/campanas/${id}/ejecutar`, { asunto: 'No usar', cuerpoTexto: 'No usar' }).expect(422);
+      assert.match(respuesta.text, /Completa el asunto y el cuerpo de texto/);
+      assert.match(respuesta.text, /role="alert"/);
+      assert.deepEqual(documento.toObject(), anterior);
+    }
+  }
+  for (const canal of ['redes_sociales', 'sms', 'otro']) {
+    documento.canal = canal;
+    const respuesta = await post(`/campanas/${id}/ejecutar`, {}).expect(422);
+    assert.match(respuesta.text, /Canal aún no disponible/);
+  }
+  assert.equal(webhook.mock.callCount(), 0);
+  assert.equal(guardar.mock.callCount(), 0);
 });
 
 test('crear/editar: 422, sin persistencia y datos conservados', async () => {

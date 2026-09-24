@@ -54,5 +54,17 @@
           <span class="error-campo" id="<%= campo %>-error"><%= errores[campo] || '' %></span>
         </div>
       <% } %>
+      <p class="campo-amplio">Contenido para el canal email. Puedes guardarlo incompleto; asunto y cuerpo de texto son obligatorios para ejecutar el envío.</p>
+      <% for (const [campo, etiqueta] of [['asunto', 'Asunto'], ['cuerpoTexto', 'Cuerpo de texto']]) { %>
+        <div class="campo campo-amplio">
+          <label for="<%= campo %>"><%= etiqueta %> (solo email)</label>
+          <% if (campo === 'cuerpoTexto') { %>
+            <textarea id="<%= campo %>" name="<%= campo %>" rows="8" aria-invalid="<%= !!errores[campo] %>" aria-describedby="<%= campo %>-error"><%= datos[campo] || '' %></textarea>
+          <% } else { %>
+            <input id="<%= campo %>" name="<%= campo %>" value="<%= datos[campo] || '' %>" aria-invalid="<%= !!errores[campo] %>" aria-describedby="<%= campo %>-error">
+          <% } %>
+          <span class="error-campo" id="<%= campo %>-error"><%= errores[campo] || '' %></span>
+        </div>
+      <% } %>
       <div class="acciones"><button type="submit">Guardar campaña</button><a class="boton secundario" href="<%= cancelar %>">Cancelar</a></div>
     </form>

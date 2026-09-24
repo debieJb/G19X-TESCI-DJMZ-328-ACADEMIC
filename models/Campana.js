@@ -11,6 +11,8 @@ const transiciones = {
 const campanaSchema = new mongoose.Schema({
   nombre: { type: String, required: true, trim: true },
   objetivo: { type: String, required: true, trim: true },
+  asunto: { type: String, trim: true },
+  cuerpoTexto: { type: String },
   canal: {
     type: String,
     enum: ['email', 'redes_sociales', 'sms', 'otro']
