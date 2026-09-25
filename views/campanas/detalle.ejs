@@ -19,7 +19,7 @@
       <div><dt>Canal</dt><dd><%= canales[campana.canal] || 'Sin definir' %></dd></div>
       <% if (campana.canal === 'email') { %>
         <div><dt>Asunto</dt><dd><%= campana.asunto || 'Sin definir' %></dd></div>
-        <div class="objetivo"><dt>Mensaje</dt><dd style="white-space: pre-wrap; overflow-wrap: anywhere;"><%= campana.cuerpoTexto || 'Sin definir' %></dd></div>
+        <div class="objetivo"><dt>Mensaje</dt><dd><%= campana.cuerpoTexto || 'Sin definir' %></dd></div>
       <% } %>
       <% if (campana.canal === 'redes_sociales') { %>
         <div class="objetivo"><dt>Publicación</dt><dd><%= campana.publicacion || 'Sin definir' %></dd></div>
