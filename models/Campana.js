@@ -9,6 +9,8 @@ const transiciones = {
 };
 
 const campanaSchema = new mongoose.Schema({
+  empresa: { type: mongoose.Schema.Types.ObjectId, ref: 'Empresa' },
+  creadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
   nombre: { type: String, required: true, trim: true },
   objetivo: { type: String, required: true, trim: true },
   asunto: { type: String, trim: true },

@@ -46,6 +46,19 @@ afterEach(() => {
 const post = (ruta, datos) => request(app).post(ruta).type('form').send(datos);
 const editar = datos => post(`/campanas/${id}/editar`, datos);
 
+test('relaciones: el CRUD ignora empresa y creadoPor enviados en req.body', async () => {
+  const relaciones = { empresa: ausente, creadoPor: ausente };
+  await post('/campanas', { nombre: 'Nueva', objetivo: 'Objetivo', ...relaciones }).expect(303);
+  for (const campo of Object.keys(relaciones)) assert.equal(crear.mock.calls[0].arguments[0][campo], undefined);
+  await editar({ ...base, ...relaciones }).expect(303);
+  for (const campo of Object.keys(relaciones)) assert.equal(documento[campo], undefined);
+  documento.empresa = new mongoose.Types.ObjectId(id);
+  documento.creadoPor = new mongoose.Types.ObjectId(id);
+  await editar({ ...base, ...relaciones }).expect(303);
+  assert.equal(documento.empresa.toHexString(), id);
+  assert.equal(documento.creadoPor.toHexString(), id);
+});
+
 test('automatización: botón POST solo para activas; GET no ejecuta', async t => {
   const ejecutar = t.mock.method(automatizacion, 'ejecutarCampana', async () => {});
   for (const estado of ['borrador', 'programada', 'activa', 'pausada', 'finalizada']) {

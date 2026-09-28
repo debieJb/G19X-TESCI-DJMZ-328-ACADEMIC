@@ -4,6 +4,26 @@ const Campana = require('../models/Campana');
 
 const base = { nombre: ' Campaña ', objetivo: ' Objetivo ' };
 
+test('modelo: referencias opcionales a Empresa y Usuario', async () => {
+  const mongoose = require('mongoose');
+  for (const [campo, referencia] of [['empresa', 'Empresa'], ['creadoPor', 'Usuario']]) {
+    assert.equal(Campana.schema.path(campo).options.ref, referencia);
+    const id = new mongoose.Types.ObjectId();
+    const campana = new Campana({ ...base, [campo]: id.toHexString() });
+    await campana.validate();
+    assert.ok(campana[campo].equals(id));
+    await assert.rejects(new Campana({ ...base, [campo]: 'inválido' }).validate(), e => !!e.errors[campo]);
+  }
+});
+
+test('modelo: campañas antiguas y nuevas sin relaciones siguen siendo válidas', async () => {
+  for (const campana of [new Campana(base), Campana.hydrate({ ...base, estado: 'activa' })]) {
+    await campana.validate();
+    assert.equal(campana.empresa, undefined);
+    assert.equal(campana.creadoPor, undefined);
+  }
+});
+
 test('modelo: trim, estado predeterminado y campos opcionales', async () => {
   const documento = new Campana(base);
   await documento.validate();

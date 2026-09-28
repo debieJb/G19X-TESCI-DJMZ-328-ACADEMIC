@@ -1,0 +1,71 @@
+warning: in the working copy of 'models/Campana.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/campana.model.test.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tests/campanas.http.test.js', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/models/Campana.js b/models/Campana.js[m
+[1mindex 7dbbbcd..d0784e9 100644[m
+[1m--- a/models/Campana.js[m
+[1m+++ b/models/Campana.js[m
+[36m@@ -9,6 +9,8 @@[m [mconst transiciones = {[m
+ };[m
+ [m
+ const campanaSchema = new mongoose.Schema({[m
+[32m+[m[32m  empresa: { type: mongoose.Schema.Types.ObjectId, ref: 'Empresa' },[m
+[32m+[m[32m  creadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },[m
+   nombre: { type: String, required: true, trim: true },[m
+   objetivo: { type: String, required: true, trim: true },[m
+   asunto: { type: String, trim: true },[m
+[1mdiff --git a/tests/campana.model.test.js b/tests/campana.model.test.js[m
+[1mindex 9532d47..5a36ca4 100644[m
+[1m--- a/tests/campana.model.test.js[m
+[1m+++ b/tests/campana.model.test.js[m
+[36m@@ -4,6 +4,26 @@[m [mconst Campana = require('../models/Campana');[m
+ [m
+ const base = { nombre: ' Campaña ', objetivo: ' Objetivo ' };[m
+ [m
+[32m+[m[32mtest('modelo: referencias opcionales a Empresa y Usuario', async () => {[m
+[32m+[m[32m  const mongoose = require('mongoose');[m
+[32m+[m[32m  for (const [campo, referencia] of [['empresa', 'Empresa'], ['creadoPor', 'Usuario']]) {[m
+[32m+[m[32m    assert.equal(Campana.schema.path(campo).options.ref, referencia);[m
+[32m+[m[32m    const id = new mongoose.Types.ObjectId();[m
+[32m+[m[32m    const campana = new Campana({ ...base, [campo]: id.toHexString() });[m
+[32m+[m[32m    await campana.validate();[m
+[32m+[m[32m    assert.ok(campana[campo].equals(id));[m
+[32m+[m[32m    await assert.rejects(new Campana({ ...base, [campo]: 'inválido' }).validate(), e => !!e.errors[campo]);[m
+[32m+[m[32m  }[m
+[32m+[m[32m});[m
+[32m+[m
+[32m+[m[32mtest('modelo: campañas antiguas y nuevas sin relaciones siguen siendo válidas', async () => {[m
+[32m+[m[32m  for (const campana of [new Campana(base), Campana.hydrate({ ...base, estado: 'activa' })]) {[m
+[32m+[m[32m    await campana.validate();[m
+[32m+[m[32m    assert.equal(campana.empresa, undefined);[m
+[32m+[m[32m    assert.equal(campana.creadoPor, undefined);[m
+[32m+[m[32m  }[m
+[32m+[m[32m});[m
+[32m+[m
+ test('modelo: trim, estado predeterminado y campos opcionales', async () => {[m
+   const documento = new Campana(base);[m
+   await documento.validate();[m
+[1mdiff --git a/tests/campanas.http.test.js b/tests/campanas.http.test.js[m
+[1mindex 8981c7e..0a18a02 100644[m
+[1m--- a/tests/campanas.http.test.js[m
+[1m+++ b/tests/campanas.http.test.js[m
+[36m@@ -46,6 +46,19 @@[m [mafterEach(() => {[m
+ const post = (ruta, datos) => request(app).post(ruta).type('form').send(datos);[m
+ const editar = datos => post(`/campanas/${id}/editar`, datos);[m
+ [m
+[32m+[m[32mtest('relaciones: el CRUD ignora empresa y creadoPor enviados en req.body', async () => {[m
+[32m+[m[32m  const relaciones = { empresa: ausente, creadoPor: ausente };[m
+[32m+[m[32m  await post('/campanas', { nombre: 'Nueva', objetivo: 'Objetivo', ...relaciones }).expect(303);[m
+[32m+[m[32m  for (const campo of Object.keys(relaciones)) assert.equal(crear.mock.calls[0].arguments[0][campo], undefined);[m
+[32m+[m[32m  await editar({ ...base, ...relaciones }).expect(303);[m
+[32m+[m[32m  for (const campo of Object.keys(relaciones)) assert.equal(documento[campo], undefined);[m
+[32m+[m[32m  documento.empresa = new mongoose.Types.ObjectId(id);[m
+[32m+[m[32m  documento.creadoPor = new mongoose.Types.ObjectId(id);[m
+[32m+[m[32m  await editar({ ...base, ...relaciones }).expect(303);[m
+[32m+[m[32m  assert.equal(documento.empresa.toHexString(), id);[m
+[32m+[m[32m  assert.equal(documento.creadoPor.toHexString(), id);[m
+[32m+[m[32m});[m
+[32m+[m
+ test('automatización: botón POST solo para activas; GET no ejecuta', async t => {[m
+   const ejecutar = t.mock.method(automatizacion, 'ejecutarCampana', async () => {});[m
+   for (const estado of ['borrador', 'programada', 'activa', 'pausada', 'finalizada']) {[m
