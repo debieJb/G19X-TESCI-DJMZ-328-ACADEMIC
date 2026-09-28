@@ -1,5 +1,8 @@
 const router = require('express').Router();
 const controller = require('../controllers/campanaController');
+const { requerirAutenticacion } = require('../middlewares/autenticacion');
+const { accesoEmpresa } = require('../middlewares/accesoEmpresa');
+router.use(requerirAutenticacion, accesoEmpresa);
 
 router.get('/', controller.listarCampanas);
 router.get('/nueva', controller.mostrarFormularioCreacion);

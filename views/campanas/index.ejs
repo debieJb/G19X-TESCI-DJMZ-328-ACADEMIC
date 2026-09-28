@@ -32,7 +32,7 @@
                 <td><nav class="tabla-acciones" aria-label="Acciones de <%= campana.nombre %>">
                   <a class="boton secundario" href="/campanas/<%= campana._id %>">Detalle</a>
                   <a class="boton editar" href="/campanas/<%= campana._id %>/editar">Editar</a>
-                  <a class="boton eliminar" href="/campanas/<%= campana._id %>/eliminar">Eliminar</a>
+                  <% if (puedeCampana('campanas.eliminar', campana)) { %><a class="boton eliminar" href="/campanas/<%= campana._id %>/eliminar">Eliminar</a><% } %>
                 </nav></td>
               </tr>
             <% } %>
@@ -53,7 +53,7 @@
             <nav class="acciones" aria-label="Acciones de <%= campana.nombre %>">
               <a class="boton secundario" href="/campanas/<%= campana._id %>">Detalle</a>
               <a class="boton editar" href="/campanas/<%= campana._id %>/editar">Editar</a>
-              <a class="boton eliminar" href="/campanas/<%= campana._id %>/eliminar">Eliminar</a>
+              <% if (puedeCampana('campanas.eliminar', campana)) { %><a class="boton eliminar" href="/campanas/<%= campana._id %>/eliminar">Eliminar</a><% } %>
             </nav>
           </article>
         <% } %>

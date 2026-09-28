@@ -12,10 +12,10 @@ const mensajeCanalNoDisponible = (canal) => {
     : 'Canal aún no disponible.';
 };
 
-const ejecutarCampana = async (campana) => {
+const ejecutarCampana = async (campana, usuario) => {
   const integracion = integraciones.get(campana.canal);
   if (!integracion) throw new ErrorAutomatizacion('CANAL_NO_DISPONIBLE');
-  return integracion.ejecutarCampana(campana);
+  return integracion.ejecutarCampana(campana, usuario);
 };
 
 module.exports = { ejecutarCampana, mensajeCanalNoDisponible, ErrorAutomatizacion };

@@ -8,8 +8,11 @@ const conexiones = [];
 for (const [objeto, metodo] of [[dotenv, 'config'], [mongoose, 'connect'], [mongoose, 'createConnection'], [mongoose.Connection.prototype, 'openUri']]) {
   conexiones.push(mock.method(objeto, metodo, () => { throw new Error('Acceso externo prohibido en pruebas'); }));
 }
-const app = require('../app');
-const request = require('supertest');
+process.env.SESSION_SECRET = 'secreto-exclusivo-de-pruebas-campanas';
+const { crearContexto } = require('./soporte/sesion');
+let app, cliente;
+const request = () => cliente;
+const Empresa = require('../models/Empresa');
 const Campana = require('../models/Campana');
 const automatizacion = require('../services/automatizacionService');
 const id = '507f1f77bcf86cd799439011';
@@ -17,7 +20,10 @@ const ausente = '507f1f77bcf86cd799439012';
 const base = { nombre: 'Conservar', objetivo: 'Objetivo', estado: 'pausada' };
 let documento, crear, guardar, borrar, buscar, listar;
 
-beforeEach(() => {
+beforeEach(t => {
+  ({ app, cliente } = crearContexto(t, { _id: id, nombre: 'Superadmin', email: 'super@example.test', rol: 'superadmin' }));
+  t.mock.method(Empresa, 'find', () => ({ select: () => ({ sort: () => ({ lean: async () => [{ _id: id, nombre: 'Empresa' }] }) }) }));
+  t.mock.method(Empresa, 'exists', async () => ({ _id: id }));
   documento = Campana.hydrate({
     _id: id, nombre: '<script>alert(1)</script>', objetivo: 'Objetivo', canal: 'email', estado: 'activa',
     asunto: 'Asunto guardado', cuerpoTexto: 'Texto guardado',
@@ -43,13 +49,14 @@ afterEach(() => {
   assert.equal(mongoose.connection.readyState, 0);
 });
 
-const post = (ruta, datos) => request(app).post(ruta).type('form').send(datos);
+const post = (ruta, datos) => request(app).post(ruta).type('form').send(ruta === '/campanas' ? { empresa: id, ...datos } : datos);
 const editar = datos => post(`/campanas/${id}/editar`, datos);
 
-test('relaciones: el CRUD ignora empresa y creadoPor enviados en req.body', async () => {
+test('relaciones: superadmin selecciona empresa al crear; autor fijado y relaciones inmutables al editar', async () => {
   const relaciones = { empresa: ausente, creadoPor: ausente };
   await post('/campanas', { nombre: 'Nueva', objetivo: 'Objetivo', ...relaciones }).expect(303);
-  for (const campo of Object.keys(relaciones)) assert.equal(crear.mock.calls[0].arguments[0][campo], undefined);
+  assert.equal(crear.mock.calls[0].arguments[0].empresa, ausente);
+  assert.equal(crear.mock.calls[0].arguments[0].creadoPor, id);
   await editar({ ...base, ...relaciones }).expect(303);
   for (const campo of Object.keys(relaciones)) assert.equal(documento[campo], undefined);
   documento.empresa = new mongoose.Types.ObjectId(id);
@@ -259,7 +266,7 @@ test('crear: 303, campos permitidos, borrador y opcionales vacíos', async () =>
   await post('/campanas', { nombre: ' Nueva ', objetivo: ' Objetivo ', canal: '', fechaInicio: '', fechaFin: '', admin: 'true', _id: ausente })
     .expect(303).expect('Location', '/campanas');
   const valores = crear.mock.calls[0].arguments[0];
-  assert.deepEqual(Object.keys(valores).sort(), ['nombre', 'objetivo', 'canal', 'estado', 'fechaInicio', 'fechaFin', 'asunto', 'cuerpoTexto', 'publicacion'].sort());
+  assert.deepEqual(Object.keys(valores).sort(), ['nombre', 'objetivo', 'canal', 'estado', 'fechaInicio', 'fechaFin', 'asunto', 'cuerpoTexto', 'publicacion', 'empresa', 'creadoPor'].sort());
   assert.equal(valores.nombre, 'Nueva');
   assert.equal(valores.objetivo, 'Objetivo');
   assert.equal(valores.estado, 'borrador');

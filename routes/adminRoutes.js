@@ -1,0 +1,13 @@
+const router = require('express').Router();
+const { requerirAutenticacion } = require('../middlewares/autenticacion');
+const { requiereRol } = require('../middlewares/roles');
+const controller = require('../controllers/adminController');
+router.use(requerirAutenticacion, requiereRol('superadmin'));
+router.get('/empresas/nueva', controller.mostrarEmpresaNueva);
+router.post('/empresas', controller.crearEmpresa);
+router.get('/empresas/:id/automatizaciones', controller.mostrarAutomatizaciones);
+router.post('/empresas/:id/automatizaciones', controller.guardarAutomatizaciones);
+router.get('/empresas/:id', controller.mostrarDetalleEmpresa);
+router.get('/usuarios/nuevo', controller.mostrarUsuarioNuevo);
+router.post('/usuarios', controller.crearUsuario);
+module.exports = router;

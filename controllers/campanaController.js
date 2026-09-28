@@ -1,5 +1,7 @@
 const Campana = require('../models/Campana');
 const automatizacionService = require('../services/automatizacionService');
+const Empresa = require('../models/Empresa');
+const { filtroEmpresa, buscarCampana } = require('../services/accesoCampanasService');
 
 const canales = { email: 'Correo electrónico', redes_sociales: 'Redes sociales', sms: 'SMS', otro: 'Otro' };
 const estados = { borrador: 'Borrador', programada: 'Programada', activa: 'Activa', pausada: 'Pausada', finalizada: 'Finalizada' };
@@ -18,15 +20,9 @@ const formatearFecha = (fecha) => fecha
   ? new Intl.DateTimeFormat('es-MX', { timeZone: 'UTC' }).format(new Date(fecha)) : 'Sin definir';
 
 const errorRecurso = (status, message) => Object.assign(new Error(message), { status });
-const buscarCampana = async (id) => {
-  if (typeof id !== 'string' || id.length !== 24 || !/^[a-fA-F0-9]{24}$/.test(id)) throw errorRecurso(400, 'El identificador de la campaña no es válido.');
-  const campana = await Campana.findById(id);
-  if (!campana) throw errorRecurso(404, 'La campaña no existe o fue eliminada.');
-  return campana;
-};
 
 const responderErrorRecurso = (res, error) => res.status(error.status).render('error', {
-  titulo: error.status === 404 ? 'Campaña no encontrada' : 'Identificador inválido', mensaje: error.message
+  titulo: error.status === 404 ? 'Campaña no encontrada' : error.status === 403 ? 'Acceso denegado' : 'Identificador inválido', mensaje: error.message
 });
 
 const esErrorConexion = (error) => ['MongoServerSelectionError', 'MongooseServerSelectionError', 'MongoNetworkError', 'MongoNetworkTimeoutError', 'MongoTopologyClosedError', 'MongoNotConnectedError'].includes(error.name)
@@ -34,7 +30,7 @@ const esErrorConexion = (error) => ['MongoServerSelectionError', 'MongooseServer
 
 const listarCampanas = async (req, res, next) => {
   try {
-    const campanas = await Campana.find().sort({ createdAt: -1, _id: -1 }).lean();
+    const campanas = await Campana.find(filtroEmpresa(res.locals.usuarioActual)).sort({ createdAt: -1, _id: -1 }).lean();
     res.render('campanas/index', {
       titulo: 'Campañas', campanas, canales, estados,
       formatearFecha
@@ -45,9 +41,16 @@ const listarCampanas = async (req, res, next) => {
   }
 };
 
-const mostrarFormularioCreacion = (req, res) => mostrarFormulario(res, {
-  nombre: '', objetivo: '', canal: '', estado: 'borrador', fechaInicio: '', fechaFin: '', asunto: '', cuerpoTexto: '', publicacion: ''
-});
+const cargarEmpresas = async res => {
+  res.locals.empresasDisponibles = res.locals.usuarioActual.rol === 'superadmin'
+    ? await Empresa.find().select('nombre').sort({ nombre: 1 }).lean() : [];
+};
+const mostrarFormularioCreacion = async (req, res, next) => {
+  try {
+    await cargarEmpresas(res);
+    return mostrarFormulario(res, { nombre: '', objetivo: '', canal: '', estado: 'borrador', fechaInicio: '', fechaFin: '', asunto: '', cuerpoTexto: '', publicacion: '', empresa: '' });
+  } catch (error) { next(error); }
+};
 
 const validarFormulario = (entrada = {}, editar = false) => {
   const datos = {};
@@ -114,8 +117,17 @@ const responderErrorFormulario = (res, error, datos, id = null, estadoActual = n
 
 const crearCampana = async (req, res) => {
   const { datos, errores, valores } = validarFormulario(req.body);
-  if (Object.keys(errores).length) return mostrarFormulario(res, datos, errores, '', 422);
   try {
+    await cargarEmpresas(res);
+    const usuario = res.locals.usuarioActual;
+    if (usuario.rol === 'superadmin') {
+      datos.empresa = typeof req.body?.empresa === 'string' ? req.body.empresa : '';
+      if (!/^[a-f\d]{24}$/i.test(datos.empresa) || !(await Empresa.exists({ _id: datos.empresa }))) {
+        errores.empresa = 'Selecciona una empresa válida y existente.';
+      } else valores.empresa = datos.empresa;
+    } else valores.empresa = filtroEmpresa(usuario).empresa;
+    valores.creadoPor = usuario._id;
+    if (Object.keys(errores).length) return mostrarFormulario(res, datos, errores, '', 422);
     await Campana.create(valores);
     return res.redirect(303, '/campanas');
   } catch (error) {
@@ -125,7 +137,7 @@ const crearCampana = async (req, res) => {
 
 const consultarCampana = (vista, titulo) => async (req, res, next) => {
   try {
-    const campana = await buscarCampana(req.params.id);
+    const campana = await buscarCampana(req.params.id, res.locals.usuarioActual, vista === 'eliminar' ? 'campanas.eliminar' : vista === 'editar' ? 'campanas.editar' : 'campanas.consultar');
     if (vista === 'editar') {
       const datos = {};
       for (const campo of campos) {
@@ -140,7 +152,7 @@ const consultarCampana = (vista, titulo) => async (req, res, next) => {
     return res.render(`campanas/${vista}`, { titulo, campana, canales, estados, formatearFecha, mensaje, errorAutomatizacion: false,
       mensajeCanal: automatizacionService.mensajeCanalNoDisponible(campana.canal) });
   } catch (error) {
-    if ([400, 404].includes(error.status)) return responderErrorRecurso(res, error);
+    if ([400, 403, 404].includes(error.status)) return responderErrorRecurso(res, error);
     if (esErrorConexion(error)) error.status = 503;
     return next(error);
   }
@@ -154,7 +166,7 @@ const actualizarCampana = async (req, res) => {
   const { datos, errores, valores } = validarFormulario(req.body, true);
   let estadoActual = null;
   try {
-    const campana = await buscarCampana(req.params.id);
+    const campana = await buscarCampana(req.params.id, res.locals.usuarioActual, 'campanas.editar');
     estadoActual = campana.estado;
     // Formularios anteriores que omitan estos campos no deben borrar contenido guardado.
     for (const campo of ['asunto', 'cuerpoTexto', 'publicacion']) {
@@ -175,24 +187,24 @@ const actualizarCampana = async (req, res) => {
   } catch (error) {
     if (error.name === 'DocumentNotFoundError') error.status = 404;
     if (error.status === 404) return responderErrorRecurso(res, errorRecurso(404, 'La campaña no existe o fue eliminada.'));
-    if (error.status === 400) return responderErrorRecurso(res, error);
+    if ([400, 403].includes(error.status)) return responderErrorRecurso(res, error);
     return responderErrorFormulario(res, error, datos, req.params.id, estadoActual);
   }
 };
 
 const eliminarCampana = async (req, res, next) => {
   try {
-    const campana = await buscarCampana(req.params.id);
+    const campana = await buscarCampana(req.params.id, res.locals.usuarioActual, 'campanas.eliminar');
     if (req.body?.confirmacion !== 'eliminar') {
       return res.status(422).render('campanas/eliminar', {
         titulo: 'Eliminar campaña', campana, mensaje: 'Debes confirmar explícitamente la eliminación.'
       });
     }
-    const resultado = await Campana.deleteOne({ _id: campana._id });
+    const resultado = await Campana.deleteOne({ _id: campana._id, ...filtroEmpresa(res.locals.usuarioActual) });
     if (!resultado.deletedCount) throw errorRecurso(404, 'La campaña no existe o fue eliminada.');
     return res.redirect(303, '/campanas');
   } catch (error) {
-    if ([400, 404].includes(error.status)) return responderErrorRecurso(res, error);
+    if ([400, 403, 404].includes(error.status)) return responderErrorRecurso(res, error);
     if (esErrorConexion(error)) error.status = 503;
     return next(error);
   }
@@ -205,21 +217,23 @@ const ejecutarAutomatizacion = async (req, res, next) => {
     mensajeCanal: automatizacionService.mensajeCanalNoDisponible(campana.canal)
   });
   try {
-    campana = await buscarCampana(req.params.id);
+    campana = await buscarCampana(req.params.id, res.locals.usuarioActual, 'campanas.ejecutar');
     if (campana.estado !== 'activa') return mostrarError(422, 'Solo puedes ejecutar campañas activas.');
     const mensajeCanal = automatizacionService.mensajeCanalNoDisponible(campana.canal);
     if (mensajeCanal) return mostrarError(422, mensajeCanal);
     // Los datos y el destino nunca se toman del cuerpo del formulario.
-    await automatizacionService.ejecutarCampana(campana);
+    await automatizacionService.ejecutarCampana(campana, res.locals.usuarioActual);
     return res.redirect(303, `/campanas/${req.params.id}?automatizacion=enviada`);
   } catch (error) {
-    if ([400, 404].includes(error.status)) return responderErrorRecurso(res, error);
+    if ([400, 403, 404].includes(error.status)) return responderErrorRecurso(res, error);
     if (error instanceof automatizacionService.ErrorAutomatizacion) {
       const errores = {
         CANAL_NO_DISPONIBLE: [422, 'Canal aún no disponible.'],
         CUENTAS_REDES_NO_CONECTADAS: [422, 'Conecta Facebook y LinkedIn para publicar'],
         CONTENIDO_EMAIL_INCOMPLETO: [422, 'Completa el asunto y el cuerpo de texto antes de ejecutar la campaña de email.'],
         CONFIGURACION: [503, 'La automatización no está configurada correctamente.'],
+        DESHABILITADA: [422, 'La automatización está deshabilitada para esta empresa.'],
+        ACCESO_DENEGADO: [403, 'No tienes permiso para ejecutar esta campaña.'],
         CONEXION: [502, 'No se pudo confirmar la recepción de la solicitud. Revisa n8n antes de repetir.'],
         TIMEOUT: [504, 'La automatización no respondió a tiempo. Revisa n8n antes de repetir.'],
         RESPUESTA: [502, 'La automatización devolvió un error. Revisa n8n antes de repetir.']

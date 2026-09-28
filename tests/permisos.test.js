@@ -5,7 +5,7 @@ const { ROLES, puede } = require('../services/permisos');
 const empresa = new mongoose.Types.ObjectId();
 const otraEmpresa = new mongoose.Types.ObjectId();
 const campanas = ['campanas.crear', 'campanas.consultar', 'campanas.editar', 'campanas.ejecutar'];
-const acciones = [...campanas, 'campanas.eliminar', 'usuarios.administrar', 'empresas.administrar'];
+const acciones = [...campanas, 'campanas.eliminar', 'usuarios.administrar', 'empresas.administrar', 'automatizaciones.editar'];
 
 test('permisos: roles exactos y superadmin con acceso global sin empresa', () => {
   assert.deepEqual(ROLES, ['superadmin', 'admin_empresa', 'operador']);

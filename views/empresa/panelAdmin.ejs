@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title><%= titulo %> | Marketing Automation</title><link rel="stylesheet" href="/css/styles.css"></head>
+<body class="pagina-admin"><%- include('../partials/_encabezado', { seccion: '' }) %>
+<main id="contenido" tabindex="-1">
+<h1><%= empresa.nombre %></h1><p><%= usuarioActual.nombre %> · <%= usuarioActual.email %> · <%= usuarioActual.rol %></p>
+<form class="salida-admin" action="/logout" method="post"><button type="submit">Cerrar sesión</button></form>
+<section class="resumen-admin seccion-admin"><article class="panel"><h2>Usuarios</h2><p class="total-admin"><%= totalUsuarios %></p></article><article class="panel"><h2>Campañas</h2><p class="total-admin"><%= totalCampanas %></p></article></section>
+<section class="seccion-admin"><h2>Usuarios de tu empresa</h2><a class="boton" href="/empresa/usuarios/nuevo">Nuevo operador</a>
+<%- include('../admin/_usuarios', { usuarios, sinEmpresa: false, leyenda: 'Usuarios de tu empresa' }) %>
+<h2>Operadores</h2><%- include('../admin/_usuarios', { usuarios: operadores, sinEmpresa: false, leyenda: 'Operadores de tu empresa' }) %></section>
+<%- include('_campanas') %>
+</main><%- include('../partials/_piePublico') %></body></html>

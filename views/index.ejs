@@ -6,22 +6,40 @@
   <title><%= titulo %></title>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
-<body>
-  <%- include('partials/_encabezado', { seccion: 'inicio' }) %>
+<body class="pagina-publica">
+  <%- include('partials/_encabezadoPublico') %>
   <main id="contenido" tabindex="-1">
-    <section class="hero">
-    <p class="sobrelinea">Organiza. Planifica. Avanza.</p>
-    <h1><%= titulo %></h1>
-    <h2>Tus campañas, en un solo lugar.</h2>
-    <p>Plataforma Inteligente de Marketing Automation</p>
-    <p class="intro">Dale forma a tus objetivos, organiza tus canales y mantén cada campaña bajo control.</p>
-    <div class="acciones"><a class="boton" href="/campanas">Gestionar campañas</a><a class="boton secundario" href="/campanas/nueva">Crear campaña</a></div>
+    <section class="hero hero-publico" aria-labelledby="titulo-inicio">
+      <p class="sobrelinea">Marketing Automation / Conecta tus ideas</p>
+      <h1 id="titulo-inicio">Menos tareas repetitivas.<br><span>Más impulso para tus campañas.</span></h1>
+      <p class="intro">Una plataforma inteligente para gestionar y automatizar tu marketing desde un solo lugar. Crea, programa y ejecuta campañas de correo electrónico y otros canales digitales.</p>
+      <div class="acciones"><a class="boton" href="/login">Iniciar sesión</a><a class="enlace-publico" href="#funcionalidades">Explorar funcionalidades <span aria-hidden="true">↓</span></a></div>
+      <p class="hero-nota">Planifica · Organiza · Automatiza</p>
     </section>
-    <section class="funciones" aria-label="Gestión de campañas">
-      <article class="panel"><span class="numero">01 / Organizar</span><h2>De la idea al plan</h2><p class="muted">Define el objetivo, el canal y las fechas de tu próxima campaña.</p></article>
-      <article class="panel"><span class="numero">02 / Consultar</span><h2>Todo a la vista</h2><p class="muted">Encuentra el estado y los detalles de cada iniciativa en un solo panel.</p></article>
-      <article class="panel"><span class="numero">03 / Actualizar</span><h2>El control es tuyo</h2><p class="muted">Ajusta tus campañas a medida que tus planes evolucionan.</p></article>
+    <section class="seccion-publica" id="funcionalidades" aria-labelledby="titulo-funcionalidades">
+      <p class="sobrelinea">Un espacio para todo tu marketing</p>
+      <h2 id="titulo-funcionalidades">De la planificación a la ejecución.</h2>
+      <p class="intro">Conecta tus campañas, tus procesos y las personas que los hacen posibles.</p>
+      <div class="rejilla-publica">
+        <article class="panel"><span class="numero" aria-hidden="true">01 / Campañas</span><h3>Gestión de campañas</h3><p>Crea y organiza tus iniciativas. Consulta objetivos, fechas y estados para mantener el seguimiento.</p></article>
+        <article class="panel"><span class="numero" aria-hidden="true">02 / Procesos</span><h3>Automatización de procesos</h3><p>Conecta tus campañas con flujos de n8n y simplifica las tareas repetitivas.</p></article>
+        <article class="panel"><span class="numero" aria-hidden="true">03 / Email</span><h3>Campañas por correo electrónico</h3><p>Prepara el asunto y el contenido de tus mensajes desde el mismo espacio de trabajo.</p></article>
+        <article class="panel"><span class="numero" aria-hidden="true">04 / Empresas</span><h3>Gestión de empresas</h3><p>Una estructura pensada para organizar usuarios y campañas por empresa.</p></article>
+        <article class="panel"><span class="numero" aria-hidden="true">05 / Equipo</span><h3>Usuarios con diferentes niveles de acceso</h3><p>Tres perfiles definidos para las responsabilidades de cada integrante de tu equipo.</p></article>
+        <article class="panel"><span class="numero" aria-hidden="true">06 / Integraciones</span><h3>Integraciones y automatización con servicios externos</h3><p>Conecta tus procesos de marketing con herramientas externas mediante automatizaciones.</p></article>
+      </div>
+    </section>
+    <section class="seccion-publica" aria-labelledby="titulo-niveles">
+      <p class="sobrelinea">Cada persona, un papel claro</p>
+      <h2 id="titulo-niveles">Niveles de usuario</h2>
+      <p class="intro">Conoce los perfiles previstos para el acceso a la plataforma.</p>
+      <div class="rejilla-publica niveles-publicos">
+        <article class="panel"><span class="numero">Control global</span><h3>Superadministrador</h3><ul><li>Acceso total a la plataforma</li><li>Administración de empresas</li><li>Administración de usuarios</li><li>Administración de campañas</li></ul></article>
+        <article class="panel"><span class="numero">Gestión del equipo</span><h3>Administrador de empresa</h3><ul><li>Administra usuarios de su empresa</li><li>Administra campañas de su empresa</li><li>No puede acceder a otras empresas</li></ul></article>
+        <article class="panel"><span class="numero">Trabajo diario</span><h3>Operador</h3><ul><li>Puede crear campañas</li><li>Consultar campañas</li><li>Editar campañas</li><li>Ejecutar campañas</li><li>No administra usuarios ni empresas</li></ul></article>
+      </div>
     </section>
   </main>
+  <%- include('partials/_piePublico') %>
 </body>
 </html>

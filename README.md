@@ -10,6 +10,7 @@ Utiliza Node.js 24 y npm. Instala las dependencias con `npm ci`. Crea un archivo
 | --- | --- |
 | `MONGODB_URI` | URI obligatoria de la base de datos MongoDB. |
 | `PORT` | Puerto HTTP; por defecto, 3000. |
+| `SESSION_SECRET` | Secreto aleatorio obligatorio para firmar la cookie de sesión. Sin valor predeterminado. |
 
 Ejecuta `npm run dev` para desarrollo con nodemon o `npm start` para iniciar con Node. El servidor comienza a escuchar después de conectar a MongoDB. En PowerShell puedes usar `npm.cmd` si la política de ejecución bloquea `npm.ps1`.
 
@@ -47,4 +48,104 @@ La suite no verifica persistencia real, actualización de timestamps en MongoDB 
 
 Solo se aceptan nombre, objetivo, canal, estado y fechas de inicio/fin. Nombre y objetivo son obligatorios; canal y fechas son opcionales. El estado inicial es borrador y al editar se exige un estado válido. Las fechas se guardan y presentan en UTC; la fecha final no puede ser anterior a la inicial.
 
-Las escrituras exitosas redirigen con 303. Se usan 400 para identificadores inválidos, 404 para campañas inexistentes, 422 para validaciones, 503 para indisponibilidad de MongoDB y 500 para fallos inesperados. La eliminación requiere confirmación por POST; GET nunca borra. No incluye autenticación, envíos, IA ni automatizaciones.
+Las escrituras exitosas redirigen con 303. Se usan 400 para identificadores inválidos, 404 para campañas inexistentes o ajenas, 403 para acciones no permitidas sobre recursos propios, 422 para validaciones, 503 para indisponibilidad de MongoDB o configuración de automatización y 500 para fallos inesperados. La eliminación requiere confirmación por POST; GET nunca borra. Todas las rutas de campañas y el panel requieren autenticación; las rutas `/admin` requieren superadmin.
+
+## Administración de superadmin
+
+`GET /panel` muestra el dashboard global cuando el rol cargado desde MongoDB es `superadmin`. Los otros roles acceden a paneles limitados a su empresa. El dashboard global incluye totales, empresas con conteos, usuarios agrupados por empresa y secciones separadas de usuarios y campañas sin empresa. Los superadministradores sin empresa se identifican explícitamente; los usuarios que referencian una empresa eliminada aparecen en una sección adicional.
+
+| Método | Ruta | Acción |
+| --- | --- | --- |
+| GET | `/admin/empresas/nueva` | Formulario de empresa |
+| POST | `/admin/empresas` | Crear empresa |
+| GET | `/admin/empresas/:id` | Información, usuarios y campañas de una empresa |
+| GET | `/admin/usuarios/nuevo` | Formulario de usuario |
+| POST | `/admin/usuarios` | Crear admin_empresa u operador |
+
+Todas las rutas `/admin` usan `requerirAutenticacion` y `requiereRol('superadmin')`. Sin sesión redirigen a `/login`; con sesión de otro rol responden **403**, sin ejecutar consultas o escrituras administrativas. Los permisos se deciden mediante `res.locals.usuarioActual`, nunca desde el formulario. Un identificador de empresa inválido devuelve 400; uno válido pero inexistente devuelve 404. Las validaciones de formularios y emails duplicados devuelven 422. La creación exitosa redirige con 303 al detalle de empresa.
+
+Los totales usan `countDocuments()` y los conteos por empresa agregaciones `$group`; no se realiza una consulta por cada empresa. Las empresas sin recursos muestran cero. Se consultan campos explícitos de los usuarios y se excluye password. El detalle carga el nombre del autor con `populate`; si falta o el usuario ya no existe, muestra “Sin autor disponible”.
+
+Las campañas con `empresa` ausente o `null` aparecen en “Campañas sin empresa” y siguen incluidas en el total global. Estas consultas no modifican documentos ni asignan empresas o autores. Solo superadmin puede acceder a esas campañas históricas. “Ver campañas” abre el CRUD con el filtro correspondiente al usuario autenticado.
+
+Los formularios construyen objetos mediante listas blancas. Para crear usuarios solo se aceptan `admin_empresa` y `operador`, con una empresa válida y existente (activa o inactiva). El formulario no crea superadmin. `Usuario.create()` conserva el hash existente; la contraseña no se repuebla al mostrar errores ni se incluye en logs o respuestas. El alta de empresa conserva la fecha automática del modelo.
+
+`tests/admin.http.test.js` comprueba acceso, vistas, formularios, errores, listas blancas y hash real con escrituras simuladas. `tests/admin.service.test.js` comprueba las consultas, agrupaciones, ceros y `populate` con autores inexistentes. No requieren ni modifican MongoDB real. La interfaz usa CSS propio y tablas con desplazamiento horizontal en pantallas pequeñas.
+
+## Aislamiento multiempresa y automatizaciones
+
+Las nueve rutas de campañas (listado, formulario de creación, creación, detalle, formulario y POST de edición, confirmación y POST de eliminación, POST de ejecución) ahora requieren sesión. Sin sesión redirigen a `/login`. Para admin_empresa y operador las consultas incluyen siempre su empresa, obtenida de `res.locals.usuarioActual` y cargada desde MongoDB. Usuarios sin empresa válida no reciben acceso global. Superadmin conserva acceso global.
+
+Una campaña ajena o inexistente devuelve **404**, incluso al intentar eliminarla como operador. Una acción prohibida sobre una campaña propia devuelve **403**. El operador crea, consulta, edita y ejecuta campañas de su empresa, pero no elimina ni administra usuarios, empresas o automatizaciones. El admin_empresa también puede eliminar campañas propias. Se reutiliza `services/permisos.js`; el filtro de empresa acompaña la lectura, el guardado y la eliminación. La edición normal no permite cambiar empresa ni autor.
+
+Al crear, el servidor fija `creadoPor` al usuario autenticado. Para usuarios empresariales también fija `empresa`, ignorando ambos campos enviados por el navegador. Superadmin selecciona empresa en el formulario y el servidor comprueba que exista. El modelo Campana conserva referencias opcionales para documentos históricos, pero el flujo de creación siempre asigna ambas. No hay migración ni asignación automática de campañas antiguas.
+
+El panel de admin_empresa incluye su empresa, usuarios, operadores, campañas y conteos propios. El de operador incluye solo su empresa y campañas con acciones permitidas. La propiedad de una campaña corresponde a la empresa, no exclusivamente a su autor.
+
+| Método | Ruta nueva | Acceso |
+| --- | --- | --- |
+| GET | `/empresa/usuarios/nuevo` | admin_empresa: formulario de operador |
+| POST | `/empresa/usuarios` | admin_empresa: crear operador de su empresa |
+| GET | `/admin/empresas/:id/automatizaciones` | superadmin: editor de configuración |
+| POST | `/admin/empresas/:id/automatizaciones` | superadmin: guardar configuración |
+
+El alta empresarial de usuarios fija `rol = operador` y la empresa del usuario autenticado, aunque el cliente envíe otros valores. Usa `Usuario.create()` para conservar el hash y no devuelve password en errores.
+
+La configuración reside en subdocumentos de Empresa: `automatizaciones.email`, `.whatsapp` y `.facebook`, cada uno con `habilitada` y `webhookUrl`. Email está habilitado por defecto; WhatsApp y Facebook, deshabilitados. Las URLs se excluyen de consultas habituales mediante `select: false`; solo el editor de superadmin y el servicio de ejecución las solicitan explícitamente. El detalle normal muestra estados, no URLs. No se agregan secretos al payload de n8n ni a los logs.
+
+Resolución del webhook de email, usando la campaña persistida:
+
+1. Una campaña sin empresa solo puede ejecutarla superadmin y usa `N8N_WEBHOOK_URL`.
+2. Una campaña con empresa cuya referencia ya no existe produce error de configuración sin fallback.
+3. `habilitada === false` bloquea la ejecución, incluso si hay URL global.
+4. Si está habilitada y tiene URL empresarial, usa esa URL. Si es inválida, falla sin fallback.
+5. Si está habilitada y su URL está vacía, usa `N8N_WEBHOOK_URL` temporalmente.
+6. Si tampoco hay URL global válida, devuelve error de configuración.
+
+Las empresas antiguas sin configuración conservan el comportamiento de email habilitado con fallback global. Las URLs admiten HTTP/HTTPS sin credenciales embebidas. El timeout, payload de email, ausencia de reintentos y bloqueo de redirecciones conservan el comportamiento anterior de Gmail/n8n. No se retira ninguna variable global.
+
+WhatsApp y Facebook tienen configuración preparada pero **no se ejecutan**. `redes_sociales` mantiene el bloqueo de Facebook/LinkedIn hasta conectar integraciones reales; no se redirige al webhook de email. El estado `inactiva` de una empresa no incorpora una política adicional de suspensión en esta fase; el control de ejecución es `habilitada` por canal. Los listados todavía no tienen paginación.
+
+Las pruebas de aislamiento usan consultas y documentos Mongoose reales con persistencia simulada, y las de email conservan las peticiones HTTP a servidores locales de prueba. No se envían campañas reales ni se modifican datos existentes al ejecutar la suite.
+
+## Autenticación y superadmin inicial
+
+La página `/` y `GET /login` son públicas. El login usa bcryptjs y sesiones del servidor. Los tres roles se redirigen a `/panel`, que muestra los datos actuales del usuario y, si corresponde, el nombre de su empresa. Un usuario autenticado que visita `/login` vuelve a `/panel`. `POST /logout` destruye la sesión y elimina la cookie; no existe `GET /logout`.
+
+Configura tu archivo `.env` local, conservando las variables de MongoDB y automatizaciones. Si aún no existe, copia `.env.example` a `.env`. No sobrescribas un `.env` existente.
+
+```dotenv
+SESSION_SECRET=
+SUPERADMIN_NOMBRE=
+SUPERADMIN_EMAIL=
+SUPERADMIN_PASSWORD=
+```
+
+Los valores anteriores son intencionalmente vacíos. Debes completar:
+
+- `SESSION_SECRET`: un secreto aleatorio propio. Puedes generar uno localmente con `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"` y copiarlo a `.env`. No lo publiques ni reutilices como contraseña.
+- `SUPERADMIN_NOMBRE`: el nombre que quieras mostrar.
+- `SUPERADMIN_EMAIL`: el correo con el que iniciarás sesión.
+- `SUPERADMIN_PASSWORD`: una contraseña propia y robusta; máximo 72 bytes UTF-8 por el límite de bcrypt. No se recortan espacios de la contraseña. Usa comillas en `.env` si contiene `#` o espacios significativos.
+- `MONGODB_URI`: la conexión a tu MongoDB. `PORT` es opcional, con valor predeterminado 3000.
+
+Con MongoDB disponible, ejecuta desde la raíz del proyecto:
+
+```powershell
+npm.cmd run crear-superadmin
+npm.cmd start
+```
+
+Para reinicio automático durante desarrollo usa `npm.cmd run dev` en lugar de `npm.cmd start`. Abre `http://localhost:3000/login` (o el puerto configurado) y utiliza exactamente el correo y contraseña que configuraste. El script crea `superadmin` sin empresa, normaliza el email, espera el índice único, no sobrescribe cuentas existentes y cierra la conexión tanto en éxito como en error. No imprime la contraseña. Después de crear el usuario puedes quitar las tres variables `SUPERADMIN_*` del entorno; el login consulta MongoDB. `.env` está excluido de Git.
+
+### Sesiones: solo desarrollo
+
+**MemoryStore no debe usarse en producción.** Las sesiones viven en memoria del proceso, se pierden al reiniciar y no se comparten entre instancias. Esta fase bloquea el arranque con `NODE_ENV=production`; antes de desplegar hay que integrar un almacén persistente y configurar HTTPS y cookies `secure: true` según la infraestructura. No cambies `NODE_ENV` para eludir ese bloqueo.
+
+En desarrollo la cookie `marketing.sid` usa `httpOnly: true`, `sameSite: 'lax'`, `secure: false` y una duración de ocho horas. La sesión guarda solo `usuarioId` como dato de aplicación, además de los metadatos de cookie internos de express-session. Se regenera al iniciar sesión. El middleware carga los datos desde MongoDB en cada solicitud autenticada y los expone en `res.locals.usuarioActual`, sin password. Si la cuenta fue eliminada, destruye la sesión; `/panel` redirige a `/login`.
+
+### Contraseñas y pruebas
+
+`Usuario.create()` y `documento.save()` calculan el hash al crear o cambiar la contraseña. Guardar otros campos conserva el hash existente. Las escrituras masivas, reemplazos y actualizaciones directas de password están bloqueadas para evitar omitir este proceso; no uses acceso directo a la colección para guardar usuarios. `password` tiene `select: false` y se elimina de `toJSON()` y `toObject()`. El login lo solicita explícitamente con `.select('+password')`; `compararPassword()` también puede recuperarlo explícitamente en documentos persistidos que no lo incluyan. Las contraseñas heredadas en texto plano no permiten iniciar sesión y no se migran automáticamente.
+
+Ejecuta `npm.cmd test`. Las pruebas de autenticación usan bcrypt y sesiones reales en memoria, Supertest y persistencia simulada. Comprueban login, regeneración, cierre, usuario eliminado, cookies, datos mínimos de sesión, hash, comparación y creación segura del superadmin sin tocar MongoDB real. Las pruebas HTTP usan secretos exclusivos de prueba; no necesitan tu `.env`. Al importar `app.js` fuera de las pruebas, `SESSION_SECRET` ya debe estar disponible en el entorno.

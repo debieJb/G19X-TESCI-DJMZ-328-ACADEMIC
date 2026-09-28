@@ -1,0 +1,8 @@
+<section class="seccion-admin"><h2>Campañas de tu empresa</h2>
+<a class="boton" href="/campanas/nueva">Crear campaña</a>
+<% if (!campanas.length) { %><p>No hay campañas registradas</p><% } else { %>
+<div class="tabla-admin"><table><caption>Campañas</caption><thead><tr><th>Nombre</th><th>Canal</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
+<% for (const campana of campanas) { %><tr><td><%= campana.nombre %></td><td><%= campana.canal || 'Sin definir' %></td><td><%= campana.estado %></td><td>
+<a href="/campanas/<%= campana._id %>">Consultar</a> · <a href="/campanas/<%= campana._id %>/editar">Editar</a>
+<% if (campana.estado === 'activa') { %><form action="/campanas/<%= campana._id %>/ejecutar" method="post"><button type="submit">Ejecutar campaña</button></form><% } %>
+</td></tr><% } %></tbody></table></div><% } %></section>

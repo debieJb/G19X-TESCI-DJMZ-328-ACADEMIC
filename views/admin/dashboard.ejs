@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= titulo %> | Marketing Automation</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="pagina-admin">
+  <%- include('../partials/_encabezadoAdmin') %>
+  <main id="contenido" tabindex="-1">
+    <div class="cabecera-pagina"><div>
+      <p class="sobrelinea">Administración global</p><h1>Panel superadmin</h1>
+      <p class="muted">Bienvenido, <%= usuarioActual.nombre %> · <%= usuarioActual.email %></p>
+    </div></div>
+    <section class="resumen-admin" aria-label="Totales de la plataforma">
+      <article class="panel"><h2>Total empresas</h2><p class="total-admin"><%= totales.empresas %></p></article>
+      <article class="panel"><h2>Total usuarios</h2><p class="total-admin"><%= totales.usuarios %></p></article>
+      <article class="panel"><h2>Total campañas</h2><p class="total-admin"><%= totales.campanas %></p></article>
+    </section>
+    <section class="seccion-admin" aria-labelledby="empresas"><h2 id="empresas">Empresas</h2>
+      <% if (!empresas.length) { %><p class="vacio">No hay empresas registradas</p><% } else { %>
+      <div class="tabla-admin"><table><caption>Empresas y recursos asociados</caption>
+        <thead><tr><th scope="col">Nombre</th><th scope="col">Estado</th><th scope="col">Usuarios</th><th scope="col">Campañas</th><th scope="col">Detalle</th></tr></thead>
+        <tbody><% for (const empresa of empresas) { %>
+          <tr><td><%= empresa.nombre %></td><td><%= empresa.estado %></td><td><%= empresa.totalUsuarios %></td><td><%= empresa.totalCampanas %></td><td><a href="/admin/empresas/<%= empresa._id %>">Ver empresa</a></td></tr>
+        <% } %></tbody>
+      </table></div><% } %>
+    </section>
+    <section class="seccion-admin" aria-labelledby="usuarios-empresa"><h2 id="usuarios-empresa">Usuarios por empresa</h2>
+      <% if (!empresas.length) { %><p class="muted">No hay empresas registradas</p><% } %>
+      <% for (const empresa of empresas) { %><article class="panel grupo-admin">
+        <h3><a href="/admin/empresas/<%= empresa._id %>"><%= empresa.nombre %></a></h3>
+        <%- include('_usuarios', { usuarios: empresa.usuarios, sinEmpresa: false, leyenda: 'Usuarios de ' + empresa.nombre }) %>
+      </article><% } %>
+    </section>
+    <section class="seccion-admin" aria-labelledby="usuarios-sin-empresa"><h2 id="usuarios-sin-empresa">Usuarios sin empresa</h2>
+      <p class="muted">Los superadministradores tienen acceso global y no necesitan pertenecer a una empresa.</p>
+      <%- include('_usuarios', { usuarios: usuariosSinEmpresa, sinEmpresa: true, leyenda: 'Usuarios sin empresa asignada' }) %>
+    </section>
+    <% if (usuariosEmpresaInexistente.length) { %>
+    <section class="seccion-admin"><h2>Usuarios con empresa inexistente</h2>
+      <%- include('_usuarios', { usuarios: usuariosEmpresaInexistente, sinEmpresa: false, leyenda: 'Usuarios cuya empresa ya no existe' }) %>
+    </section><% } %>
+    <section class="seccion-admin" aria-labelledby="campanas-sin-empresa"><h2 id="campanas-sin-empresa">Campañas sin empresa</h2>
+      <% if (!campanasSinEmpresa.length) { %><p class="muted">No hay campañas registradas sin empresa</p><% } else { %>
+      <div class="tabla-admin"><table><caption>Campañas pendientes de asignación</caption>
+        <thead><tr><th scope="col">Nombre</th><th scope="col">Canal</th><th scope="col">Estado</th></tr></thead>
+        <tbody><% for (const campana of campanasSinEmpresa) { %><tr><td><a href="/campanas/<%= campana._id %>"><%= campana.nombre %></a></td><td><%= campana.canal || 'Sin canal definido' %></td><td><%= campana.estado %></td></tr><% } %></tbody>
+      </table></div><% } %>
+    </section>
+  </main>
+  <%- include('../partials/_piePublico') %>
+</body>
+</html>

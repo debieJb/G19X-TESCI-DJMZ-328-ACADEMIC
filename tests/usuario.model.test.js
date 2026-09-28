@@ -4,13 +4,71 @@ const mongoose = require('mongoose');
 const Usuario = require('../models/Usuario');
 const base = { nombre: ' Usuario ', email: ' USUARIO@Ejemplo.COM ', password: ' contraseña ', rol: 'superadmin' };
 
-test('usuario: normaliza nombre y email, conserva password sin hash y declara índice único', async () => {
+test('usuario: normaliza nombre y email y declara índice único antes de persistir', async () => {
   const usuario = new Usuario(base);
   await usuario.validate();
   assert.equal(usuario.nombre, 'Usuario');
   assert.equal(usuario.email, 'usuario@ejemplo.com');
   assert.equal(usuario.password, base.password);
   assert.ok(Usuario.schema.indexes().some(([campos, opciones]) => campos.email === 1 && opciones.unique));
+});
+
+test('usuario: save guarda hash, compara y no vuelve a hashear al editar nombre', async t => {
+  let almacenado;
+  t.mock.method(Usuario.collection, 'insertOne', async datos => { almacenado = { ...datos }; return { insertedId: datos._id }; });
+  const actualizar = t.mock.method(Usuario.collection, 'updateOne', async () => ({ matchedCount: 1 }));
+  const usuario = new Usuario(base);
+  await usuario.save();
+  assert.notEqual(almacenado.password, base.password);
+  assert.match(almacenado.password, /^\$2[ab]\$12\$/);
+  assert.equal(await usuario.compararPassword(base.password), true);
+  assert.equal(await usuario.compararPassword('incorrecta'), false);
+  const hash = usuario.password;
+  usuario.nombre = 'Otro';
+  await usuario.save();
+  assert.equal(usuario.password, hash);
+  assert.equal(actualizar.mock.calls[0].arguments[1].$set.password, undefined);
+  usuario.password = 'nueva contraseña';
+  await usuario.save();
+  assert.notEqual(usuario.password, hash);
+  assert.equal(await usuario.compararPassword('nueva contraseña'), true);
+});
+
+test('usuario: password excluido de consultas y serialización, comparación con selección explícita', async t => {
+  const bcrypt = require('bcryptjs');
+  const hash = await bcrypt.hash(base.password, 4);
+  assert.equal(Usuario.schema.path('password').options.select, false);
+  const usuario = Usuario.hydrate({ ...base, _id: new mongoose.Types.ObjectId(), password: hash });
+  assert.equal(usuario.toObject().password, undefined);
+  assert.equal(usuario.toJSON().password, undefined);
+  assert.ok(!JSON.stringify(usuario).includes(hash));
+  const sinPassword = Usuario.hydrate({ _id: usuario._id, nombre: base.nombre });
+  t.mock.method(Usuario, 'findById', id => {
+    assert.ok(id.equals(usuario._id));
+    return { select: async seleccion => { assert.equal(seleccion, '+password'); return usuario; } };
+  });
+  assert.equal(await sinPassword.compararPassword(base.password), true);
+});
+
+test('usuario: rechaza password heredado y entradas inválidas o mayores de 72 bytes', async () => {
+  const usuario = Usuario.hydrate(base);
+  assert.equal(await usuario.compararPassword(base.password), false);
+  for (const valor of [undefined, null, {}, '', 'á'.repeat(37)]) assert.equal(await usuario.compararPassword(valor), false);
+  await assert.rejects(new Usuario({ ...base, password: 'á'.repeat(37) }).validate());
+});
+
+test('usuario: bloquea escrituras que evaden el hash de save', async () => {
+  for (const ejecutar of [
+    () => Usuario.updateOne({}, { $set: { password: 'texto' } }),
+    () => Usuario.updateMany({}, { password: 'texto' }),
+    () => Usuario.findOneAndUpdate({}, { $set: { password: 'texto' } }),
+    () => Usuario.updateOne({}, { $rename: { nombre: 'password' } }),
+    () => Usuario.updateOne({}, { nombre: 'Nombre' }, { upsert: true }),
+    () => Usuario.replaceOne({}, base),
+    () => Usuario.findOneAndReplace({}, base),
+    () => Usuario.insertMany([base]),
+    () => Usuario.bulkWrite([{ insertOne: { document: base } }])
+  ]) await assert.rejects(async () => ejecutar(), /Usa /);
 });
 
 test('usuario: campos requeridos y roles inválidos', async () => {

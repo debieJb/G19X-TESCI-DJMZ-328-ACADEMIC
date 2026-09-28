@@ -1,0 +1,14 @@
+<% if (!usuarios.length) { %>
+  <p class="muted">No hay usuarios registrados</p>
+<% } else { %>
+  <div class="tabla-admin"><table>
+    <caption><%= leyenda %></caption>
+    <thead><tr><th scope="col">Nombre</th><th scope="col">Email</th><th scope="col">Rol</th></tr></thead>
+    <tbody><% for (const usuario of usuarios) { %>
+      <tr><td><%= usuario.nombre %></td><td><%= usuario.email %></td><td>
+        <% if (usuario.rol === 'superadmin') { %><span class="numero">Superadministrador</span> <span>superadmin</span>
+        <% } else { %><%= usuario.rol %><% if (sinEmpresa) { %><br><span class="muted">Usuario sin empresa asignada</span><% } %><% } %>
+      </td></tr>
+    <% } %></tbody>
+  </table></div>
+<% } %>

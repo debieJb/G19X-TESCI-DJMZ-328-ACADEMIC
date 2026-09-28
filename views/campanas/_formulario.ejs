@@ -2,6 +2,13 @@
       <div class="aviso-error" role="alert"><%= mensaje || 'Corrige los campos indicados antes de guardar.' %></div>
     <% } %>
     <form class="formulario" action="<%= accion %>" method="post">
+      <% if (accion === '/campanas' && usuarioActual.rol === 'superadmin') { %>
+        <div class="campo campo-amplio"><label for="empresa">Empresa propietaria</label>
+          <select id="empresa" name="empresa" required aria-describedby="empresa-error"><option value="">Selecciona una empresa</option>
+            <% for (const empresa of (typeof empresasDisponibles !== 'undefined' ? empresasDisponibles : [])) { %><option value="<%= empresa._id %>" <%= datos.empresa === String(empresa._id) ? 'selected' : '' %>><%= empresa.nombre %></option><% } %>
+          </select><span class="error-campo" id="empresa-error"><%= errores.empresa || '' %></span>
+        </div>
+      <% } %>
       <p>Nombre y objetivo son obligatorios. La fecha de inicio es obligatoria para una campaña programada. Canal y fecha de fin son opcionales. Los cambios de estado son manuales.</p>
       <% for (const [campo, etiqueta] of [['nombre', 'Nombre'], ['objetivo', 'Objetivo']]) { %>
         <div class="campo campo-amplio">

@@ -39,7 +39,7 @@
     <% } %>
     <nav aria-label="Acciones de campaña">
       <a class="boton editar" href="/campanas/<%= campana._id %>/editar">Editar</a>
-      <a class="boton eliminar" href="/campanas/<%= campana._id %>/eliminar">Eliminar</a>
+      <% if (puedeCampana('campanas.eliminar', campana)) { %><a class="boton eliminar" href="/campanas/<%= campana._id %>/eliminar">Eliminar</a><% } %>
       <a href="/campanas">Volver al listado</a>
     </nav>
   </main>

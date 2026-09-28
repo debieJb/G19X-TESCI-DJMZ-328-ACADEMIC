@@ -132,6 +132,55 @@ main>nav { margin-top:1.5rem; }
   .acciones>.boton,.acciones>button { flex:1 1 100%; }
   .tarjeta dl { grid-template-columns:1fr; }
 }
+.pagina-publica { display:flex; flex-direction:column; }
+.pagina-publica main { flex:1; }
+.pagina-publica .hero-publico { padding:clamp(1.5rem,6vw,5rem); }
+.pagina-publica .hero-publico h1 { color:var(--texto); font-size:clamp(2.1rem,5.3vw,4.3rem); line-height:1.1; letter-spacing:-.045em; max-width:940px; margin:1.5rem 0; font-weight:750; }
+.pagina-publica .hero-publico h1 span { color:var(--acento); }
+.pagina-publica .hero-publico .intro { max-width:710px; }
+.pagina-publica .hero-nota { margin-top:2.5rem; color:var(--muted); font-size:.85rem; letter-spacing:.08em; }
+.pagina-publica .enlace-publico { color:var(--texto); gap:.75rem; }
+.pagina-publica .seccion-publica { margin-top:clamp(3rem,7vw,5rem); scroll-margin-top:2rem; }
+.pagina-publica .seccion-publica>h2 { font-size:clamp(1.75rem,3vw,2.5rem); margin:.75rem 0; }
+.pagina-publica .rejilla-publica { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1.25rem; margin-top:2rem; }
+.pagina-publica .rejilla-publica h3 { font-size:1.2rem; margin:1.25rem 0 .75rem; }
+.pagina-publica .rejilla-publica p,.pagina-publica .rejilla-publica li { color:var(--muted); }
+.pagina-publica .rejilla-publica p { margin-bottom:0; }
+.pagina-publica .niveles-publicos ul { padding-left:1.25rem; margin-bottom:0; }
+.pagina-publica .niveles-publicos li { margin:.65rem 0; padding-left:.25rem; }
+.pagina-publica .niveles-publicos li::marker { color:var(--acento); }
+.pagina-publica .pie-publico { display:flex; justify-content:space-between; flex-wrap:wrap; gap:1rem; padding:1.5rem max(1rem,calc((100% - 1180px)/2)); border-top:1px solid var(--borde); color:var(--muted); font-size:.9rem; }
+.pagina-publica .acceso-publico { max-width:500px; margin-block:clamp(2rem,6vw,5rem); }
+.pagina-publica .tarjeta-acceso { padding:clamp(1.5rem,4vw,2.5rem); }
+.pagina-publica .tarjeta-acceso h1 { margin-bottom:1rem; }
+.pagina-publica .campos-acceso { display:grid; gap:1.5rem; margin-top:2rem; }
+.pagina-publica .volver-inicio { display:inline-flex; align-items:center; min-height:44px; margin-top:1.5rem; }
+@media(max-width:900px) {
+  .pagina-publica .rejilla-publica { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:600px) {
+  .pagina-publica .rejilla-publica { grid-template-columns:1fr; }
+  .pagina-publica .barra { gap:.75rem; }
+  .pagina-publica .barra nav { width:100%; }
+  .pagina-publica .barra nav .boton { width:100%; }
+}
+.pagina-admin .resumen-admin { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; }
+.pagina-admin .resumen-admin h2 { color:var(--muted); font-size:1rem; margin:0; }
+.pagina-admin .total-admin { color:var(--acento); font-size:2.5rem; font-weight:750; margin:.5rem 0 0; }
+.pagina-admin .seccion-admin { margin-top:2.5rem; }
+.pagina-admin .grupo-admin { margin-top:1rem; }
+.pagina-admin .grupo-admin h3 { margin-top:0; }
+.pagina-admin .tabla-admin { overflow-x:auto; background:var(--panel); border:1px solid var(--borde); border-radius:14px; }
+.pagina-admin .tabla-admin th,.pagina-admin .tabla-admin td { white-space:normal; }
+.pagina-admin .salida-admin { padding:0; border:0; background:transparent; }
+.pagina-admin .barra nav { gap:.75rem; }
+.pagina-admin .pie-publico { padding:1.5rem 2rem; border-top:1px solid var(--borde); display:flex; justify-content:space-between; gap:1rem; color:var(--muted); }
+.pagina-admin button:disabled { cursor:not-allowed; opacity:.6; }
+@media(max-width:760px) {
+  .pagina-admin .resumen-admin { grid-template-columns:1fr; }
+  .pagina-admin .tabla-admin th,.pagina-admin .tabla-admin td { padding:.75rem; min-width:100px; }
+  .pagina-admin .barra nav { width:100%; }
+}
 @media(prefers-reduced-motion:reduce) {
   *,*::before,*::after { transition:none !important; }
 }

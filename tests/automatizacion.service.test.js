@@ -1,7 +1,8 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
-const { ejecutarCampana, ErrorAutomatizacion } = require('../services/automatizacionService');
+const { ejecutarCampana: ejecutarConUsuario, ErrorAutomatizacion } = require('../services/automatizacionService');
+const ejecutarCampana = campana => ejecutarConUsuario(campana, { rol: 'superadmin' });
 const emailService = require('../services/emailService');
 
 const campana = {

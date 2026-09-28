@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title><%= titulo %> | Marketing Automation</title><link rel="stylesheet" href="/css/styles.css"></head>
+<body class="pagina-admin"><%- include('../partials/_encabezado', { seccion: '' }) %>
+<main id="contenido" tabindex="-1">
+<h1><%= empresa.nombre %></h1><p><%= usuarioActual.nombre %> · <%= usuarioActual.email %> · <%= usuarioActual.rol %></p>
+<form class="salida-admin" action="/logout" method="post"><button type="submit">Cerrar sesión</button></form>
+<%- include('_campanas') %>
+</main><%- include('../partials/_piePublico') %></body></html>

@@ -1,7 +1,7 @@
 const ROLES = Object.freeze(['superadmin', 'admin_empresa', 'operador']);
 const accionesCampana = ['campanas.crear', 'campanas.consultar', 'campanas.editar', 'campanas.ejecutar'];
 const accionesAdmin = [...accionesCampana, 'campanas.eliminar', 'usuarios.administrar'];
-const acciones = new Set([...accionesAdmin, 'empresas.administrar']);
+const acciones = new Set([...accionesAdmin, 'empresas.administrar', 'automatizaciones.editar']);
 
 const idEmpresa = empresa => {
   const id = empresa?._id ?? empresa;
@@ -10,7 +10,7 @@ const idEmpresa = empresa => {
 };
 
 // Recibe un usuario y la empresa del recurso obtenidos por el servidor, nunca req.body.
-// No se conecta todavía a las rutas. Los recursos antiguos sin empresa son globales
+// Los recursos antiguos sin empresa son globales
 // únicamente para superadmin; no se concede acceso por dos empresas ausentes.
 const puede = (usuario, accion, empresaRecurso) => {
   if (!usuario || !ROLES.includes(usuario.rol) || !acciones.has(accion)) return false;

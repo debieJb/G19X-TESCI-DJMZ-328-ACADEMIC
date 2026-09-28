@@ -1,14 +1,14 @@
 const ErrorAutomatizacion = require('./ErrorAutomatizacion');
+const { resolverWebhook } = require('./configuracionAutomatizacionesService');
 
-const ejecutarCampana = async (campana) => {
+const ejecutarCampana = async (campana, usuario) => {
   if (campana.canal !== 'email') throw new ErrorAutomatizacion('CANAL_NO_DISPONIBLE');
   if (['asunto', 'cuerpoTexto'].some(campo => typeof campana[campo] !== 'string' || !campana[campo].trim())) {
     throw new ErrorAutomatizacion('CONTENIDO_EMAIL_INCOMPLETO');
   }
-  let url;
+  const url = await resolverWebhook(campana, usuario);
   const timeout = Number(process.env.N8N_WEBHOOK_TIMEOUT_MS ?? 10000);
   try {
-    url = new URL(process.env.N8N_WEBHOOK_URL);
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password
       || !Number.isInteger(timeout) || timeout <= 0 || timeout > 2147483647) throw new Error();
   } catch {

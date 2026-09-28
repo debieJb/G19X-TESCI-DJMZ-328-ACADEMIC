@@ -1,17 +1,17 @@
 require('dotenv').config();
 
-const app = require('./app');
 const conectarDatabase = require('./config/database');
 const PORT = process.env.PORT || 3000;
 
 const iniciarServidor = async () => {
   try {
+    const app = require('./app');
     await conectarDatabase();
     app.listen(PORT, () => {
       console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
     });
   } catch {
-    console.error('No se pudo conectar a MongoDB. Revisa MONGODB_URI y la disponibilidad de la base de datos.');
+    console.error('No se pudo iniciar. Revisa SESSION_SECRET, MONGODB_URI y MongoDB. MemoryStore solo está disponible en desarrollo.');
     process.exit(1);
   }
 };
