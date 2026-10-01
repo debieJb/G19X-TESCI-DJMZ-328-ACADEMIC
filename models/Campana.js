@@ -8,6 +8,16 @@ const transiciones = {
   finalizada: []
 };
 
+const destinatariosSchema = new mongoose.Schema({
+  tipo: { type: String, required: true, enum: ['todos', 'contactos', 'etiquetas'] },
+  contactos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Contacto' }],
+  etiquetas: [{ type: String, trim: true }]
+}, { _id: false });
+destinatariosSchema.pre('validate', function () {
+  if (this.tipo === 'contactos' && !this.contactos.length) this.invalidate('contactos', 'Selecciona al menos un contacto.');
+  if (this.tipo === 'etiquetas' && (!this.etiquetas.length || this.etiquetas.some(valor => !valor))) this.invalidate('etiquetas', 'Selecciona al menos una etiqueta.');
+});
+
 const campanaSchema = new mongoose.Schema({
   empresa: { type: mongoose.Schema.Types.ObjectId, ref: 'Empresa' },
   creadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
@@ -16,9 +26,11 @@ const campanaSchema = new mongoose.Schema({
   asunto: { type: String, trim: true },
   cuerpoTexto: { type: String },
   publicacion: { type: String },
+  // Sin default: los documentos antiguos conservan el flujo previo de n8n.
+  destinatarios: { type: destinatariosSchema, default: undefined },
   canal: {
     type: String,
-    enum: ['email', 'redes_sociales', 'sms', 'otro']
+    enum: ['email', 'redes_sociales', 'whatsapp', 'sms', 'otro']
   },
   estado: {
     type: String,

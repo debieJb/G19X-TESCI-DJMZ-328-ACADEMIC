@@ -30,6 +30,7 @@
       <div><dt>Fecha de creación (UTC)</dt><dd><%= formatearFecha(campana.createdAt) %></dd></div>
       <div><dt>Última actualización (UTC)</dt><dd><%= formatearFecha(campana.updatedAt) %></dd></div>
     </dl>
+    <%- include('_resumenDestinatarios') %>
     <% if (mensajeCanal) { %>
       <p class="panel" role="status"><%= mensajeCanal %></p>
     <% } else if (campana.estado === 'activa') { %>

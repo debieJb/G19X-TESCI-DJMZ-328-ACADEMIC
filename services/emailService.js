@@ -1,5 +1,6 @@
 const ErrorAutomatizacion = require('./ErrorAutomatizacion');
 const { resolverWebhook } = require('./configuracionAutomatizacionesService');
+const destinatariosService = require('./destinatariosService');
 
 const ejecutarCampana = async (campana, usuario) => {
   if (campana.canal !== 'email') throw new ErrorAutomatizacion('CANAL_NO_DISPONIBLE');
@@ -26,6 +27,14 @@ const ejecutarCampana = async (campana, usuario) => {
     fechaInicio: campana.fechaInicio ? campana.fechaInicio.toISOString() : null,
     fechaFin: campana.fechaFin ? campana.fechaFin.toISOString() : null
   };
+  if (campana.destinatarios) {
+    const destinatarios = await destinatariosService.resolverDestinatarios(campana);
+    if (!destinatarios.length) throw new ErrorAutomatizacion('SIN_DESTINATARIOS');
+    // Un solo webhook; los campos históricos mantienen su forma y significado.
+    payload.destinatarios = destinatarios;
+    payload.totalDestinatarios = destinatarios.length;
+    payload.tipoDestinatarios = campana.destinatarios.tipo;
+  }
   const abort = new AbortController();
   const timer = setTimeout(() => abort.abort(), timeout);
   try {

@@ -4,6 +4,8 @@ const http = require('node:http');
 const { ejecutarCampana: ejecutarConUsuario, ErrorAutomatizacion } = require('../services/automatizacionService');
 const ejecutarCampana = campana => ejecutarConUsuario(campana, { rol: 'superadmin' });
 const emailService = require('../services/emailService');
+const Contacto = require('../models/Contacto');
+const Empresa = require('../models/Empresa');
 
 const campana = {
   _id: '507f1f77bcf86cd799439011', nombre: 'Campaña', objetivo: 'Objetivo',
@@ -152,4 +154,39 @@ test('servicio: timeout interrumpe la espera sin reintentar', async t => {
   configurar(t, url, '150');
   await assert.rejects(ejecutarCampana(campana), codigo('TIMEOUT'));
   assert.equal(llamadas, 1);
+});
+
+test('email: webhook HTTP real conserva campos y agrega destinatarios sin solicitudes individuales', async t => {
+  const empresa = '507f1f77bcf86cd799439012';
+  const contactoId = '507f1f77bcf86cd799439013';
+  const peticiones = [];
+  const url = await servidor(t, async (req, res) => {
+    let body = '';
+    for await (const chunk of req) body += chunk;
+    peticiones.push(JSON.parse(body));
+    res.writeHead(204).end();
+  });
+  configurar(t, url);
+  t.mock.method(Empresa, 'findById', () => ({ select: async () => ({ automatizaciones: { email: { habilitada: true } } }) }));
+  t.mock.method(Contacto.collection, 'find', filtro => {
+    assert.equal(String(filtro.empresa), empresa); assert.equal(filtro.activo, true);
+    return { toArray: async () => [{ _id: contactoId, nombre: 'Cliente', email: 'cliente@example.test', activo: true, privado: 'NO ENVIAR' }] };
+  });
+  await ejecutarCampana({ ...campana, empresa, destinatarios: { tipo: 'todos' } });
+  assert.equal(peticiones.length, 1);
+  const { destinatarios, totalDestinatarios, tipoDestinatarios, ...historico } = peticiones[0];
+  assert.deepEqual(historico, { id: campana._id, nombre: campana.nombre, objetivo: campana.objetivo,
+    asunto: campana.asunto, cuerpoTexto: campana.cuerpoTexto, canal: 'email', estado: 'activa',
+    fechaInicio: '2026-10-01T00:00:00.000Z', fechaFin: '2026-10-05T00:00:00.000Z' });
+  assert.deepEqual(destinatarios, [{ id: contactoId, nombre: 'Cliente', email: 'cliente@example.test', telefono: null }]);
+  assert.equal(totalDestinatarios, 1); assert.equal(tipoDestinatarios, 'todos');
+});
+
+test('email: acceso empresarial se valida antes de resolver destinatarios', async t => {
+  const empresa = '507f1f77bcf86cd799439012';
+  const contactos = t.mock.method(Contacto, 'find', () => { throw new Error('No debe consultar contactos'); });
+  const webhook = t.mock.method(global, 'fetch', () => { throw new Error('No debe enviar'); });
+  await assert.rejects(emailService.ejecutarCampana({ ...campana, empresa, destinatarios: { tipo: 'todos' } },
+    { rol: 'operador', empresa: campana._id }), codigo('ACCESO_DENEGADO'));
+  assert.equal(contactos.mock.callCount(), 0); assert.equal(webhook.mock.callCount(), 0);
 });

@@ -1,0 +1,13 @@
+const router = require('express').Router();
+const controller = require('../controllers/contactoController');
+const { requerirAutenticacion } = require('../middlewares/autenticacion');
+const { accesoEmpresa } = require('../middlewares/accesoEmpresa');
+router.use(requerirAutenticacion, accesoEmpresa);
+router.get('/', controller.listarContactos);
+router.get('/nuevo', controller.mostrarFormularioCreacion);
+router.post('/', controller.crearContacto);
+router.get('/:id/editar', controller.mostrarFormularioEdicion);
+router.post('/:id/editar', controller.actualizarContacto);
+router.post('/:id/eliminar', controller.eliminarContacto);
+router.get('/:id', controller.mostrarDetalle);
+module.exports = router;

@@ -1,0 +1,14 @@
+<% if (Object.keys(errores).length) { %><div class="aviso-error" role="alert"><p>Corrige los campos indicados antes de guardar.</p><% for (const texto of Object.values(errores)) { %><p><%= texto %></p><% } %></div><% } %>
+<form class="formulario" action="<%= accion %>" method="post">
+<% if (accion === '/contactos' && usuarioActual.rol === 'superadmin') { %>
+<div class="campo"><label for="empresa">Empresa propietaria</label><select id="empresa" name="empresa" required><option value="">Selecciona una empresa</option><% for (const empresa of empresasDisponibles) { %><option value="<%= empresa._id %>" <%= String(empresa._id) === datos.empresa ? 'selected' : '' %>><%= empresa.nombre %></option><% } %></select></div>
+<% } %>
+<p>El nombre es obligatorio. Introduce al menos email o teléfono.</p>
+<% for (const [campo, etiqueta, tipo] of [['nombre', 'Nombre', 'text'], ['email', 'Email', 'email'], ['telefono', 'Teléfono', 'tel']]) { %>
+<div class="campo"><label for="<%= campo %>"><%= etiqueta %></label><input id="<%= campo %>" name="<%= campo %>" type="<%= tipo %>" value="<%= datos[campo] || '' %>" <%= campo === 'nombre' ? 'required' : '' %> aria-invalid="<%= !!errores[campo] %>" aria-describedby="<%= campo %>-error"><span class="error-campo" id="<%= campo %>-error"><%= errores[campo] || '' %></span></div>
+<% } %>
+<div class="campo"><label for="etiquetas">Etiquetas (separadas por comas)</label><input id="etiquetas" name="etiquetas" value="<%= (datos.etiquetas || []).join(', ') %>"></div>
+<fieldset class="campo"><legend>Canales habilitados</legend><% for (const [canal, etiqueta] of [['email', 'Email'], ['whatsapp', 'WhatsApp'], ['sms', 'SMS']]) { %><label for="canal-<%= canal %>"><input id="canal-<%= canal %>" type="checkbox" name="canales[<%= canal %>]" value="true" <%= datos.canales[canal] ? 'checked' : '' %>><%= etiqueta %></label><% } %></fieldset>
+<div class="campo"><label for="activo">Estado</label><select id="activo" name="activo"><option value="true" <%= datos.activo ? 'selected' : '' %>>Activo</option><option value="false" <%= !datos.activo ? 'selected' : '' %>>Inactivo</option></select></div>
+<div class="acciones"><button type="submit">Guardar contacto</button><a class="boton secundario" href="<%= cancelar %>">Cancelar</a></div>
+</form>

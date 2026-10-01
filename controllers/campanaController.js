@@ -1,9 +1,10 @@
 const Campana = require('../models/Campana');
 const automatizacionService = require('../services/automatizacionService');
 const Empresa = require('../models/Empresa');
+const destinatariosService = require('../services/destinatariosService');
 const { filtroEmpresa, buscarCampana } = require('../services/accesoCampanasService');
 
-const canales = { email: 'Correo electrónico', redes_sociales: 'Redes sociales', sms: 'SMS', otro: 'Otro' };
+const canales = { email: 'Correo electrónico', redes_sociales: 'Redes sociales', whatsapp: 'WhatsApp', sms: 'SMS', otro: 'Otro' };
 const estados = { borrador: 'Borrador', programada: 'Programada', activa: 'Activa', pausada: 'Pausada', finalizada: 'Finalizada' };
 const campos = ['nombre', 'objetivo', 'canal', 'estado', 'fechaInicio', 'fechaFin', 'asunto', 'cuerpoTexto', 'publicacion'];
 const etiquetas = { nombre: 'Nombre', objetivo: 'Objetivo', canal: 'Canal', estado: 'Estado', fechaInicio: 'Fecha de inicio', fechaFin: 'Fecha de fin', asunto: 'Asunto', cuerpoTexto: 'Cuerpo de texto', publicacion: 'Publicación' };
@@ -45,10 +46,19 @@ const cargarEmpresas = async res => {
   res.locals.empresasDisponibles = res.locals.usuarioActual.rol === 'superadmin'
     ? await Empresa.find().select('nombre').sort({ nombre: 1 }).lean() : [];
 };
+const cargarOpcionesDestinatarios = async (res, empresa) => {
+  res.locals.opcionesDestinatarios = await destinatariosService.opcionesEmpresa(empresa);
+};
 const mostrarFormularioCreacion = async (req, res, next) => {
   try {
     await cargarEmpresas(res);
-    return mostrarFormulario(res, { nombre: '', objetivo: '', canal: '', estado: 'borrador', fechaInicio: '', fechaFin: '', asunto: '', cuerpoTexto: '', publicacion: '', empresa: '' });
+    const usuario = res.locals.usuarioActual;
+    const datos = validarFormulario(req.query).datos;
+    datos.empresa = usuario.rol === 'superadmin' && typeof req.query.empresa === 'string'
+      && res.locals.empresasDisponibles.some(empresa => String(empresa._id) === req.query.empresa) ? req.query.empresa : '';
+    datos.destinatarios = { tipo: 'todos', contactos: [], etiquetas: [] };
+    await cargarOpcionesDestinatarios(res, usuario.rol === 'superadmin' ? datos.empresa : filtroEmpresa(usuario).empresa);
+    return mostrarFormulario(res, datos);
   } catch (error) { next(error); }
 };
 
@@ -68,6 +78,10 @@ const validarFormulario = (entrada = {}, editar = false) => {
     asunto: datos.asunto.trim() || undefined, cuerpoTexto: datos.cuerpoTexto || undefined,
     publicacion: datos.publicacion || undefined
   };
+  const seleccion = destinatariosService.validarSeleccion(entrada.destinatarios);
+  datos.destinatarios = seleccion.seleccion;
+  if (seleccion.error) errores.destinatarios = seleccion.error;
+  if (seleccion.seleccion) valores.destinatarios = seleccion.seleccion;
   if (!editar) {
     if (datos.estado && datos.estado !== 'borrador') errores.estado = 'Toda campaña nueva debe comenzar en borrador.';
     datos.estado = 'borrador';
@@ -127,6 +141,14 @@ const crearCampana = async (req, res) => {
       } else valores.empresa = datos.empresa;
     } else valores.empresa = filtroEmpresa(usuario).empresa;
     valores.creadoPor = usuario._id;
+    if (!Object.hasOwn(req.body || {}, 'destinatarios')) {
+      datos.destinatarios = valores.destinatarios = { tipo: 'todos', contactos: [], etiquetas: [] };
+    } else if (!valores.destinatarios && !errores.destinatarios) errores.destinatarios = 'Selecciona un tipo de destinatarios.';
+    await cargarOpcionesDestinatarios(res, valores.empresa);
+    if (!errores.empresa && !errores.destinatarios) {
+      const error = await destinatariosService.validarPertenencia(valores.destinatarios, valores.empresa);
+      if (error) errores.destinatarios = error;
+    }
     if (Object.keys(errores).length) return mostrarFormulario(res, datos, errores, '', 422);
     await Campana.create(valores);
     return res.redirect(303, '/campanas');
@@ -145,11 +167,15 @@ const consultarCampana = (vista, titulo) => async (req, res, next) => {
           ? (campana[campo] ? campana[campo].toISOString().slice(0, 10) : '')
           : (campana[campo] || '');
       }
+      datos.destinatarios = campana.destinatarios;
+      await cargarOpcionesDestinatarios(res, campana.empresa?._id || campana.empresa);
       return mostrarFormulario(res, datos, {}, '', 200, req.params.id, campana.estado);
     }
     const mensaje = vista === 'detalle' && req.query.automatizacion === 'enviada'
       ? 'Solicitud enviada a la automatización. Esto confirma la recepción, no la finalización del flujo.' : '';
+    const resumenDestinatarios = vista === 'detalle' ? await destinatariosService.resumenCampana(campana) : null;
     return res.render(`campanas/${vista}`, { titulo, campana, canales, estados, formatearFecha, mensaje, errorAutomatizacion: false,
+      resumenDestinatarios,
       mensajeCanal: automatizacionService.mensajeCanalNoDisponible(campana.canal) });
   } catch (error) {
     if ([400, 403, 404].includes(error.status)) return responderErrorRecurso(res, error);
@@ -168,6 +194,15 @@ const actualizarCampana = async (req, res) => {
   try {
     const campana = await buscarCampana(req.params.id, res.locals.usuarioActual, 'campanas.editar');
     estadoActual = campana.estado;
+    await cargarOpcionesDestinatarios(res, campana.empresa?._id || campana.empresa);
+    if (!Object.hasOwn(req.body || {}, 'destinatarios')) {
+      datos.destinatarios = campana.destinatarios;
+    } else if (!valores.destinatarios && campana.destinatarios && !errores.destinatarios) {
+      errores.destinatarios = 'Selecciona un tipo de destinatarios.';
+    } else if (!errores.destinatarios) {
+      const error = await destinatariosService.validarPertenencia(valores.destinatarios, campana.empresa?._id || campana.empresa);
+      if (error) errores.destinatarios = error;
+    }
     // Formularios anteriores que omitan estos campos no deben borrar contenido guardado.
     for (const campo of ['asunto', 'cuerpoTexto', 'publicacion']) {
       if (!Object.hasOwn(req.body || {}, campo)) {
@@ -180,6 +215,7 @@ const actualizarCampana = async (req, res) => {
     }
     if (Object.keys(errores).length) return mostrarFormulario(res, datos, errores, '', 422, req.params.id, estadoActual);
     for (const campo of campos) campana[campo] = valores[campo];
+    if (valores.destinatarios) campana.destinatarios = valores.destinatarios;
     // Validar el documento completo, incluso cuando solo cambia fechaInicio.
     await campana.validate();
     await campana.save();
@@ -212,12 +248,15 @@ const eliminarCampana = async (req, res, next) => {
 
 const ejecutarAutomatizacion = async (req, res, next) => {
   let campana;
+  let resumenDestinatarios = null;
   const mostrarError = (status, mensaje) => res.status(status).render('campanas/detalle', {
     titulo: 'Detalle de campaña', campana, canales, estados, formatearFecha, mensaje, errorAutomatizacion: true,
+    resumenDestinatarios,
     mensajeCanal: automatizacionService.mensajeCanalNoDisponible(campana.canal)
   });
   try {
     campana = await buscarCampana(req.params.id, res.locals.usuarioActual, 'campanas.ejecutar');
+    resumenDestinatarios = await destinatariosService.resumenCampana(campana);
     if (campana.estado !== 'activa') return mostrarError(422, 'Solo puedes ejecutar campañas activas.');
     const mensajeCanal = automatizacionService.mensajeCanalNoDisponible(campana.canal);
     if (mensajeCanal) return mostrarError(422, mensajeCanal);
@@ -231,6 +270,8 @@ const ejecutarAutomatizacion = async (req, res, next) => {
         CANAL_NO_DISPONIBLE: [422, 'Canal aún no disponible.'],
         CUENTAS_REDES_NO_CONECTADAS: [422, 'Conecta Facebook y LinkedIn para publicar'],
         CONTENIDO_EMAIL_INCOMPLETO: [422, 'Completa el asunto y el cuerpo de texto antes de ejecutar la campaña de email.'],
+        SIN_DESTINATARIOS: [422, 'No hay destinatarios válidos. Revisa la selección, el estado activo y los datos de contacto para este canal.'],
+        DESTINATARIOS_INVALIDOS: [422, 'La configuración de destinatarios no es válida. Revisa la empresa y la selección de contactos.'],
         CONFIGURACION: [503, 'La automatización no está configurada correctamente.'],
         DESHABILITADA: [422, 'La automatización está deshabilitada para esta empresa.'],
         ACCESO_DENEGADO: [403, 'No tienes permiso para ejecutar esta campaña.'],

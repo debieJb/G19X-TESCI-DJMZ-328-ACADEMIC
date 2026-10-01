@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title><%= titulo %></title><link rel="stylesheet" href="/css/styles.css"></head>
+<body><%- include('../partials/_encabezado', { seccion: 'contactos' }) %><main id="contenido" tabindex="-1">
+<div class="cabecera-pagina"><div><h1>Contactos</h1><p><%= contactos.length %> contactos en tu panel</p></div><a class="boton" href="/contactos/nuevo">Nuevo contacto</a></div>
+<% if (!contactos.length) { %><section class="vacio"><h2>Aún no hay contactos</h2><p>Crea el primer contacto de tu empresa.</p></section><% } else { %>
+<div class="tabla-contenedor" role="region" aria-label="Listado de contactos" tabindex="0"><table><caption>Contactos, del más reciente al más antiguo</caption><thead><tr><th scope="col">Nombre</th><th scope="col">Email</th><th scope="col">Teléfono</th><th scope="col">Etiquetas</th><th scope="col">Estado</th><% if (usuarioActual.rol === 'superadmin') { %><th scope="col">Empresa</th><% } %><th scope="col">Acciones</th></tr></thead><tbody>
+<% for (const contacto of contactos) { %><tr><td><%= contacto.nombre %></td><td><%= contacto.email || 'Sin definir' %></td><td><%= contacto.telefono || 'Sin definir' %></td><td><%= contacto.etiquetas.join(', ') || 'Sin etiquetas' %></td><td><%= contacto.activo ? 'Activo' : 'Inactivo' %></td><% if (usuarioActual.rol === 'superadmin') { %><td><%= contacto.empresa %></td><% } %><td><nav class="tabla-acciones" aria-label="Acciones de <%= contacto.nombre %>"><a class="boton secundario" href="/contactos/<%= contacto._id %>">Detalle</a><a class="boton editar" href="/contactos/<%= contacto._id %>/editar">Editar</a></nav></td></tr><% } %>
+</tbody></table></div>
+<section class="tarjetas" aria-label="Contactos"><% for (const contacto of contactos) { %><article class="tarjeta"><h2><%= contacto.nombre %></h2><p><%= contacto.email || contacto.telefono %></p><p><%= contacto.activo ? 'Activo' : 'Inactivo' %></p><nav class="acciones"><a class="boton secundario" href="/contactos/<%= contacto._id %>">Detalle</a><a class="boton editar" href="/contactos/<%= contacto._id %>/editar">Editar</a></nav></article><% } %></section>
+<% } %>
+</main></body></html>

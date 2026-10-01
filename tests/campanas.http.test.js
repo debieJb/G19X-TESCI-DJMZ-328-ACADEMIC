@@ -14,6 +14,7 @@ let app, cliente;
 const request = () => cliente;
 const Empresa = require('../models/Empresa');
 const Campana = require('../models/Campana');
+const Contacto = require('../models/Contacto');
 const automatizacion = require('../services/automatizacionService');
 const id = '507f1f77bcf86cd799439011';
 const ausente = '507f1f77bcf86cd799439012';
@@ -21,6 +22,7 @@ const base = { nombre: 'Conservar', objetivo: 'Objetivo', estado: 'pausada' };
 let documento, crear, guardar, borrar, buscar, listar;
 
 beforeEach(t => {
+  t.mock.method(Contacto.collection, 'find', () => ({ toArray: async () => [] }));
   ({ app, cliente } = crearContexto(t, { _id: id, nombre: 'Superadmin', email: 'super@example.test', rol: 'superadmin' }));
   t.mock.method(Empresa, 'find', () => ({ select: () => ({ sort: () => ({ lean: async () => [{ _id: id, nombre: 'Empresa' }] }) }) }));
   t.mock.method(Empresa, 'exists', async () => ({ _id: id }));
@@ -266,7 +268,8 @@ test('crear: 303, campos permitidos, borrador y opcionales vacíos', async () =>
   await post('/campanas', { nombre: ' Nueva ', objetivo: ' Objetivo ', canal: '', fechaInicio: '', fechaFin: '', admin: 'true', _id: ausente })
     .expect(303).expect('Location', '/campanas');
   const valores = crear.mock.calls[0].arguments[0];
-  assert.deepEqual(Object.keys(valores).sort(), ['nombre', 'objetivo', 'canal', 'estado', 'fechaInicio', 'fechaFin', 'asunto', 'cuerpoTexto', 'publicacion', 'empresa', 'creadoPor'].sort());
+  assert.deepEqual(Object.keys(valores).sort(), ['nombre', 'objetivo', 'canal', 'estado', 'fechaInicio', 'fechaFin', 'asunto', 'cuerpoTexto', 'publicacion', 'empresa', 'creadoPor', 'destinatarios'].sort());
+  assert.deepEqual(valores.destinatarios, { tipo: 'todos', contactos: [], etiquetas: [] });
   assert.equal(valores.nombre, 'Nueva');
   assert.equal(valores.objetivo, 'Objetivo');
   assert.equal(valores.estado, 'borrador');

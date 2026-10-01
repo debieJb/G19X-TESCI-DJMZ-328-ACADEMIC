@@ -5,4 +5,5 @@
 <h1><%= empresa.nombre %></h1><p><%= usuarioActual.nombre %> · <%= usuarioActual.email %> · <%= usuarioActual.rol %></p>
 <form class="salida-admin" action="/logout" method="post"><button type="submit">Cerrar sesión</button></form>
 <%- include('_campanas') %>
+<section class="seccion-admin panel"><h2>Contactos</h2><p>Administra la base de contactos de tu empresa.</p><div class="acciones"><a class="boton" href="/contactos">Ver contactos</a><a class="boton secundario" href="/contactos/nuevo">Nuevo contacto</a></div></section>
 </main><%- include('../partials/_piePublico') %></body></html>

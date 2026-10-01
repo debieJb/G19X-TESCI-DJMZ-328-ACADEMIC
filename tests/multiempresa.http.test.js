@@ -5,12 +5,14 @@ const request = require('supertest');
 process.env.SESSION_SECRET = 'secreto-exclusivo-multiempresa';
 const { crearContexto } = require('./soporte/sesion');
 const Campana = require('../models/Campana');
+const Contacto = require('../models/Contacto');
 const Empresa = require('../models/Empresa');
 const id = n => new mongoose.Types.ObjectId(n.toString(16).padStart(24, '0'));
 const empresaA = id(1), empresaB = id(2), autor = id(3);
 let documentos, guardados, escrituras, borrados, llamadasWebhook, empresas;
 const coincide = (documento, filtro) => Object.entries(filtro).every(([campo, valor]) => String(documento[campo]) === String(valor));
 beforeEach(t => {
+  t.mock.method(Contacto.collection, 'find', () => ({ toArray: async () => [] }));
   documentos = [
     { _id: id(10), empresa: empresaA, creadoPor: autor, nombre: 'Campaña A', objetivo: 'Objetivo', estado: 'activa', canal: 'email', asunto: 'Asunto', cuerpoTexto: 'Texto' },
     { _id: id(11), empresa: empresaB, creadoPor: autor, nombre: 'Campaña B', objetivo: 'Objetivo', estado: 'activa', canal: 'email', asunto: 'Asunto', cuerpoTexto: 'Texto' },

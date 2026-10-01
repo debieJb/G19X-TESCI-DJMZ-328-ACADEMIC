@@ -24,6 +24,7 @@ app.use('/panel', require('./routes/panelRoutes'));
 app.use('/admin', require('./routes/adminRoutes'));
 app.use('/empresa', require('./routes/empresaRoutes'));
 app.use('/campanas', campanaRoutes);
+app.use('/contactos', require('./routes/contactoRoutes'));
 
 app.use((req, res) => {
   res.status(404).render('error', { titulo: 'Página no encontrada', mensaje: 'La página solicitada no existe.' });

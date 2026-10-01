@@ -83,6 +83,8 @@
           <span class="error-campo" id="publicacion-error"><%= errores.publicacion || '' %></span>
         </div>
       </section>
+      <%- include('_destinatarios') %>
       <div class="acciones"><button type="submit">Guardar campaña</button><a class="boton secundario" href="<%= cancelar %>">Cancelar</a></div>
     </form>
     <script src="/js/campanaFormulario.js" defer></script>
+    <script src="/js/destinatariosFormulario.js" defer></script>

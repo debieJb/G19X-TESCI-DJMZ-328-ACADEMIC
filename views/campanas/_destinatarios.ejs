@@ -1,0 +1,34 @@
+<% const seleccion = datos.destinatarios || { tipo: '', contactos: [], etiquetas: [] };
+const opciones = typeof opcionesDestinatarios !== 'undefined' ? opcionesDestinatarios : { contactos: [], etiquetas: [] };
+const idsSeleccionados = (seleccion.contactos || []).map(id => String(id)); %>
+<section class="campo-amplio" id="seleccion-destinatarios">
+  <h2>Destinatarios</h2>
+  <p>Solo se incluyen contactos activos de la empresa de la campaña, con email válido para email o teléfono para WhatsApp/SMS. La selección se recalcula al ejecutar.</p>
+  <% if (accion === '/campanas' && usuarioActual.rol === 'superadmin') { %>
+    <p>Selecciona la empresa propietaria y pulsa <button type="submit" formaction="/campanas/nueva" formmethod="get" formnovalidate>Cargar contactos de la empresa</button> antes de elegir contactos o etiquetas.</p>
+  <% } %>
+  <div class="campo"><label for="destinatarios-tipo">Tipo de selección</label>
+    <select id="destinatarios-tipo" name="destinatarios[tipo]" aria-invalid="<%= !!errores.destinatarios %>" aria-describedby="destinatarios-error">
+      <% if (!seleccion.tipo) { %><option value="" selected><%= accion === '/campanas' ? 'Selecciona un tipo' : 'Sin configurar (mantener flujo anterior)' %></option><% } %>
+      <option value="todos" <%= seleccion.tipo === 'todos' ? 'selected' : '' %>>Todos los contactos activos</option>
+      <option value="contactos" <%= seleccion.tipo === 'contactos' ? 'selected' : '' %>>Contactos específicos</option>
+      <option value="etiquetas" <%= seleccion.tipo === 'etiquetas' ? 'selected' : '' %>>Por etiquetas</option>
+    </select><span id="destinatarios-error" class="error-campo"><%= errores.destinatarios || '' %></span>
+  </div>
+  <fieldset id="destinatarios-contactos"><legend>Contactos activos de la empresa</legend>
+    <% if (!opciones.contactos.length) { %><p>No hay contactos activos disponibles para esta empresa.</p><% } %>
+    <% for (const contacto of opciones.contactos) { %>
+      <label><input type="checkbox" name="destinatarios[contactos]" value="<%= contacto._id %>" <%= idsSeleccionados.includes(String(contacto._id)) ? 'checked' : '' %>
+        data-email-valido="<%= typeof contacto.email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contacto.email.trim()) %>"
+        data-telefono="<%= typeof contacto.telefono === 'string' && !!contacto.telefono.trim() %>" data-etiquetas="<%= JSON.stringify(contacto.etiquetas || []) %>">
+        <%= contacto.nombre %> — <%= contacto.email || contacto.telefono || 'Sin datos de contacto' %></label>
+    <% } %>
+  </fieldset>
+  <fieldset id="destinatarios-etiquetas"><legend>Etiquetas de la empresa (coincidencia con cualquiera)</legend>
+    <% if (!opciones.etiquetas.length) { %><p>No hay etiquetas disponibles para esta empresa.</p><% } %>
+    <% for (const etiqueta of opciones.etiquetas) { %>
+      <label><input type="checkbox" name="destinatarios[etiquetas]" value="<%= etiqueta %>" <%= (seleccion.etiquetas || []).includes(etiqueta) ? 'checked' : '' %>><%= etiqueta %></label>
+    <% } %>
+  </fieldset>
+  <p id="destinatarios-estimacion" role="status">Contactos activos disponibles: <%= opciones.contactos.length %>. La cantidad final depende de la selección y el canal.</p>
+</section>
