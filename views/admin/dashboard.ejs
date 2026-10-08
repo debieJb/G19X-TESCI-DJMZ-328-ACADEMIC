@@ -46,7 +46,7 @@
       <% if (!campanasSinEmpresa.length) { %><p class="muted">No hay campañas registradas sin empresa</p><% } else { %>
       <div class="tabla-admin"><table><caption>Campañas pendientes de asignación</caption>
         <thead><tr><th scope="col">Nombre</th><th scope="col">Canal</th><th scope="col">Estado</th></tr></thead>
-        <tbody><% for (const campana of campanasSinEmpresa) { %><tr><td><a href="/campanas/<%= campana._id %>"><%= campana.nombre %></a></td><td><%= campana.canal || 'Sin canal definido' %></td><td><%= campana.estado %></td></tr><% } %></tbody>
+        <tbody><% for (const campana of campanasSinEmpresa) { %><tr><td><a href="/campanas/<%= campana._id %>"><%= campana.nombre %></a></td><td><%= campana.canal === 'email' ? 'Correo electrónico (Gmail)' : 'Canal descontinuado' %></td><td><%= campana.estado %></td></tr><% } %></tbody>
       </table></div><% } %>
     </section>
   </main>

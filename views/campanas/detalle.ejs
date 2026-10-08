@@ -16,13 +16,10 @@
     <% if (campana.estado === 'finalizada') { %><p>Esta campaña está finalizada y no puede volver a otro estado.</p><% } %>
     <dl class="detalle">
       <div class="objetivo"><dt>Objetivo</dt><dd><%= campana.objetivo %></dd></div>
-      <div><dt>Canal</dt><dd><%= canales[campana.canal] || 'Sin definir' %></dd></div>
+      <div><dt>Canal</dt><dd><%= campana.canal === 'email' ? 'Correo electrónico (Gmail)' : 'Canal descontinuado' %></dd></div>
       <% if (campana.canal === 'email') { %>
         <div><dt>Asunto</dt><dd><%= campana.asunto || 'Sin definir' %></dd></div>
         <div class="objetivo"><dt>Mensaje</dt><dd><%= campana.cuerpoTexto || 'Sin definir' %></dd></div>
-      <% } %>
-      <% if (campana.canal === 'redes_sociales') { %>
-        <div class="objetivo"><dt>Publicación</dt><dd><%= campana.publicacion || 'Sin definir' %></dd></div>
       <% } %>
       <div><dt>Estado</dt><dd><span class="insignia estado-<%= campana.estado %>"><%= estados[campana.estado] || 'Sin definir' %></span></dd></div>
       <div><dt>Fecha de inicio</dt><dd><%= formatearFecha(campana.fechaInicio) %></dd></div>
@@ -30,10 +27,11 @@
       <div><dt>Fecha de creación (UTC)</dt><dd><%= formatearFecha(campana.createdAt) %></dd></div>
       <div><dt>Última actualización (UTC)</dt><dd><%= formatearFecha(campana.updatedAt) %></dd></div>
     </dl>
-    <%- include('_resumenDestinatarios') %>
+    <% if (campana.canal === 'email') { %><%- include('_resumenDestinatarios') %><% } %>
     <% if (mensajeCanal) { %>
       <p class="panel" role="status"><%= mensajeCanal %></p>
     <% } else if (campana.estado === 'activa') { %>
+      <p>Activar y guardar no ejecuta el envío. Usa este botón para solicitar la ejecución en n8n.</p>
       <form action="/campanas/<%= campana._id %>/ejecutar" method="post">
         <button type="submit">Ejecutar automatización</button>
       </form>

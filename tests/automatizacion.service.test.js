@@ -46,11 +46,11 @@ const codigo = esperado => error => {
 test('selector y manejador email: canales no disponibles nunca hacen peticiones', async t => {
   const webhook = t.mock.method(global, 'fetch', () => { throw new Error('Acceso externo prohibido'); });
   const email = t.mock.method(emailService, 'ejecutarCampana');
-  for (const canal of ['redes_sociales', 'sms', 'otro', undefined, null, '', 'desconocido', 'constructor', '__proto__']) {
-    await assert.rejects(ejecutarCampana({ ...campana, canal }), codigo(canal === 'redes_sociales' ? 'CUENTAS_REDES_NO_CONECTADAS' : 'CANAL_NO_DISPONIBLE'));
+  for (const canal of ['whatsapp', 'facebook', 'linkedin', 'redes_sociales', 'sms', 'otro', undefined, null, '', 'desconocido', 'constructor', '__proto__']) {
+    await assert.rejects(ejecutarCampana({ ...campana, canal }), codigo('CANAL_NO_DISPONIBLE'));
   }
   assert.equal(email.mock.callCount(), 0);
-  for (const canal of ['redes_sociales', 'sms', 'otro', undefined, null, '', 'desconocido']) {
+  for (const canal of ['whatsapp', 'facebook', 'linkedin', 'redes_sociales', 'sms', 'otro', undefined, null, '', 'desconocido']) {
     await assert.rejects(emailService.ejecutarCampana({ ...campana, canal }), codigo('CANAL_NO_DISPONIBLE'));
   }
   assert.equal(webhook.mock.callCount(), 0);
@@ -136,8 +136,8 @@ test('servicio: errores HTTP y redirecciones no generan reintentos ni seguimient
     res.writeHead(status, { Location: '/otro' }).end('DETALLE INTERNO');
   });
   configurar(t, url);
-  for (status of [400, 500, 302]) await assert.rejects(ejecutarCampana(campana), codigo('RESPUESTA'));
-  assert.equal(llamadas, 3);
+  for (status of [400, 401, 403, 404, 405, 429, 500, 503, 302, 307]) await assert.rejects(ejecutarCampana(campana), codigo('RESPUESTA'));
+  assert.equal(llamadas, 10);
 });
 
 test('servicio: conexión interrumpida se clasifica sin reintentar', async t => {

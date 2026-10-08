@@ -4,14 +4,15 @@ const Empresa = require('../models/Empresa');
 const destinatariosService = require('../services/destinatariosService');
 const { filtroEmpresa, buscarCampana } = require('../services/accesoCampanasService');
 
-const canales = { email: 'Correo electrónico', redes_sociales: 'Redes sociales', whatsapp: 'WhatsApp', sms: 'SMS', otro: 'Otro' };
+const canales = { email: 'Correo electrónico (Gmail)' };
 const estados = { borrador: 'Borrador', programada: 'Programada', activa: 'Activa', pausada: 'Pausada', finalizada: 'Finalizada' };
 const campos = ['nombre', 'objetivo', 'canal', 'estado', 'fechaInicio', 'fechaFin', 'asunto', 'cuerpoTexto', 'publicacion'];
 const etiquetas = { nombre: 'Nombre', objetivo: 'Objetivo', canal: 'Canal', estado: 'Estado', fechaInicio: 'Fecha de inicio', fechaFin: 'Fecha de fin', asunto: 'Asunto', cuerpoTexto: 'Cuerpo de texto', publicacion: 'Publicación' };
 
 const mostrarFormulario = (res, datos, errores = {}, mensaje = '', status = 200, id = null, estadoActual = null) =>
   res.status(status).render(id ? 'campanas/editar' : 'campanas/nueva', {
-    titulo: id ? 'Editar campaña' : 'Nueva campaña', datos, errores, mensaje, canales, estados,
+    titulo: id ? 'Editar campaña' : 'Nueva campaña', datos, errores, mensaje,
+    canales, estados,
     estadoActual, estadosPermitidos: estadoActual ? Campana.estadosPermitidos(estadoActual) : [],
     accion: id ? `/campanas/${id}/editar` : '/campanas',
     cancelar: id ? `/campanas/${id}` : '/campanas'
@@ -54,6 +55,7 @@ const mostrarFormularioCreacion = async (req, res, next) => {
     await cargarEmpresas(res);
     const usuario = res.locals.usuarioActual;
     const datos = validarFormulario(req.query).datos;
+    datos.canal = 'email';
     datos.empresa = usuario.rol === 'superadmin' && typeof req.query.empresa === 'string'
       && res.locals.empresasDisponibles.some(empresa => String(empresa._id) === req.query.empresa) ? req.query.empresa : '';
     datos.destinatarios = { tipo: 'todos', contactos: [], etiquetas: [] };
@@ -73,7 +75,7 @@ const validarFormulario = (entrada = {}, editar = false) => {
   }
   const valores = {
     nombre: datos.nombre.trim(), objetivo: datos.objetivo.trim(),
-    canal: datos.canal || undefined, estado: editar ? datos.estado : 'borrador',
+    canal: 'email', estado: editar ? datos.estado : 'borrador',
     fechaInicio: undefined, fechaFin: undefined,
     asunto: datos.asunto.trim() || undefined, cuerpoTexto: datos.cuerpoTexto || undefined,
     publicacion: datos.publicacion || undefined
@@ -89,7 +91,8 @@ const validarFormulario = (entrada = {}, editar = false) => {
   for (const campo of ['nombre', 'objetivo']) {
     if (!valores[campo]) errores[campo] = `${etiquetas[campo]} es obligatorio.`;
   }
-  if (datos.canal && !Object.hasOwn(canales, datos.canal)) errores.canal = 'Selecciona un canal válido.';
+  if (Object.hasOwn(entrada, 'canal') && entrada.canal !== 'email') errores.canal = 'Solo el canal email está habilitado.';
+  datos.canal = 'email';
   if (!Object.hasOwn(estados, datos.estado)) errores.estado = 'Selecciona un estado válido.';
 
   for (const campo of ['fechaInicio', 'fechaFin']) {
@@ -194,6 +197,11 @@ const actualizarCampana = async (req, res) => {
   try {
     const campana = await buscarCampana(req.params.id, res.locals.usuarioActual, 'campanas.editar');
     estadoActual = campana.estado;
+    if (campana.canal !== 'email' && Object.hasOwn(req.body || {}, 'canal')) {
+      errores.canal = 'El canal histórico está descontinuado y no puede cambiarse.';
+    }
+    // Nunca inferir email para un documento histórico, aunque el formulario omita canal.
+    valores.canal = datos.canal = campana.canal;
     await cargarOpcionesDestinatarios(res, campana.empresa?._id || campana.empresa);
     if (!Object.hasOwn(req.body || {}, 'destinatarios')) {
       datos.destinatarios = campana.destinatarios;
@@ -267,8 +275,7 @@ const ejecutarAutomatizacion = async (req, res, next) => {
     if ([400, 403, 404].includes(error.status)) return responderErrorRecurso(res, error);
     if (error instanceof automatizacionService.ErrorAutomatizacion) {
       const errores = {
-        CANAL_NO_DISPONIBLE: [422, 'Canal aún no disponible.'],
-        CUENTAS_REDES_NO_CONECTADAS: [422, 'Conecta Facebook y LinkedIn para publicar'],
+        CANAL_NO_DISPONIBLE: [422, 'Canal descontinuado. Esta campaña no puede ejecutarse.'],
         CONTENIDO_EMAIL_INCOMPLETO: [422, 'Completa el asunto y el cuerpo de texto antes de ejecutar la campaña de email.'],
         SIN_DESTINATARIOS: [422, 'No hay destinatarios válidos. Revisa la selección, el estado activo y los datos de contacto para este canal.'],
         DESTINATARIOS_INVALIDOS: [422, 'La configuración de destinatarios no es válida. Revisa la empresa y la selección de contactos.'],

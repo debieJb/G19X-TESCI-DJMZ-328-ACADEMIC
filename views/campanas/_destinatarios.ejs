@@ -3,7 +3,7 @@ const opciones = typeof opcionesDestinatarios !== 'undefined' ? opcionesDestinat
 const idsSeleccionados = (seleccion.contactos || []).map(id => String(id)); %>
 <section class="campo-amplio" id="seleccion-destinatarios">
   <h2>Destinatarios</h2>
-  <p>Solo se incluyen contactos activos de la empresa de la campaña, con email válido para email o teléfono para WhatsApp/SMS. La selección se recalcula al ejecutar.</p>
+  <p>Solo se incluyen contactos activos de la empresa de la campaña, con correo electrónico válido. La selección se recalcula al ejecutar.</p>
   <% if (accion === '/campanas' && usuarioActual.rol === 'superadmin') { %>
     <p>Selecciona la empresa propietaria y pulsa <button type="submit" formaction="/campanas/nueva" formmethod="get" formnovalidate>Cargar contactos de la empresa</button> antes de elegir contactos o etiquetas.</p>
   <% } %>

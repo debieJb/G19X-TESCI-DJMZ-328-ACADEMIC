@@ -1,21 +1,31 @@
+
 const emailService = require('./emailService');
-const redesSocialesService = require('./redesSocialesService');
 const ErrorAutomatizacion = require('./ErrorAutomatizacion');
 
-// Solo los canales registrados pueden ejecutar una integración. No hay alternativa por defecto.
-const integraciones = new Map([['email', emailService], ['redes_sociales', redesSocialesService]]);
+const integraciones = new Map([
+  ['email', emailService]
+]);
 
 const mensajeCanalNoDisponible = (canal) => {
-  if (integraciones.has(canal)) return integraciones.get(canal).mensajeNoDisponible || '';
-  return canal == null || canal === ''
-    ? 'Selecciona un canal para ejecutar la campaña.'
-    : 'Canal aún no disponible.';
+  if (integraciones.has(canal)) {
+    return integraciones.get(canal).mensajeNoDisponible || '';
+  }
+
+  return 'Canal descontinuado. Esta campaña no puede ejecutarse.';
 };
 
 const ejecutarCampana = async (campana, usuario) => {
   const integracion = integraciones.get(campana.canal);
-  if (!integracion) throw new ErrorAutomatizacion('CANAL_NO_DISPONIBLE');
+
+  if (!integracion) {
+    throw new ErrorAutomatizacion('CANAL_NO_DISPONIBLE');
+  }
+
   return integracion.ejecutarCampana(campana, usuario);
 };
 
-module.exports = { ejecutarCampana, mensajeCanalNoDisponible, ErrorAutomatizacion };
+module.exports = {
+  ejecutarCampana,
+  mensajeCanalNoDisponible,
+  ErrorAutomatizacion
+};

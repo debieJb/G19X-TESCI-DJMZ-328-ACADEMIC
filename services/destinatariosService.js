@@ -80,6 +80,7 @@ const resolverDestinatarios = async campana => {
   return [...unicos.values()];
 };
 const resumenCampana = async campana => {
+  if (campana.canal !== 'email') return null;
   if (!campana.destinatarios) return { tipo: 'Sin configurar (flujo anterior)', cantidad: null, contactos: [], etiquetas: [] };
   const destinatarios = await resolverDestinatarios(campana);
   const contactos = campana.destinatarios.tipo === 'contactos' && empresaDe(campana)

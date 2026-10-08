@@ -112,10 +112,10 @@ test('automatización: valida id, existencia y estado sin llamar al servicio', a
 test('automatización: rechaza canales distintos de email sin llamar al webhook', async t => {
   const ejecutar = t.mock.method(automatizacion, 'ejecutarCampana', async () => {});
   const webhook = t.mock.method(global, 'fetch', () => { throw new Error('Webhook externo prohibido en esta prueba'); });
-  for (const canal of ['redes_sociales', 'sms', 'otro', undefined, null, '', 'desconocido', 'constructor', '__proto__']) {
+  for (const canal of ['whatsapp', 'facebook', 'linkedin', 'redes_sociales', 'sms', 'otro', undefined, null, '', 'desconocido', 'constructor', '__proto__']) {
     documento.canal = canal;
     const respuesta = await post(`/campanas/${id}/ejecutar`, { canal: 'email' }).expect(422);
-    assert.match(respuesta.text, canal === 'redes_sociales' ? /Conecta Facebook y LinkedIn para publicar/ : canal ? /Canal aún no disponible/ : /Selecciona un canal/);
+    assert.match(respuesta.text, /Canal descontinuado/);
     assert.match(respuesta.text, /role="alert"/);
   }
   assert.equal(ejecutar.mock.callCount(), 0);
@@ -127,10 +127,10 @@ test('automatización: detalle indica canales no disponibles y no ofrece ejecuta
   const webhook = t.mock.method(global, 'fetch', () => { throw new Error('Acceso externo prohibido'); });
   for (const estado of ['activa', 'borrador', 'pausada', 'finalizada']) {
     documento.estado = estado;
-    for (const canal of ['redes_sociales', 'sms', 'otro', undefined, null, '', 'desconocido']) {
+    for (const canal of ['whatsapp', 'facebook', 'linkedin', 'redes_sociales', 'sms', 'otro', undefined, null, '', 'desconocido']) {
       documento.canal = canal;
       const respuesta = await request(app).get(`/campanas/${id}`).expect(200);
-      assert.match(respuesta.text, canal === 'redes_sociales' ? /Conecta Facebook y LinkedIn para publicar/ : canal ? /Canal aún no disponible/ : /Selecciona un canal/);
+      assert.match(respuesta.text, /Canal descontinuado/);
       assert.ok(!respuesta.text.includes('Ejecutar automatización'));
       assert.ok(!respuesta.text.includes(`action="/campanas/${id}/ejecutar"`));
     }
@@ -265,7 +265,7 @@ test('listado vacío/con datos y formulario nuevo; salida escapada', async () =>
 });
 
 test('crear: 303, campos permitidos, borrador y opcionales vacíos', async () => {
-  await post('/campanas', { nombre: ' Nueva ', objetivo: ' Objetivo ', canal: '', fechaInicio: '', fechaFin: '', admin: 'true', _id: ausente })
+  await post('/campanas', { nombre: ' Nueva ', objetivo: ' Objetivo ', fechaInicio: '', fechaFin: '', admin: 'true', _id: ausente })
     .expect(303).expect('Location', '/campanas');
   const valores = crear.mock.calls[0].arguments[0];
   assert.deepEqual(Object.keys(valores).sort(), ['nombre', 'objetivo', 'canal', 'estado', 'fechaInicio', 'fechaFin', 'asunto', 'cuerpoTexto', 'publicacion', 'empresa', 'creadoPor', 'destinatarios'].sort());
@@ -273,7 +273,8 @@ test('crear: 303, campos permitidos, borrador y opcionales vacíos', async () =>
   assert.equal(valores.nombre, 'Nueva');
   assert.equal(valores.objetivo, 'Objetivo');
   assert.equal(valores.estado, 'borrador');
-  for (const campo of ['canal', 'fechaInicio', 'fechaFin']) assert.equal(valores[campo], undefined);
+  assert.equal(valores.canal, 'email');
+  for (const campo of ['fechaInicio', 'fechaFin']) assert.equal(valores[campo], undefined);
 });
 
 test('formulario: visibilidad inicial y tras errores depende del canal, conservando contenido', async () => {
@@ -285,7 +286,7 @@ test('formulario: visibilidad inicial y tras errores depende del canal, conserva
     assert.match(html, /<script src="\/js\/campanaFormulario.js" defer><\/script>/);
     assert.ok(!/<(?:input|textarea)[^>]*name="(?:asunto|cuerpoTexto)"[^>]*disabled/.test(html));
   };
-  verificar((await request(app).get('/campanas/nueva').expect(200)).text, '');
+  verificar((await request(app).get('/campanas/nueva').expect(200)).text, 'email');
   await request(app).get('/js/campanaFormulario.js').expect(200).expect('Content-Type', /javascript/);
   for (const canal of ['email', 'redes_sociales', 'sms', 'otro', '']) {
     documento.canal = canal || undefined;
@@ -295,7 +296,7 @@ test('formulario: visibilidad inicial y tras errores depende del canal, conserva
     assert.match(edicion.text, />Texto guardado<\/textarea>/);
     for (const ruta of ['/campanas', `/campanas/${id}/editar`]) {
       const error = await post(ruta, { nombre: 'Conservar', objetivo: '', estado: 'borrador', canal, asunto: 'Escrito', cuerpoTexto: 'Mensaje\nEscrito' }).expect(422);
-      verificar(error.text, canal);
+      verificar(error.text, ruta === '/campanas' ? 'email' : canal);
       assert.match(error.text, /value="Escrito"/);
       assert.ok(error.text.includes('Mensaje\nEscrito</textarea>'));
     }
@@ -307,37 +308,44 @@ test('formulario: visibilidad inicial y tras errores depende del canal, conserva
   assert.equal(crear.mock.callCount(), 0);
 });
 
-test('formulario: guardar cambios de canal conserva el contenido de email', async () => {
-  for (const canal of ['redes_sociales', 'email']) {
-    await editar({ ...base, estado: 'activa', canal, asunto: 'Asunto guardado', cuerpoTexto: 'Texto guardado' }).expect(303);
+test('formulario: canales retirados rechazados sin modificar el contenido de email', async () => {
+  for (const canal of ['whatsapp', 'sms', 'redes_sociales', 'otro']) {
+    const anterior = documento.toObject();
+    await editar({ ...base, estado: 'activa', canal, asunto: 'Manipulado', cuerpoTexto: 'Manipulado' }).expect(422);
+    assert.deepEqual(documento.toObject(), anterior);
     assert.equal(documento.asunto, 'Asunto guardado');
     assert.equal(documento.cuerpoTexto, 'Texto guardado');
   }
 });
 
-test('redes: publicación se guarda, se conserva al cambiar canal y se muestra solo para redes', async () => {
+test('redes históricas: creación bloqueada; edición conserva canal y publicación sin opciones retiradas', async () => {
   const publicacion = ' Hola\n</textarea><script>texto</script>';
-  await post('/campanas', { nombre: 'Redes', objetivo: 'Objetivo', canal: 'redes_sociales', publicacion }).expect(303);
-  assert.equal(crear.mock.calls[0].arguments[0].publicacion, publicacion);
-  await editar({ ...base, canal: 'redes_sociales', publicacion }).expect(303);
+  await post('/campanas', { nombre: 'Redes', objetivo: 'Objetivo', canal: 'redes_sociales', publicacion }).expect(422);
+  assert.equal(crear.mock.callCount(), 0);
+  documento.canal = 'redes_sociales';
+  documento.publicacion = publicacion;
+  await editar(base).expect(303);
   assert.equal(documento.publicacion, publicacion);
   for (const canal of ['email', 'sms', 'redes_sociales']) {
-    await editar({ ...base, canal }).expect(303);
+    await editar({ ...base, canal }).expect(422);
+    assert.equal(documento.canal, 'redes_sociales');
     assert.equal(documento.publicacion, publicacion);
     const detalle = await request(app).get(`/campanas/${id}`).expect(200);
-    assert.equal(detalle.text.includes('<dt>Publicación</dt>'), canal === 'redes_sociales');
+    assert.match(detalle.text, /Canal descontinuado/);
+    assert.ok(!detalle.text.includes('<dt>Publicación</dt>'));
     assert.ok(!detalle.text.includes('<script>'));
     const formulario = await request(app).get(`/campanas/${id}/editar`).expect(200);
-    assert.equal(/hidden/.test(formulario.text.match(/<section id="contenido-redes"[^>]*>/)[0]), canal !== 'redes_sociales');
-    assert.ok(formulario.text.includes(' Hola\n&lt;/textarea&gt;&lt;script&gt;texto&lt;/script&gt;</textarea>'));
+    assert.ok(!formulario.text.includes('contenido-redes'));
+    assert.ok(!formulario.text.includes('name="publicacion"'));
+    assert.ok(!formulario.text.includes('<select id="canal"'));
   }
   const nuevo = await request(app).get('/campanas/nueva').expect(200);
-  assert.match(nuevo.text, /<section id="contenido-redes"[^>]*hidden/);
+  assert.ok(!nuevo.text.includes('contenido-redes'));
   for (const canal of ['email', 'redes_sociales', 'sms']) {
     for (const ruta of ['/campanas', `/campanas/${id}/editar`]) {
       const error = await post(ruta, { nombre: 'Redes', objetivo: '', canal, publicacion }).expect(422);
-      assert.equal(/hidden/.test(error.text.match(/<section id="contenido-redes"[^>]*>/)[0]), canal !== 'redes_sociales');
-      assert.ok(error.text.includes(' Hola\n&lt;/textarea&gt;&lt;script&gt;texto&lt;/script&gt;</textarea>'));
+      assert.ok(!error.text.includes('contenido-redes'));
+      assert.ok(!error.text.includes('name="publicacion"'));
     }
   }
   await editar({ ...base, canal: 'redes_sociales', 'publicacion[]': 'inválido' }).expect(422);
@@ -389,7 +397,8 @@ test('email: formularios y detalle escapan contenido y conservan entradas tras e
 });
 
 test('email: documentos antiguos y formularios sin campos nuevos conservan sus datos', async () => {
-  await editar({ ...base, canal: 'redes_sociales' }).expect(303);
+  documento.canal = 'redes_sociales';
+  await editar(base).expect(303);
   assert.equal(documento.asunto, 'Asunto guardado');
   assert.equal(documento.cuerpoTexto, 'Texto guardado');
   documento.asunto = undefined;
@@ -417,10 +426,10 @@ test('email: ejecutar sin contenido guardado devuelve 422 y no llama al webhook'
       assert.deepEqual(documento.toObject(), anterior);
     }
   }
-  for (const canal of ['redes_sociales', 'sms', 'otro']) {
+  for (const canal of ['whatsapp', 'facebook', 'linkedin', 'redes_sociales', 'sms', 'otro']) {
     documento.canal = canal;
     const respuesta = await post(`/campanas/${id}/ejecutar`, {}).expect(422);
-    assert.match(respuesta.text, canal === 'redes_sociales' ? /Conecta Facebook y LinkedIn para publicar/ : /Canal aún no disponible/);
+    assert.match(respuesta.text, /Canal descontinuado/);
   }
   assert.equal(webhook.mock.callCount(), 0);
   assert.equal(guardar.mock.callCount(), 0);
@@ -461,8 +470,8 @@ test('detalle y edición: precarga, escape y fechas UTC', async () => {
 });
 
 test('editar: borrar opcionales y proteger campos ajenos al formulario', async () => {
-  await editar({ ...base, canal: '', fechaInicio: '', fechaFin: '', _id: ausente, createdAt: '2000-01-01', admin: 'true' }).expect(303);
-  for (const campo of ['canal', 'fechaInicio', 'fechaFin']) assert.equal(documento[campo], undefined);
+  await editar({ ...base, fechaInicio: '', fechaFin: '', _id: ausente, createdAt: '2000-01-01', admin: 'true' }).expect(303);
+  for (const campo of ['fechaInicio', 'fechaFin']) assert.equal(documento[campo], undefined);
   assert.equal(String(documento._id), id);
   assert.equal(documento.createdAt.toISOString(), '2026-09-20T00:00:00.000Z');
   assert.equal(documento.admin, undefined);

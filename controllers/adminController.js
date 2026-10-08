@@ -108,7 +108,8 @@ const guardarAutomatizaciones = async (req, res, next) => {
     } catch {
       return res.status(422).render('admin/automatizacionesEditar', { ...baseVista('Automatizaciones'), empresa, canales: configuracionService.canales, error: 'Revisa los estados y las URLs de automatización. No se guardaron cambios.' });
     }
-    empresa.automatizaciones = configuraciones;
+    // Actualizar solo email; conservar la configuración histórica de los demás canales.
+    empresa.set('automatizaciones.email', configuraciones.email);
     await empresa.save();
     res.redirect(303, `/admin/empresas/${empresa._id}`);
   } catch (error) { next(error); }

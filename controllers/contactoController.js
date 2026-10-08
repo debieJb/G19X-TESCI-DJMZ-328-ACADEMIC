@@ -40,7 +40,7 @@ const validar = (entrada = {}) => {
     return defecto;
   };
   if (entrada.canales !== undefined && (!entrada.canales || typeof entrada.canales !== 'object' || Array.isArray(entrada.canales))) errores.canales = 'Selecciona canales válidos.';
-  for (const canal of ['email', 'whatsapp', 'sms']) datos.canales[canal] = booleano(entrada.canales?.[canal], false, 'canales');
+  datos.canales.email = booleano(entrada.canales?.email, false, 'canales');
   datos.activo = booleano(entrada.activo, true, 'activo');
   const valores = { nombre: datos.nombre, email: datos.email || undefined, telefono: datos.telefono || undefined,
     etiquetas: datos.etiquetas, canales: datos.canales, activo: datos.activo };
@@ -79,7 +79,12 @@ const guardar = editar => async (req, res, next) => {
       valores.creadoPor = usuario._id;
     }
     if (Object.keys(errores).length) return formulario(res, datos, errores, 422, id);
-    if (editar) { Object.assign(contacto, valores); await contacto.save(); }
+    if (editar) {
+      contacto.set('canales.email', valores.canales.email);
+      delete valores.canales;
+      Object.assign(contacto, valores);
+      await contacto.save();
+    }
     else await Contacto.create(valores);
     return res.redirect(303, editar ? `/contactos/${id}` : '/contactos');
   } catch (error) {

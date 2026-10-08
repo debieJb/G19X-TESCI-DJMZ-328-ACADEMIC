@@ -75,11 +75,11 @@ test('webhooks: usuarios de otra empresa no resuelven configuración', async () 
   assert.equal(peticiones.length, 0);
 });
 
-test('webhooks: WhatsApp, Facebook y redes sociales no se activan', async () => {
+test('webhooks: canales retirados no ejecutan aunque la configuración los habilite', async () => {
   empresa.automatizaciones.whatsapp.habilitada = true;
   empresa.automatizaciones.facebook.habilitada = true;
-  for (const canal of ['whatsapp', 'facebook', 'redes_sociales']) {
-    await assert.rejects(automatizacion.ejecutarCampana({ ...campana, canal }, usuario), codigo(canal === 'redes_sociales' ? 'CUENTAS_REDES_NO_CONECTADAS' : 'CANAL_NO_DISPONIBLE'));
+  for (const canal of ['whatsapp', 'sms', 'facebook', 'linkedin', 'redes_sociales', 'otro']) {
+    await assert.rejects(automatizacion.ejecutarCampana({ ...campana, canal }, usuario), codigo('CANAL_NO_DISPONIBLE'));
   }
   assert.equal(peticiones.length, 0);
 });

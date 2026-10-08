@@ -11,7 +11,13 @@
   <main id="contenido" tabindex="-1" class="pagina-error panel">
     <h1><%= titulo %></h1>
     <p class="aviso-error" role="alert"><%= mensaje %></p>
-    <nav aria-label="Navegación"><a href="/">Volver al inicio</a><a href="/campanas">Ir a campañas</a></nav>
+    <nav aria-label="Navegación">
+      <% if (usuarioActual) { %>
+        <a href="/campanas">Volver al listado</a><a href="/panel">Mi panel</a>
+      <% } else { %>
+        <a href="/login">Iniciar sesión</a><a href="/">Volver al inicio</a>
+      <% } %>
+    </nav>
   </main>
 </body>
 </html>

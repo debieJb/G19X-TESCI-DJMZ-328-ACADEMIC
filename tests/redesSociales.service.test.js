@@ -12,7 +12,7 @@ test('redes: mismo texto para Facebook y LinkedIn, resultados independientes blo
     campanaId: 'campana-1', texto: campana.publicacion,
     destinos: [{ red: 'facebook', cuentaId: null }, { red: 'linkedin', cuentaId: null }]
   });
-  for (const ejecutar of [redes.ejecutarCampana, automatizacion.ejecutarCampana]) {
+  for (const ejecutar of [redes.ejecutarCampana]) {
     await assert.rejects(ejecutar(campana), error => {
       assert.equal(error.codigo, 'CUENTAS_REDES_NO_CONECTADAS');
       assert.deepEqual(error.resultados, ['facebook', 'linkedin'].map(red => ({
@@ -22,6 +22,7 @@ test('redes: mismo texto para Facebook y LinkedIn, resultados independientes blo
       return true;
     });
   }
+  await assert.rejects(automatizacion.ejecutarCampana(campana), { codigo: 'CANAL_NO_DISPONIBLE' });
   await assert.rejects(redes.ejecutarCampana({ ...campana, canal: 'email' }), { codigo: 'CANAL_NO_DISPONIBLE' });
   assert.equal(fetch.mock.callCount(), 0);
   assert.equal(correo.mock.callCount(), 0);

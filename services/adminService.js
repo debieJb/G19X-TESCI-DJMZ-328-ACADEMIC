@@ -36,7 +36,7 @@ const obtenerDashboard = async () => {
 };
 
 const obtenerDetalleEmpresa = async id => {
-  const empresa = await Empresa.findById(id).select('nombre estado fechaRegistro automatizaciones.email.habilitada automatizaciones.whatsapp.habilitada automatizaciones.facebook.habilitada').lean();
+  const empresa = await Empresa.findById(id).select('nombre estado fechaRegistro automatizaciones.email.habilitada').lean();
   if (!empresa) return null;
   const [usuarios, campanas] = await Promise.all([
     Usuario.find({ empresa: id }).select('nombre email rol').sort({ nombre: 1, _id: 1 }).lean(),

@@ -16,7 +16,11 @@ const configuracion = {
 };
 beforeEach(t => {
   empresas = [
-    { _id: A, nombre: 'Empresa A', estado: 'activa', automatizaciones: { email: { habilitada: true, webhookUrl: 'https://a.example.test/SECRETO' } } },
+    { _id: A, nombre: 'Empresa A', estado: 'activa', automatizaciones: {
+      email: { habilitada: true, webhookUrl: 'https://a.example.test/SECRETO' },
+      whatsapp: { habilitada: true, webhookUrl: 'https://historica.example.test/whatsapp' },
+      facebook: { habilitada: true, webhookUrl: 'https://historica.example.test/facebook' }
+    } },
     { _id: B, nombre: 'Empresa B', estado: 'activa' }
   ];
   consultasUsuarios = []; consultasCampanas = []; insertados = []; cambios = [];
@@ -106,8 +110,9 @@ test('superadmin: visualiza estados sin URLs y edita configuración solo de empr
   await cliente.post(`/admin/empresas/${A}/automatizaciones`).send({ ...configuracion, empresa: String(B), nombre: 'Manipulada', token: 'NO_GUARDAR' }).expect(303).expect('Location', `/admin/empresas/${A}`);
   assert.equal(String(cambios[0].filtro._id), String(A));
   const guardado = cambios[0].update.$set;
-  assert.equal(guardado.automatizaciones.email.webhookUrl, configuracion.emailWebhookUrl);
-  assert.equal(guardado.automatizaciones.facebook.habilitada, false);
+  assert.equal(guardado['automatizaciones.email'].webhookUrl, configuracion.emailWebhookUrl);
+  assert.equal(guardado['automatizaciones.facebook'], undefined);
+  assert.equal(guardado.automatizaciones, undefined);
   assert.equal(guardado.nombre, undefined); assert.equal(guardado.token, undefined);
 });
 

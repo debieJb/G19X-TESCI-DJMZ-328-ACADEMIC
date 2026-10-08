@@ -57,7 +57,7 @@ test('adminService: empresa inexistente no consulta usuarios ni campañas', asyn
 test('adminService: detalle usa filtros, proyecciones y populate real tolerante a autores eliminados', async t => {
   t.mock.method(Empresa.collection, 'findOne', async (filtro, opciones) => {
     assert.ok(filtro._id.equals(id));
-    assert.deepEqual(opciones.projection, { nombre: 1, estado: 1, fechaRegistro: 1, 'automatizaciones.email.habilitada': 1, 'automatizaciones.whatsapp.habilitada': 1, 'automatizaciones.facebook.habilitada': 1 });
+    assert.deepEqual(opciones.projection, { nombre: 1, estado: 1, fechaRegistro: 1, 'automatizaciones.email.habilitada': 1 });
     return { _id: id, nombre: 'Empresa', estado: 'activa' };
   });
   t.mock.method(Campana.collection, 'find', (filtro, opciones) => {

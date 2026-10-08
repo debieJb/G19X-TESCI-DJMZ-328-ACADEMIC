@@ -19,7 +19,7 @@
     const unicos = new Set();
     for (const contacto of contactos.querySelectorAll('input')) {
       const apto = canal.value === 'email' ? contacto.dataset.emailValido === 'true'
-        : ['whatsapp', 'sms'].includes(canal.value) ? contacto.dataset.telefono === 'true' : true;
+        : false;
       const coincide = tipo.value === 'todos' || (tipo.value === 'contactos' && contacto.checked)
         || (tipo.value === 'etiquetas' && JSON.parse(contacto.dataset.etiquetas).some(etiqueta => elegidas.has(etiqueta)));
       if (apto && coincide) unicos.add(contacto.value);

@@ -9,7 +9,7 @@
           </select><span class="error-campo" id="empresa-error"><%= errores.empresa || '' %></span>
         </div>
       <% } %>
-      <p>Nombre y objetivo son obligatorios. La fecha de inicio es obligatoria para una campaña programada. Canal y fecha de fin son opcionales. Los cambios de estado son manuales.</p>
+      <p>Nombre y objetivo son obligatorios. La fecha de inicio es obligatoria para una campaña programada. La fecha de fin es opcional. El envío utiliza Gmail y n8n. Los cambios de estado son manuales.</p>
       <% for (const [campo, etiqueta] of [['nombre', 'Nombre'], ['objetivo', 'Objetivo']]) { %>
         <div class="campo campo-amplio">
           <label for="<%= campo %>"><%= etiqueta %> (obligatorio)</label>
@@ -39,21 +39,9 @@
         <% } %>
         <span class="error-campo" id="estado-error"><%= errores.estado || '' %></span>
       </div>
-      <% for (const [campo, etiqueta, opciones] of [['canal', 'Canal', canales]]) { %>
-        <div class="campo">
-          <label for="<%= campo %>"><%= etiqueta %></label>
-          <select id="<%= campo %>" name="<%= campo %>" aria-invalid="<%= !!errores[campo] %>" aria-describedby="<%= campo %>-error">
-            <% if (campo === 'canal') { %><option value="">Sin definir</option><% } else if (!datos.estado) { %><option value="" selected>Selecciona un estado</option><% } %>
-            <% if (datos[campo] && !Object.hasOwn(opciones, datos[campo])) { %>
-              <option value="<%= datos[campo] %>" selected>Valor no válido: <%= datos[campo] %></option>
-            <% } %>
-            <% for (const [valor, texto] of Object.entries(opciones)) { %>
-              <option value="<%= valor %>" <%= datos[campo] === valor ? 'selected' : '' %>><%= texto %></option>
-            <% } %>
-          </select>
-          <span class="error-campo" id="<%= campo %>-error"><%= errores[campo] || '' %></span>
-        </div>
-      <% } %>
+      <p>Canal: <%= datos.canal === 'email' ? 'Correo electrónico (Gmail)' : 'Canal descontinuado' %></p>
+      <input id="canal" type="hidden" value="<%= datos.canal === 'email' ? 'email' : 'descontinuado' %>">
+      <span class="error-campo" id="canal-error"><%= errores.canal || '' %></span>
       <% for (const [campo, etiqueta] of [['fechaInicio', 'Fecha de inicio'], ['fechaFin', 'Fecha de fin']]) { %>
         <div class="campo">
           <label for="<%= campo %>"><%= etiqueta %> (<%= campo === 'fechaInicio' ? 'obligatoria si está programada' : 'opcional' %>)</label>
@@ -75,15 +63,7 @@
         </div>
       <% } %>
       </section>
-      <section id="contenido-redes" class="campo-amplio" <%= datos.canal === 'redes_sociales' ? '' : 'hidden' %>>
-        <p>El mismo texto se publicará en Facebook y LinkedIn. Conecta Facebook y LinkedIn para publicar.</p>
-        <div class="campo">
-          <label for="publicacion">Publicación</label>
-          <textarea id="publicacion" name="publicacion" rows="8" aria-invalid="<%= !!errores.publicacion %>" aria-describedby="publicacion-error"><%= datos.publicacion || '' %></textarea>
-          <span class="error-campo" id="publicacion-error"><%= errores.publicacion || '' %></span>
-        </div>
-      </section>
-      <%- include('_destinatarios') %>
+      <% if (datos.canal === 'email') { %><%- include('_destinatarios') %><% } %>
       <div class="acciones"><button type="submit">Guardar campaña</button><a class="boton secundario" href="<%= cancelar %>">Cancelar</a></div>
     </form>
     <script src="/js/campanaFormulario.js" defer></script>

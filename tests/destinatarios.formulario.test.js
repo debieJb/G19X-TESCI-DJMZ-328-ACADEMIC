@@ -30,8 +30,9 @@ test('destinatarios formulario: cuenta por modo/canal sin duplicar etiquetas y d
   assert.match(estimacion.textContent, /destinatarios: 2/); assert.equal(etiquetas.hidden, false);
   for (const valor of ['sms', 'whatsapp']) {
     canal.value = valor; canal.dispatchEvent(new Event('change'));
-    assert.match(estimacion.textContent, /destinatarios: 2/);
+    assert.match(estimacion.textContent, /destinatarios: 0/);
   }
+  canal.value = 'email';
   tipo.value = ''; tipo.dispatchEvent(new Event('change'));
   assert.match(estimacion.textContent, /flujo anterior/);
   empresa.value = 'empresa-b'; empresa.dispatchEvent(new Event('change'));

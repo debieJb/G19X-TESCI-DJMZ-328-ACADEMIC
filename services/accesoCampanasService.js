@@ -16,7 +16,9 @@ const buscarCampana = async (id, usuario, accion = 'campanas.consultar') => {
   // Buscar primero dentro de la empresa evita revelar una campaña ajena incluso si la acción está prohibida.
   if (!campana) throw error(404, 'La campaña no existe o fue eliminada.');
   if (!puede(usuario, accion, campana.empresa)) throw error(403, 'No tienes permiso para esta acción.');
-  if (usuario.rol !== 'superadmin') campana.$where = filtro;
+  // Mongoose aplica $where directamente al filtro de save(), sin hacer cast.
+  // Usar el ObjectId ya convertido del documento conserva el aislamiento BSON.
+  if (usuario.rol !== 'superadmin') campana.$where = { ...campana.$where, empresa: campana.empresa._id || campana.empresa };
   return campana;
 };
 module.exports = { filtroEmpresa, idEmpresa, buscarCampana };

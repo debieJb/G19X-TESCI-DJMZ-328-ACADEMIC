@@ -3,11 +3,11 @@
 <body class="pagina-admin"><%- include('../partials/_encabezadoAdmin') %>
 <main id="contenido" tabindex="-1">
 <h1>Automatizaciones de <%= empresa.nombre %></h1>
-<p>Una URL vacía usa el webhook global para email habilitado. Deshabilitar bloquea también el fallback. WhatsApp y Facebook aún no ejecutan integraciones.</p>
+<p>Una URL vacía usa el webhook global para email habilitado. Deshabilitar bloquea también el fallback.</p>
 <% if (error) { %><p class="aviso-error" role="alert"><%= error %></p><% } %>
 <form action="/admin/empresas/<%= empresa._id %>/automatizaciones" method="post" class="formulario">
 <% for (const canal of canales) { const config = empresa.automatizaciones?.[canal]; %>
-<section class="campo-amplio"><h2><%= canal === 'whatsapp' ? 'WhatsApp' : canal === 'facebook' ? 'Facebook' : 'Email' %></h2>
+<section class="campo-amplio"><h2><%= 'Correo electrónico (Gmail)' %></h2>
 <div class="campo"><label for="<%= canal %>Habilitada">Estado</label><select id="<%= canal %>Habilitada" name="<%= canal %>Habilitada">
 <option value="true" <%= (config?.habilitada ?? (canal === 'email')) ? 'selected' : '' %>>Habilitada</option><option value="false" <%= !(config?.habilitada ?? (canal === 'email')) ? 'selected' : '' %>>Deshabilitada</option></select></div>
 <div class="campo"><label for="<%= canal %>WebhookUrl">Webhook URL (opcional)</label><input id="<%= canal %>WebhookUrl" name="<%= canal %>WebhookUrl" type="url" autocomplete="off" value="<%= config?.webhookUrl || '' %>"></div>

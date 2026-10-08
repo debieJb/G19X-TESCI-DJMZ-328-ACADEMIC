@@ -54,7 +54,7 @@ test('contactos: crear normaliza y fija empresa/autor ignorando relaciones manip
   assert.equal(valores.empresa, empresa); assert.equal(valores.creadoPor, autor);
   assert.equal(valores.email, 'nuevo@example.test'); assert.equal(valores.nombre, 'Nuevo');
   assert.deepEqual(valores.etiquetas, ['cliente', 'vip']);
-  assert.deepEqual(valores.canales, { email: true, whatsapp: false, sms: true });
+  assert.deepEqual(valores.canales, { email: true });
   assert.equal(valores.activo, true);
 });
 test('contactos: listar con aislamiento multiempresa, salida escapada y listado vacío', async () => {

@@ -18,13 +18,11 @@ test('formulario: cambia visibilidad sin borrar ni deshabilitar valores escritos
     const ventana = new EventTarget();
     runInNewContext(script, { document: { getElementById: id => elementos[id] }, window: ventana });
     assert.equal(contenido.hidden, inicial !== 'email');
-    assert.equal(contenidoRedes.hidden, inicial !== 'redes_sociales');
     for (const valor of ['email', 'redes_sociales', 'sms', 'otro', '', 'desconocido', 'email']) {
       canal.value = valor;
       canal.dispatchEvent(new Event('change'));
       assert.equal(contenido.hidden, valor !== 'email');
-      assert.equal(contenidoRedes.hidden, valor !== 'redes_sociales');
-      assert.equal(publicacion.value, 'Publicación\ncon saltos');
+        assert.equal(publicacion.value, 'Publicación\ncon saltos');
       assert.equal(publicacion.disabled, false);
       assert.equal(elementos.asunto.value, 'Asunto escrito');
       assert.equal(elementos.cuerpoTexto.value, 'Mensaje\ncon saltos');
