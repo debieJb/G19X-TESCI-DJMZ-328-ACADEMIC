@@ -4,6 +4,7 @@
 <div class="campo"><label for="empresa">Empresa propietaria</label><select id="empresa" name="empresa" required><option value="">Selecciona una empresa</option><% for (const empresa of empresasDisponibles) { %><option value="<%= empresa._id %>" <%= String(empresa._id) === datos.empresa ? 'selected' : '' %>><%= empresa.nombre %></option><% } %></select></div>
 <% } %>
 <p>El nombre es obligatorio. Introduce al menos email o teléfono.</p>
+<p>Habilitar correo electrónico permite incluir el contacto en campañas. No registra ni acredita consentimiento de marketing.</p>
 <% for (const [campo, etiqueta, tipo] of [['nombre', 'Nombre', 'text'], ['email', 'Email', 'email'], ['telefono', 'Teléfono', 'tel']]) { %>
 <div class="campo"><label for="<%= campo %>"><%= etiqueta %></label><input id="<%= campo %>" name="<%= campo %>" type="<%= tipo %>" value="<%= datos[campo] || '' %>" <%= campo === 'nombre' ? 'required' : '' %> aria-invalid="<%= !!errores[campo] %>" aria-describedby="<%= campo %>-error"><span class="error-campo" id="<%= campo %>-error"><%= errores[campo] || '' %></span></div>
 <% } %>

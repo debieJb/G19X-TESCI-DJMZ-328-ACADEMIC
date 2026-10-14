@@ -12,12 +12,13 @@ const empresaA = id(1), empresaB = id(2), autor = id(3);
 let documentos, guardados, escrituras, borrados, llamadasWebhook, empresas;
 const coincide = (documento, filtro) => Object.entries(filtro).every(([campo, valor]) => String(documento[campo]) === String(valor));
 beforeEach(t => {
-  t.mock.method(Contacto.collection, 'find', () => ({ toArray: async () => [] }));
+  t.mock.method(Contacto.collection, 'find', filtro => ({ toArray: async () => [{ _id: id(20), empresa: filtro.empresa, activo: true, nombre: 'Propio', email: 'propio@example.test' }] }));
   documentos = [
     { _id: id(10), empresa: empresaA, creadoPor: autor, nombre: 'Campaña A', objetivo: 'Objetivo', estado: 'activa', canal: 'email', asunto: 'Asunto', cuerpoTexto: 'Texto' },
     { _id: id(11), empresa: empresaB, creadoPor: autor, nombre: 'Campaña B', objetivo: 'Objetivo', estado: 'activa', canal: 'email', asunto: 'Asunto', cuerpoTexto: 'Texto' },
     { _id: id(12), nombre: 'Campaña histórica', objetivo: 'Objetivo', estado: 'activa', canal: 'email', asunto: 'Asunto', cuerpoTexto: 'Texto' }
   ];
+  for (const doc of documentos.filter(doc => doc.empresa)) doc.destinatarios = { tipo: 'todos' };
   empresas = [{ _id: empresaA, nombre: 'Empresa A' }, { _id: empresaB, nombre: 'Empresa B' }];
   guardados = []; escrituras = []; borrados = []; llamadasWebhook = [];
   t.mock.method(Campana.collection, 'find', filtro => ({ toArray: async () => documentos.filter(doc => coincide(doc, filtro)) }));
@@ -101,14 +102,14 @@ test('superadmin: selecciona empresa válida y fija autor; rechaza IDs manipulad
   assert.equal(String(guardados[0].empresa), String(empresaB)); assert.equal(String(guardados[0].creadoPor), String(autor));
 });
 
-test('superadmin: administra históricas sin migrarlas y las ejecuta con global', async t => {
+test('superadmin: administra históricas sin migrarlas, pero no ejecuta sin destinatarios autorizados', async t => {
   const { cliente } = contexto(t, 'superadmin', null);
   const antes = JSON.stringify(documentos[2]);
   const listado = await cliente.get('/campanas').expect(200);
   assert.match(listado.text, /Campaña A/); assert.match(listado.text, /Campaña B/); assert.match(listado.text, /Campaña histórica/);
   await cliente.get(`/campanas/${id(12)}`).expect(200);
-  await cliente.post(`/campanas/${id(12)}/ejecutar`).send({ empresa: String(empresaA) }).expect(303);
-  assert.equal(llamadasWebhook[0].url, 'https://global.example.test/hook');
+  await cliente.post(`/campanas/${id(12)}/ejecutar`).send({ empresa: String(empresaA) }).expect(422);
+  assert.equal(llamadasWebhook.length, 0);
   await cliente.post(`/campanas/${id(12)}/editar`).send({ nombre: 'Histórica editada', objetivo: 'Objetivo', estado: 'pausada', empresa: String(empresaA), creadoPor: String(autor) }).expect(303);
   assert.equal(escrituras[0].cambios.$set.empresa, undefined); assert.equal(escrituras[0].cambios.$set.creadoPor, undefined);
   assert.equal(JSON.stringify(documentos[2]), antes);

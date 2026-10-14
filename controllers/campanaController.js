@@ -280,6 +280,7 @@ const ejecutarAutomatizacion = async (req, res, next) => {
         SIN_DESTINATARIOS: [422, 'No hay destinatarios válidos. Revisa la selección, el estado activo y los datos de contacto para este canal.'],
         DESTINATARIOS_INVALIDOS: [422, 'La configuración de destinatarios no es válida. Revisa la empresa y la selección de contactos.'],
         CONFIGURACION: [503, 'La automatización no está configurada correctamente.'],
+        EMPRESA_INACTIVA: [422, 'La empresa está inactiva. No puede ejecutar campañas.'],
         DESHABILITADA: [422, 'La automatización está deshabilitada para esta empresa.'],
         ACCESO_DENEGADO: [403, 'No tienes permiso para ejecutar esta campaña.'],
         CONEXION: [502, 'No se pudo confirmar la recepción de la solicitud. Revisa n8n antes de repetir.'],

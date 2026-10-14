@@ -1,7 +1,7 @@
 const ROLES = Object.freeze(['superadmin', 'admin_empresa', 'operador']);
 const accionesCampana = ['campanas.crear', 'campanas.consultar', 'campanas.editar', 'campanas.ejecutar',
   'contactos.crear', 'contactos.consultar', 'contactos.editar', 'contactos.eliminar'];
-const accionesAdmin = [...accionesCampana, 'campanas.eliminar', 'usuarios.administrar'];
+const accionesAdmin = [...accionesCampana, 'campanas.eliminar', 'usuarios.administrar', 'gmail.administrar'];
 const acciones = new Set([...accionesAdmin, 'empresas.administrar', 'automatizaciones.editar']);
 
 const idEmpresa = empresa => {

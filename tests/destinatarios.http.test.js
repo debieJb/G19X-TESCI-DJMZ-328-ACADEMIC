@@ -149,19 +149,19 @@ test('destinatarios HTTP: se recalculan después de editar/inactivar/eliminar co
   await cliente.post(`/campanas/${campanaId}/ejecutar`).send({}).expect(422);
   assert.equal(solicitudes.length, 0);
 });
-test('destinatarios HTTP: campañas antiguas conservan configuración ausente y payload anterior', async () => {
+test('destinatarios HTTP: campañas antiguas se conservan, pero no ejecutan sin selección autorizada', async () => {
   delete campanas[0].destinatarios;
   const respuesta = await cliente.get(`/campanas/${campanaId}/editar`).expect(200);
-  assert.match(respuesta.text, /Sin configurar \(mantener flujo anterior\)/);
+  assert.match(respuesta.text, /Selecciona destinatarios antes de ejecutar/);
   await editar({ nombre: 'Editada' }).expect(303);
   assert.equal(cambios[0].update.$set.destinatarios, undefined);
   await editar({ nombre: 'Otra edición', destinatarios: { tipo: '' } }).expect(303);
   assert.equal(cambios[1].update.$set.destinatarios, undefined);
-  await cliente.post(`/campanas/${campanaId}/ejecutar`).send({}).expect(303);
-  assert.equal(solicitudes[0].payload.destinatarios, undefined);
+  await cliente.post(`/campanas/${campanaId}/ejecutar`).send({}).expect(422);
+  assert.equal(solicitudes.length, 0);
   usuario.rol = 'superadmin'; usuario.empresa = null;
-  await cliente.post(`/campanas/${id(12)}/ejecutar`).send({}).expect(303);
-  assert.equal(solicitudes[1].payload.destinatarios, undefined);
+  await cliente.post(`/campanas/${id(12)}/ejecutar`).send({}).expect(422);
+  assert.equal(solicitudes.length, 0);
 });
 test('destinatarios HTTP: formularios antiguos no borran una selección configurada', async () => {
   await editar({ nombre: 'Editada' }).expect(303);

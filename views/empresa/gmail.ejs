@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title><%= titulo %> | Marketing Automation</title><link rel="stylesheet" href="/css/styles.css"></head>
+<body class="pagina-admin"><%- include('../partials/_encabezado', { seccion: 'gmail' }) %>
+<main id="contenido" tabindex="-1">
+  <h1>Configuración Gmail</h1>
+  <p>Conecta una cuenta Gmail para tu empresa. Esta pantalla administra la autorización; conectar o renovar no envía correos.</p>
+  <% if (mensaje) { %><p class="<%= esError ? 'aviso-error' : 'panel' %>" role="<%= esError ? 'alert' : 'status' %>"><%= mensaje %></p><% } %>
+  <% if (!configurado) { %><p class="aviso-error" role="alert">La plataforma necesita configurar Google OAuth y la clave de cifrado antes de conectar o renovar Gmail. Contacta al administrador de la plataforma.</p><% } %>
+  <section class="panel" aria-label="Estado de conexión">
+    <h2>Cuenta de <%= usuarioActual.empresa.nombre %></h2>
+    <p>Estado: <strong><%= ({ conectada: 'Conectada', desconectada: 'Desconectada', requiere_reconexion: 'Necesita nueva autorización', revocacion_pendiente: 'Deshabilitada; revocación pendiente' })[conexion.estado] || 'No disponible' %></strong></p>
+    <% if (conexion.email) { %><p>Cuenta: <%= conexion.email %></p><% } %>
+    <% if (conexion.estado === 'conectada') { %>
+      <p>Google autorizó el acceso para esta empresa. Los tokens se renuevan cuando es necesario; la revocación por Google se detecta al renovar.</p>
+    <% } else if (conexion.estado === 'requiere_reconexion') { %>
+      <p>Vuelve a autorizar la misma cuenta. Para utilizar otra cuenta, desconecta primero la actual.</p>
+    <% } else if (conexion.estado === 'revocacion_pendiente') { %>
+      <p>La aplicación no utiliza esta autorización. Reintenta la revocación antes de conectar otra cuenta.</p>
+    <% } %>
+    <div class="acciones">
+      <% if (configurado && conexion.estado !== 'revocacion_pendiente') { %>
+      <form action="/empresa/gmail/conectar" method="post"><input type="hidden" name="_csrf" value="<%= gmailCsrf %>"><button type="submit"><%= conexion.estado === 'desconectada' ? 'Conectar Gmail' : 'Autorizar de nuevo' %></button></form>
+      <% } %>
+      <% if (configurado && conexion.estado === 'conectada') { %>
+      <form action="/empresa/gmail/renovar" method="post"><input type="hidden" name="_csrf" value="<%= gmailCsrf %>"><button type="submit">Comprobar y renovar autorización</button></form>
+      <% } %>
+      <% if (conexion.estado !== 'desconectada') { %>
+      <form action="/empresa/gmail/desconectar" method="post"><input type="hidden" name="_csrf" value="<%= gmailCsrf %>"><button type="submit"><%= conexion.estado === 'revocacion_pendiente' ? 'Reintentar revocación' : 'Desconectar Gmail' %></button></form>
+      <% } %>
+    </div>
+  </section>
+  <p>Una cuenta Google no puede conectarse simultáneamente a dos empresas. La autorización de Gmail es independiente de la habilitación de contactos y del consentimiento de marketing.</p>
+  <a href="/panel">Volver al panel</a>
+</main><%- include('../partials/_piePublico') %></body></html>

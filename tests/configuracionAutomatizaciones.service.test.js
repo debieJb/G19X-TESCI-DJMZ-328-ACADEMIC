@@ -1,13 +1,15 @@
 const { test, beforeEach } = require('node:test');
 const assert = require('node:assert/strict');
 const Empresa = require('../models/Empresa');
+const Contacto = require('../models/Contacto');
 const { resolverWebhook } = require('../services/configuracionAutomatizacionesService');
 const automatizacion = require('../services/automatizacionService');
 const empresaId = '507f1f77bcf86cd799439011';
 const usuario = { rol: 'operador', empresa: empresaId };
-const campana = { _id: empresaId, empresa: empresaId, nombre: 'Campaña', objetivo: 'Objetivo', estado: 'activa', canal: 'email', asunto: 'Asunto', cuerpoTexto: 'Texto' };
+const campana = { _id: empresaId, empresa: empresaId, destinatarios: { tipo: 'todos' }, nombre: 'Campaña', objetivo: 'Objetivo', estado: 'activa', canal: 'email', asunto: 'Asunto', cuerpoTexto: 'Texto' };
 let empresa, peticiones, payloads;
 beforeEach(t => {
+  t.mock.method(Contacto.collection, 'find', () => ({ toArray: async () => [{ _id: empresaId, activo: true, email: 'prueba@example.test' }] }));
   empresa = new Empresa({ nombre: 'Empresa' }); peticiones = []; payloads = [];
   t.mock.method(Empresa, 'findById', id => {
     assert.equal(String(id), empresaId);
@@ -66,8 +68,9 @@ test('webhooks: histórica usa global solo para superadmin, nunca para empresa o
   for (const actor of [usuario, { rol: 'admin_empresa', empresa: empresaId }, undefined]) {
     await assert.rejects(automatizacion.ejecutarCampana(antigua, actor), codigo('ACCESO_DENEGADO'));
   }
-  await automatizacion.ejecutarCampana(antigua, { rol: 'superadmin' });
-  assert.deepEqual(peticiones, ['https://global.example.test/webhook']);
+  assert.equal(String(await resolverWebhook(antigua, { rol: 'superadmin' })), 'https://global.example.test/webhook');
+  await assert.rejects(automatizacion.ejecutarCampana(antigua, { rol: 'superadmin' }), codigo('DESTINATARIOS_INVALIDOS'));
+  assert.deepEqual(peticiones, []);
 });
 
 test('webhooks: usuarios de otra empresa no resuelven configuración', async () => {

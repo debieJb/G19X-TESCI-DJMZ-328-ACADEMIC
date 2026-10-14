@@ -8,7 +8,8 @@ const buscarContacto = async (id, usuario, accion = 'contactos.consultar') => {
   const contacto = await Contacto.findOne({ _id: id, ...filtro });
   if (!contacto) throw error(404, 'El contacto no existe o fue eliminado.');
   if (!puede(usuario, accion, contacto.empresa)) throw error(403, 'No tienes permiso para esta acción.');
-  if (usuario.rol !== 'superadmin') contacto.$where = filtro;
+  // save() no convierte los valores de $where: usar el ObjectId del documento.
+  if (usuario.rol !== 'superadmin') contacto.$where = { ...contacto.$where, empresa: contacto.empresa._id || contacto.empresa };
   return contacto;
 };
 module.exports = { buscarContacto };

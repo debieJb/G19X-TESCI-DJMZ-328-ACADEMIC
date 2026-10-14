@@ -1,10 +1,11 @@
 const mongoose = require('mongoose');
+const { validarFormatoUrl } = require('../services/validacionWebhookService');
 const configuracionCanal = habilitada => new mongoose.Schema({
   habilitada: { type: Boolean, default: habilitada },
   webhookUrl: { type: String, default: '', select: false, validate: {
     validator: valor => {
       if (valor === '') return true;
-      try { const url = new URL(valor); return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password; }
+      try { validarFormatoUrl(valor); return true; }
       catch { return false; }
     }, message: 'Webhook inválido.'
   } }

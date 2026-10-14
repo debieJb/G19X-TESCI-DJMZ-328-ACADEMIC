@@ -19,8 +19,11 @@ destinatariosSchema.pre('validate', function () {
 });
 
 const campanaSchema = new mongoose.Schema({
-  empresa: { type: mongoose.Schema.Types.ObjectId, ref: 'Empresa' },
-  creadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' },
+  // Opcionales por compatibilidad histórica. Una relación asignada no se cambia;
+  // documentos sin relación pueden completarla explícitamente, nunca por HTTP.
+  // Los controladores exigen empresa al crear; la ejecución valida su existencia.
+  empresa: { type: mongoose.Schema.Types.ObjectId, ref: 'Empresa', immutable: function () { return !(this instanceof mongoose.Document) || this.empresa != null; } },
+  creadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', immutable: function () { return !(this instanceof mongoose.Document) || this.creadoPor != null; } },
   nombre: { type: String, required: true, trim: true },
   objetivo: { type: String, required: true, trim: true },
   asunto: { type: String, trim: true },

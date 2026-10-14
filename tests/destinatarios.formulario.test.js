@@ -34,7 +34,7 @@ test('destinatarios formulario: cuenta por modo/canal sin duplicar etiquetas y d
   }
   canal.value = 'email';
   tipo.value = ''; tipo.dispatchEvent(new Event('change'));
-  assert.match(estimacion.textContent, /flujo anterior/);
+  assert.match(estimacion.textContent, /antes de ejecutar/);
   empresa.value = 'empresa-b'; empresa.dispatchEvent(new Event('change'));
   assert.match(estimacion.textContent, /Carga los contactos/);
   empresa.value = 'empresa-a'; tipo.value = 'contactos'; ventana.dispatchEvent(new Event('pageshow'));

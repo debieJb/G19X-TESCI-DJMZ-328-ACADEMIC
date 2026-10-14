@@ -1,7 +1,7 @@
 <section class="panel" aria-label="Destinatarios de la campaña"><h2>Destinatarios</h2>
 <% if (typeof resumenDestinatarios !== 'undefined' && resumenDestinatarios) { %>
   <p>Tipo de selección: <%= resumenDestinatarios.tipo %></p>
-  <% if (resumenDestinatarios.cantidad === null) { %><p>Esta campaña conserva el flujo anterior de n8n. Configura una selección para usar la base de contactos de su empresa.</p>
+  <% if (resumenDestinatarios.cantidad === null) { %><p>Configura una selección de destinatarios de la empresa antes de ejecutar esta campaña.</p>
   <% } else { %><p>Cantidad estimada de destinatarios: <strong><%= resumenDestinatarios.cantidad %></strong></p><p>La selección se recalcula al ejecutar según los contactos activos y el canal.</p><% } %>
   <% if (resumenDestinatarios.contactos.length) { %><h3>Contactos seleccionados</h3><ul><% for (const nombre of resumenDestinatarios.contactos) { %><li><%= nombre %></li><% } %></ul><% } %>
   <% if (resumenDestinatarios.etiquetas.length) { %><p>Etiquetas seleccionadas: <%= resumenDestinatarios.etiquetas.join(', ') %></p><% } %>

@@ -1,4 +1,4 @@
-const { test } = require('node:test');
+const { test, beforeEach } = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const { ejecutarCampana: ejecutarConUsuario, ErrorAutomatizacion } = require('../services/automatizacionService');
@@ -8,11 +8,21 @@ const Contacto = require('../models/Contacto');
 const Empresa = require('../models/Empresa');
 
 const campana = {
+  empresa: '507f1f77bcf86cd799439012', destinatarios: { tipo: 'todos' },
   _id: '507f1f77bcf86cd799439011', nombre: 'Campaña', objetivo: 'Objetivo',
   canal: 'email', estado: 'activa', fechaInicio: new Date('2026-10-01'),
   asunto: 'Asunto de prueba', cuerpoTexto: 'Hola,\n\nContenido de prueba.',
   fechaFin: new Date('2026-10-05'), privado: 'NO ENVIAR'
 };
+const destinatario = { id: '507f1f77bcf86cd799439013', nombre: 'Cliente', email: 'cliente@example.test', telefono: null };
+beforeEach(t => {
+  t.mock.method(Empresa, 'findById', () => ({ select: async () => ({ automatizaciones: { email: { habilitada: true } } }) }));
+  t.mock.method(Contacto.collection, 'find', filtro => {
+    assert.equal(String(filtro.empresa), campana.empresa);
+    assert.equal(filtro.activo, true);
+    return { toArray: async () => [{ _id: destinatario.id, nombre: destinatario.nombre, email: destinatario.email, activo: true }] };
+  });
+});
 
 const configurar = (t, url, timeout) => {
   const anteriores = [process.env.N8N_WEBHOOK_URL, process.env.N8N_WEBHOOK_TIMEOUT_MS];
@@ -69,7 +79,8 @@ test('servicio: POST JSON real con payload explícito y fechas UTC; acepta 204',
   assert.deepEqual(peticiones, [{ method: 'POST', type: 'application/json', body: {
     id: campana._id, nombre: 'Campaña', objetivo: 'Objetivo', canal: 'email', estado: 'activa',
     asunto: campana.asunto, cuerpoTexto: campana.cuerpoTexto,
-    fechaInicio: '2026-10-01T00:00:00.000Z', fechaFin: '2026-10-05T00:00:00.000Z'
+    fechaInicio: '2026-10-01T00:00:00.000Z', fechaFin: '2026-10-05T00:00:00.000Z',
+    destinatarios: [destinatario], totalDestinatarios: 1, tipoDestinatarios: 'todos'
   } }]);
 });
 

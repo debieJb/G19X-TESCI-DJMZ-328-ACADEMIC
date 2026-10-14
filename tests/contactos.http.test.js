@@ -73,7 +73,7 @@ test('contactos: editar conserva empresa/autor y limita el filtro de guardado', 
   const doc = documentos[0];
   assert.equal(doc.nombre, 'Editado'); assert.equal(doc.telefono, '555'); assert.equal(doc.email, undefined);
   assert.equal(doc.activo, false); assert.equal(String(doc.empresa), empresa); assert.equal(String(doc.creadoPor), autor);
-  assert.deepEqual(doc.$where, { empresa }); assert.equal(guardar.mock.callCount(), 1);
+  assert.deepEqual(doc.$where, { empresa: new mongoose.Types.ObjectId(empresa) }); assert.equal(guardar.mock.callCount(), 1);
 });
 test('contactos: eliminar usa filtro de empresa y conserva contactos ajenos', async () => {
   await post(`/contactos/${id}/eliminar`, {}).expect(303).expect('Location', '/contactos');
@@ -96,6 +96,25 @@ test('contactos: email duplicado dentro de empresa devuelve 422 y conserva formu
 test('contactos: permite mismo email en empresas distintas', async () => {
   await post('/contactos', { nombre: 'Mismo email', email: 'secreto@example.test' }).expect(303);
   assert.equal(documentos.filter(doc => doc.email === 'secreto@example.test').length, 2);
+});
+
+for (const rol of ['operador', 'admin_empresa']) {
+  test(`contactos: ${rol} normaliza duplicados y permite el mismo email únicamente en otra empresa`, async () => {
+    usuario.rol = rol;
+    await post('/contactos', { nombre: 'Duplicado A', email: ' CLIENTE@EXAMPLE.TEST ', empresa: otra }).expect(422);
+    usuario.empresa = { _id: otra, nombre: 'Empresa B' };
+    await post('/contactos', { nombre: 'Contacto B', email: ' CLIENTE@EXAMPLE.TEST ', empresa }).expect(303);
+    assert.equal(crear.mock.calls[1].arguments[0].empresa, otra);
+    await post('/contactos', { nombre: 'Duplicado B', email: 'cliente@example.test' }).expect(422);
+    assert.equal(documentos.filter(doc => doc.email === 'cliente@example.test').length, 2);
+  });
+}
+
+test('contactos: conflicto de versión devuelve 409 sin detalles internos', async t => {
+  guardar.mock.mockImplementation(async () => { throw Object.assign(new Error('SECRETO'), { name: 'VersionError' }); });
+  const respuesta = await post(`/contactos/${id}/editar`, { nombre: 'Cambio', email: 'cliente@example.test' }).expect(409);
+  assert.match(respuesta.text, /cambió durante el guardado/);
+  assert.doesNotMatch(respuesta.text, /SECRETO/);
 });
 test('contactos: teléfono duplicado solo se rechaza dentro de la misma empresa', async () => {
   documentos[1].telefono = '555';

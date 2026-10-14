@@ -8,6 +8,8 @@ const ejecutarCampana = async (campana, usuario) => {
     throw new ErrorAutomatizacion('CONTENIDO_EMAIL_INCOMPLETO');
   }
   const url = await resolverWebhook(campana, usuario);
+  // Validar permisos antes de la selección. Nunca delegar destinatarios al workflow.
+  if (!campana.destinatarios) throw new ErrorAutomatizacion('DESTINATARIOS_INVALIDOS');
   const timeout = Number(process.env.N8N_WEBHOOK_TIMEOUT_MS ?? 10000);
   try {
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password
@@ -27,7 +29,7 @@ const ejecutarCampana = async (campana, usuario) => {
     fechaInicio: campana.fechaInicio ? campana.fechaInicio.toISOString() : null,
     fechaFin: campana.fechaFin ? campana.fechaFin.toISOString() : null
   };
-  if (campana.destinatarios) {
+  {
     const destinatarios = await destinatariosService.resolverDestinatarios(campana);
     if (!destinatarios.length) throw new ErrorAutomatizacion('SIN_DESTINATARIOS');
     // Un solo webhook; los campos históricos mantienen su forma y significado.

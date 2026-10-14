@@ -1,22 +1,34 @@
 # Gestión de campañas
 
+## Conexión Gmail por empresa: etapa 2
+
+El administrador empresarial puede entrar a `/empresa/gmail` desde su panel para conectar, consultar, renovar o desconectar una cuenta real de Google mediante OAuth. Los tokens se guardan cifrados y separados por empresa, con protección CSRF, state de un solo uso, PKCE y verificación de identidad. Si falta configuración, la pantalla lo informa sin simular una conexión. La conexión todavía no realiza envíos ni cambia n8n.
+
+Consulta [gmail-oauth.md](docs/gmail-oauth.md) para configurar Google Cloud, las variables privadas, las pruebas manuales y los límites de despliegue. Esta etapa conserva las campañas, contactos y controles de aislamiento anteriores.
+
+## Seguridad multiempresa: etapa 1
+
+Las ejecuciones consultan el estado persistido de la empresa y bloquean empresas inactivas, incluso para superadmin. Las relaciones de campaña no se transfieren una vez asignadas; las campañas históricas conservan sus datos. Email excluye contactos con `canales.email === false`; los documentos sin el campo conservan su elegibilidad histórica. Esta habilitación técnica no acredita consentimiento de marketing.
+
+En producción los webhooks requieren HTTPS y un origen autorizado: el origen global administrado si no hay lista, o exclusivamente los orígenes de `N8N_WEBHOOK_ORIGENES_PERMITIDOS` cuando se define. Desarrollo conserva HTTP local. La política, compatibilidad y límites se detallan en [seguridad-multiempresa-etapa1.md](docs/seguridad-multiempresa-etapa1.md).
+
 ## Contactos por empresa
 
 ### Destinatarios de campañas
 
 Las campañas nuevas configuran `destinatarios: { tipo: 'todos' | 'contactos' | 'etiquetas', contactos: [ObjectId], etiquetas: [String] }`. Por defecto seleccionan todos los contactos activos de su empresa. El formulario permite elegir contactos concretos o etiquetas existentes; las etiquetas coinciden con cualquiera de las seleccionadas. El superadmin carga las opciones de la empresa seleccionada al crear y utiliza la empresa persistida al editar. Las selecciones ajenas o inexistentes devuelven 422 sin guardar.
 
-`services/destinatariosService.js` resuelve la selección mediante consultas limitadas a la empresa de la campaña, excluye inactivos y elimina duplicados por contacto. Email exige una dirección válida; WhatsApp y SMS exigen teléfono. El formulario estima la cantidad y el detalle muestra la selección y el número actual de coincidencias. Al ejecutar se recalcula; si no hay destinatarios válidos, email devuelve 422 y no llama al webhook.
+`services/destinatariosService.js` resuelve la selección mediante consultas limitadas a la empresa de la campaña, excluye inactivos y elimina duplicados por contacto. Gmail es el único canal operativo y exige una dirección válida. El formulario estima la cantidad y el detalle muestra la selección y el número actual de coincidencias. Al ejecutar se recalcula; si no hay destinatarios válidos, email devuelve 422 y no llama al webhook.
 
-Email mantiene una sola solicitud a n8n y todos los campos anteriores. Para campañas configuradas agrega `destinatarios: [{ id, nombre, email, telefono }]`, `totalDestinatarios` y `tipoDestinatarios`. No envía una solicitud por contacto ni modifica el workflow: n8n debe consumir esos campos para realizar envíos a la selección. WhatsApp/SMS todavía no tienen integración ejecutable; redes conserva su flujo actual de publicación y bloqueo por cuentas no conectadas.
+Email mantiene una sola solicitud a n8n y los campos de contenido. Incluye siempre `destinatarios: [{ id, nombre, email, telefono }]`, `totalDestinatarios` y `tipoDestinatarios`. No envía una solicitud por contacto ni modifica el workflow: n8n debe consumir exclusivamente esa lista para realizar los envíos. Las integraciones de los demás canales están deshabilitadas.
 
-Las campañas existentes sin `destinatarios` conservan exactamente el payload y la ejecución anteriores, incluso las históricas sin empresa para superadmin. El formulario de edición permite mantener ese comportamiento. Omitir el campo desde un formulario antiguo no borra una selección configurada ni migra automáticamente campañas anteriores.
+Las campañas existentes sin `destinatarios` conservan sus datos, pero su ejecución devuelve 422 sin enviar el webhook. Deben configurarse destinatarios de una empresa válida antes de enviar, también para superadmin. Omitir el campo desde un formulario antiguo no borra una selección configurada ni migra automáticamente campañas anteriores.
 
 Las pruebas de destinatarios cubren esquema, resolución, aislamiento, formularios, estimaciones, errores y compatibilidad. La prueba de webhook utiliza un servidor HTTP local temporal; las consultas MongoDB se simulan como en el resto de la suite.
 
 El módulo `/contactos` permite listar, crear (`/contactos/nuevo` y POST `/contactos`), consultar (`/contactos/:id`), editar (GET/POST `/contactos/:id/editar`) y eliminar (POST `/contactos/:id/eliminar`). Ambos roles empresariales pueden administrar únicamente contactos de su empresa; el superadmin conserva acceso global y selecciona una empresa existente al crear. La empresa y el autor no cambian al editar. Los paneles empresariales y la navegación incluyen Contactos.
 
-El nombre y la empresa son obligatorios y se requiere al menos email o teléfono. El email se normaliza con trim y lowercase; el teléfono con trim. Las etiquetas admiten un arreglo de textos o una lista separada por comas en el formulario. Los canales email, WhatsApp y SMS comienzan deshabilitados; los contactos comienzan activos. Guardar contactos todavía no los incorpora a los envíos de campañas.
+El nombre y la empresa son obligatorios y se requiere al menos email o teléfono. El email se normaliza con trim y lowercase; el teléfono con trim. Las etiquetas admiten un arreglo de textos o una lista separada por comas en el formulario. La interfaz permite configurar únicamente email y conserva los campos históricos. Los contactos comienzan activos. Su inclusión en el envío depende de la selección persistida de la campaña y de tener un email válido.
 
 `models/Contacto.js` declara índices únicos compuestos `{ empresa, email }` y `{ empresa, telefono }`, parciales para valores de texto, permitiendo múltiples contactos sin uno de esos campos y los mismos valores en empresas distintas. MongoDB debe crear estos índices para proteger también escrituras concurrentes; si se deshabilita `autoIndex`, hay que crearlos mediante el procedimiento de despliegue. Los duplicados devuelven 422 sin exponer detalles de MongoDB. Las demás respuestas siguen los criterios HTTP del CRUD existente.
 
@@ -117,7 +129,7 @@ La configuración reside en subdocumentos de Empresa: `automatizaciones.email`, 
 
 Resolución del webhook de email, usando la campaña persistida:
 
-1. Una campaña sin empresa solo puede ejecutarla superadmin y usa `N8N_WEBHOOK_URL`.
+1. Solo superadmin puede resolver la URL global de una campaña sin empresa, pero su ejecución está bloqueada por no poder autorizar destinatarios empresariales.
 2. Una campaña con empresa cuya referencia ya no existe produce error de configuración sin fallback.
 3. `habilitada === false` bloquea la ejecución, incluso si hay URL global.
 4. Si está habilitada y tiene URL empresarial, usa esa URL. Si es inválida, falla sin fallback.

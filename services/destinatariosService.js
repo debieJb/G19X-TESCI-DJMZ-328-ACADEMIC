@@ -1,14 +1,14 @@
 const Contacto = require('../models/Contacto');
 const ErrorAutomatizacion = require('./ErrorAutomatizacion');
+const { normalizarEmpresaId } = require('./accesoEmpresaService');
 const tipos = Object.freeze({ todos: 'Todos los contactos activos', contactos: 'Contactos específicos', etiquetas: 'Por etiquetas' });
 const idValido = valor => typeof valor === 'string' && /^[a-f\d]{24}$/i.test(valor);
-const empresaDe = campana => {
-  const valor = String(campana.empresa?._id || campana.empresa || '');
-  return idValido(valor) ? valor : null;
-};
+const empresaDe = campana => normalizarEmpresaId(campana.empresa);
 const emailValido = valor => typeof valor === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor.trim());
 const aptoParaCanal = (contacto, canal) => contacto.activo === true && (canal === 'email'
-  ? emailValido(contacto.email)
+  // Habilitación técnica, no consentimiento. Ausente conserva el flujo histórico;
+  // un valor presente solo habilita con true (incluido false: excluir).
+  ? emailValido(contacto.email) && (contacto.canales?.email === undefined || contacto.canales.email === true)
   : ['whatsapp', 'sms'].includes(canal) ? typeof contacto.telefono === 'string' && !!contacto.telefono.trim() : true);
 
 // Validar el cuerpo explícitamente antes de permitir casts de Mongoose.
@@ -33,7 +33,7 @@ const validarSeleccion = entrada => {
 
 const opcionesEmpresa = async empresa => {
   if (!idValido(String(empresa || ''))) return { contactos: [], etiquetas: [] };
-  const contactos = await Contacto.find({ empresa }).select('nombre email telefono etiquetas activo').sort({ nombre: 1, _id: 1 }).lean();
+  const contactos = await Contacto.find({ empresa }).select('nombre email telefono etiquetas activo canales.email').sort({ nombre: 1, _id: 1 }).lean();
   return { contactos: contactos.filter(contacto => contacto.activo === true),
     etiquetas: [...new Set(contactos.flatMap(contacto => contacto.etiquetas || []))].sort() };
 };
@@ -68,7 +68,7 @@ const resolverDestinatarios = async campana => {
   if (seleccion.seleccion.tipo === 'etiquetas') filtro.etiquetas = { $in: seleccion.seleccion.etiquetas };
   if (campana.canal === 'email') filtro.email = { $type: 'string' };
   if (['whatsapp', 'sms'].includes(campana.canal)) filtro.telefono = { $type: 'string' };
-  const contactos = await Contacto.find(filtro).select('nombre email telefono activo').sort({ _id: 1 }).lean();
+  const contactos = await Contacto.find(filtro).select('nombre email telefono activo canales.email').sort({ _id: 1 }).lean();
   const unicos = new Map();
   for (const contacto of contactos) {
     if (!aptoParaCanal(contacto, campana.canal)) continue;

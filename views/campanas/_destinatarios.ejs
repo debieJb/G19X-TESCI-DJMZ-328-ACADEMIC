@@ -3,13 +3,13 @@ const opciones = typeof opcionesDestinatarios !== 'undefined' ? opcionesDestinat
 const idsSeleccionados = (seleccion.contactos || []).map(id => String(id)); %>
 <section class="campo-amplio" id="seleccion-destinatarios">
   <h2>Destinatarios</h2>
-  <p>Solo se incluyen contactos activos de la empresa de la campaña, con correo electrónico válido. La selección se recalcula al ejecutar.</p>
+  <p>Solo se incluyen contactos activos de la empresa de la campaña, con correo electrónico válido y sin email deshabilitado. La selección se recalcula al ejecutar. La habilitación técnica no acredita consentimiento de marketing; los contactos históricos sin este campo conservan su comportamiento.</p>
   <% if (accion === '/campanas' && usuarioActual.rol === 'superadmin') { %>
     <p>Selecciona la empresa propietaria y pulsa <button type="submit" formaction="/campanas/nueva" formmethod="get" formnovalidate>Cargar contactos de la empresa</button> antes de elegir contactos o etiquetas.</p>
   <% } %>
   <div class="campo"><label for="destinatarios-tipo">Tipo de selección</label>
     <select id="destinatarios-tipo" name="destinatarios[tipo]" aria-invalid="<%= !!errores.destinatarios %>" aria-describedby="destinatarios-error">
-      <% if (!seleccion.tipo) { %><option value="" selected><%= accion === '/campanas' ? 'Selecciona un tipo' : 'Sin configurar (mantener flujo anterior)' %></option><% } %>
+      <% if (!seleccion.tipo) { %><option value="" selected>Selecciona destinatarios antes de ejecutar</option><% } %>
       <option value="todos" <%= seleccion.tipo === 'todos' ? 'selected' : '' %>>Todos los contactos activos</option>
       <option value="contactos" <%= seleccion.tipo === 'contactos' ? 'selected' : '' %>>Contactos específicos</option>
       <option value="etiquetas" <%= seleccion.tipo === 'etiquetas' ? 'selected' : '' %>>Por etiquetas</option>
@@ -20,6 +20,7 @@ const idsSeleccionados = (seleccion.contactos || []).map(id => String(id)); %>
     <% for (const contacto of opciones.contactos) { %>
       <label><input type="checkbox" name="destinatarios[contactos]" value="<%= contacto._id %>" <%= idsSeleccionados.includes(String(contacto._id)) ? 'checked' : '' %>
         data-email-valido="<%= typeof contacto.email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contacto.email.trim()) %>"
+        data-email-habilitado="<%= contacto.canales?.email === undefined || contacto.canales.email === true %>"
         data-telefono="<%= typeof contacto.telefono === 'string' && !!contacto.telefono.trim() %>" data-etiquetas="<%= JSON.stringify(contacto.etiquetas || []) %>">
         <%= contacto.nombre %> — <%= contacto.email || contacto.telefono || 'Sin datos de contacto' %></label>
     <% } %>

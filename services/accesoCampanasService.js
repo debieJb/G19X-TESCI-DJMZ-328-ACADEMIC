@@ -1,7 +1,8 @@
 const Campana = require('../models/Campana');
 const { puede, ROLES } = require('./permisos');
+const { normalizarEmpresaId } = require('./accesoEmpresaService');
 const error = (status, message) => Object.assign(new Error(message), { status });
-const idEmpresa = usuario => String(usuario?.empresa?._id || usuario?.empresa || '');
+const idEmpresa = usuario => normalizarEmpresaId(usuario?.empresa) || '';
 const filtroEmpresa = usuario => {
   if (!usuario || !ROLES.includes(usuario.rol)) throw error(403, 'Acceso denegado.');
   if (usuario.rol === 'superadmin') return {};

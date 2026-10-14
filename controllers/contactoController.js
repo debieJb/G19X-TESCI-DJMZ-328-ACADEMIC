@@ -88,6 +88,7 @@ const guardar = editar => async (req, res, next) => {
     else await Contacto.create(valores);
     return res.redirect(303, editar ? `/contactos/${id}` : '/contactos');
   } catch (error) {
+    if (error.name === 'VersionError') return formulario(res, datos, { datos: 'El contacto cambió durante el guardado. Vuelve a consultarlo antes de editar.' }, 409, id);
     if (error.code === 11000) return formulario(res, datos, { [error.keyPattern?.telefono ? 'telefono' : 'email']: 'Ya existe un contacto con ese email o teléfono en esta empresa.' }, 422, id);
     if (error.name === 'ValidationError') return formulario(res, datos, { datos: 'Revisa los datos del contacto.' }, 422, id);
     if (!error.status && error.name !== 'DocumentNotFoundError') {

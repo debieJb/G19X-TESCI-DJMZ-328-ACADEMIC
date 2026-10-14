@@ -14,11 +14,11 @@
       estimacion.textContent = 'Carga los contactos de la empresa seleccionada para actualizar las opciones.';
       return;
     }
-    if (!tipo.value) { estimacion.textContent = 'Sin configurar: se conserva el flujo anterior.'; return; }
+    if (!tipo.value) { estimacion.textContent = 'Configura los destinatarios antes de ejecutar.'; return; }
     const elegidas = new Set([...etiquetas.querySelectorAll('input:checked')].map(input => input.value));
     const unicos = new Set();
     for (const contacto of contactos.querySelectorAll('input')) {
-      const apto = canal.value === 'email' ? contacto.dataset.emailValido === 'true'
+      const apto = canal.value === 'email' ? contacto.dataset.emailValido === 'true' && contacto.dataset.emailHabilitado !== 'false'
         : false;
       const coincide = tipo.value === 'todos' || (tipo.value === 'contactos' && contacto.checked)
         || (tipo.value === 'etiquetas' && JSON.parse(contacto.dataset.etiquetas).some(etiqueta => elegidas.has(etiqueta)));

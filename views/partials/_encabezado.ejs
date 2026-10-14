@@ -5,6 +5,7 @@
     <nav class="navegacion" aria-label="Navegación principal">
       <a href="/" <% if (seccion === 'inicio') { %>aria-current="page"<% } %>>Inicio</a>
       <% if (usuarioActual) { %><a href="/panel">Mi panel</a><a href="/contactos" <% if (seccion === 'contactos') { %>aria-current="page"<% } %>>Contactos</a><% } %>
+      <% if (usuarioActual?.rol === 'admin_empresa') { %><a href="/empresa/gmail" <% if (seccion === 'gmail') { %>aria-current="page"<% } %>>Configurar Gmail</a><% } %>
       <a href="/campanas" <% if (seccion === 'campanas') { %>aria-current="page"<% } %>>Campañas</a>
       <a class="boton" href="/campanas/nueva" <% if (seccion === 'nueva') { %>aria-current="page"<% } %>>Crear campaña</a>
     </nav>
