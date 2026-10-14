@@ -13,7 +13,7 @@
       <p class="sobrelinea">Administración / Usuarios</p><h1>Nuevo usuario</h1>
       <% if (errores.length) { %><div class="aviso-error" role="alert"><ul><% for (const error of errores) { %><li><%= error %></li><% } %></ul></div><% } %>
       <% if (!empresas.length) { %><p class="aviso-error">Primero debes <a href="/admin/empresas/nueva">crear una empresa</a>.</p><% } %>
-      <form action="/admin/usuarios" method="post" class="formulario">
+      <form action="/admin/usuarios" method="post" class="formulario"><%- include('../partials/_csrfSuperadmin') %>
         <div class="campo"><label for="nombre">Nombre</label><input id="nombre" name="nombre" value="<%= datos.nombre %>" required autocomplete="name"></div>
         <div class="campo"><label for="email">Email</label><input id="email" name="email" type="email" value="<%= datos.email %>" required autocomplete="email"></div>
         <div class="campo campo-amplio"><label for="password">Contraseña</label><input id="password" name="password" type="password" required autocomplete="new-password" aria-describedby="ayuda-password"><p id="ayuda-password">Máximo 72 bytes. Si hay un error, vuelve a introducir la contraseña.</p></div>

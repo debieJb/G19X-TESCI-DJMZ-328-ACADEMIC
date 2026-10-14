@@ -107,6 +107,7 @@ test('superadmin: visualiza estados sin URLs y edita configuración solo de empr
   assert.match(detalle.text, /Automatizaciones/); assert.doesNotMatch(detalle.text, /https:|SECRETO/);
   const editor = await cliente.get(`/admin/empresas/${A}/automatizaciones`).expect(200);
   assert.match(editor.text, /name="emailWebhookUrl"/);
+  assert.match(editor.text, /name="_csrf" value="[A-Za-z0-9_-]{43}"/);
   await cliente.post(`/admin/empresas/${A}/automatizaciones`).send({ ...configuracion, empresa: String(B), nombre: 'Manipulada', token: 'NO_GUARDAR' }).expect(303).expect('Location', `/admin/empresas/${A}`);
   assert.equal(String(cambios[0].filtro._id), String(A));
   const guardado = cambios[0].update.$set;

@@ -17,6 +17,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(crearSesion(opcionesSesion));
 app.use(cargarUsuario);
+app.use(require('./middlewares/csrfSuperadmin'));
 
 app.use('/', indexRoutes);
 app.use('/', require('./routes/authRoutes'));

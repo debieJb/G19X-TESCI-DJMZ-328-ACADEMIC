@@ -1,7 +1,7 @@
     <% if (mensaje || Object.keys(errores).length) { %>
       <div class="aviso-error" role="alert"><%= mensaje || 'Corrige los campos indicados antes de guardar.' %></div>
     <% } %>
-    <form class="formulario" action="<%= accion %>" method="post">
+    <form class="formulario" action="<%= accion %>" method="post"><%- include('../partials/_csrfSuperadmin') %>
       <% if (accion === '/campanas' && usuarioActual.rol === 'superadmin') { %>
         <div class="campo campo-amplio"><label for="empresa">Empresa propietaria</label>
           <select id="empresa" name="empresa" required aria-describedby="empresa-error"><option value="">Selecciona una empresa</option>

@@ -115,10 +115,15 @@ test('auth: regenerar sesión invalida la anterior', async () => {
   const agente = request.agent(app);
   const primera = await entrar(agente).expect(303);
   const vieja = primera.headers['set-cookie'][0].split(';')[0];
+  await agente.get('/panel').expect(200);
+  const tokenAnterior = Object.values(await sesiones())[0].adminCsrf;
   const segunda = await entrar(agente).expect(303);
   assert.notEqual(vieja, segunda.headers['set-cookie'][0].split(';')[0]);
   assert.equal(Object.keys(await sesiones()).length, 1);
   await request(app).get('/panel').set('Cookie', vieja).expect(302).expect('Location', '/login');
+  await agente.get('/panel').expect(200);
+  assert.notEqual(Object.values(await sesiones())[0].adminCsrf, tokenAnterior);
+  await agente.post('/logout').send({ _csrf: tokenAnterior }).expect(403);
 });
 
 test('auth: usuario eliminado destruye sesión y pierde acceso', async () => {
@@ -135,7 +140,8 @@ test('auth: logout POST destruye sesión; GET no cierra sesión', async () => {
   await entrar(agente).expect(303);
   await agente.get('/logout').expect(404);
   await agente.get('/panel').expect(200);
-  const salida = await agente.post('/logout').expect(303).expect('Location', '/');
+  const token = Object.values(await sesiones())[0].adminCsrf;
+  const salida = await agente.post('/logout').send({ _csrf: token }).expect(303).expect('Location', '/');
   assert.match(salida.headers['set-cookie'][0], /Expires=Thu, 01 Jan 1970/);
   assert.equal(Object.keys(await sesiones()).length, 0);
   await agente.get('/panel').expect(302).expect('Location', '/login');

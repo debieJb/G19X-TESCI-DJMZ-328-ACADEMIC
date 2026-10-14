@@ -46,6 +46,12 @@ afterEach(() => store.clear());
 const autenticar = async () => {
   const agente = request.agent(app);
   await agente.post('/login').send({ email: 'admin@example.test', password: 'solo-login-prueba' }).expect(303);
+  if (usuarioActual.rol === 'superadmin') {
+    const formulario = await agente.get('/admin/empresas/nueva').expect(200);
+    const token = formulario.text.match(/name="_csrf" value="([A-Za-z0-9_-]{43})"/)[1];
+    const post = agente.post.bind(agente);
+    agente.post = ruta => post(ruta).set('X-CSRF-Token', token);
+  }
   return agente;
 };
 
@@ -106,10 +112,12 @@ test('admin: formularios disponibles, empresa inicial activa y roles limitados',
   const agente = await autenticar();
   const nueva = await agente.get('/admin/empresas/nueva').expect(200);
   assert.match(nueva.text, /value="activa" selected/);
+  assert.match(nueva.text, /name="_csrf" value="[A-Za-z0-9_-]{43}"/);
   const nuevo = await agente.get('/admin/usuarios/nuevo').expect(200);
   assert.match(nuevo.text, /value="admin_empresa"/); assert.match(nuevo.text, /value="operador"/);
   assert.ok(!nuevo.text.includes('value="superadmin"'));
   assert.match(nuevo.text, /autocomplete="new-password"/);
+  assert.match(nuevo.text, /name="_csrf" value="[A-Za-z0-9_-]{43}"/);
 });
 
 test('admin: empresa válida usa lista blanca y fecha automática', async () => {

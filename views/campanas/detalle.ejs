@@ -32,7 +32,7 @@
       <p class="panel" role="status"><%= mensajeCanal %></p>
     <% } else if (campana.estado === 'activa') { %>
       <p>Activar y guardar no ejecuta el envío. Usa este botón para solicitar la ejecución en n8n.</p>
-      <form action="/campanas/<%= campana._id %>/ejecutar" method="post">
+      <form action="/campanas/<%= campana._id %>/ejecutar" method="post"><%- include('../partials/_csrfSuperadmin') %>
         <button type="submit">Ejecutar automatización</button>
       </form>
     <% } %>

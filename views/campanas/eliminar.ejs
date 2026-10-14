@@ -13,7 +13,7 @@
     <p>Vas a eliminar la campaña <strong><%= campana.nombre %></strong>.</p>
     <p>Esta acción es permanente y no se puede deshacer.</p>
     <% if (mensaje) { %><p class="aviso-error" role="alert"><%= mensaje %></p><% } %>
-    <form action="/campanas/<%= campana._id %>/eliminar" method="post">
+    <form action="/campanas/<%= campana._id %>/eliminar" method="post"><%- include('../partials/_csrfSuperadmin') %>
       <label class="confirmacion"><input type="checkbox" name="confirmacion" value="eliminar" required> Confirmo que quiero eliminar esta campaña.</label>
       <div class="acciones">
         <button class="peligro" type="submit">Eliminar definitivamente</button>

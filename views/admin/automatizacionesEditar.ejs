@@ -5,7 +5,7 @@
 <h1>Automatizaciones de <%= empresa.nombre %></h1>
 <p>Una URL vacía usa el webhook global para email habilitado. Deshabilitar bloquea también el fallback.</p>
 <% if (error) { %><p class="aviso-error" role="alert"><%= error %></p><% } %>
-<form action="/admin/empresas/<%= empresa._id %>/automatizaciones" method="post" class="formulario">
+<form action="/admin/empresas/<%= empresa._id %>/automatizaciones" method="post" class="formulario"><%- include('../partials/_csrfSuperadmin') %>
 <% for (const canal of canales) { const config = empresa.automatizaciones?.[canal]; %>
 <section class="campo-amplio"><h2><%= 'Correo electrónico (Gmail)' %></h2>
 <div class="campo"><label for="<%= canal %>Habilitada">Estado</label><select id="<%= canal %>Habilitada" name="<%= canal %>Habilitada">

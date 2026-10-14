@@ -6,6 +6,6 @@
     <a class="boton" href="/admin/empresas/nueva">Nueva empresa</a>
     <a class="boton" href="/admin/usuarios/nuevo">Nuevo usuario</a>
     <a class="boton secundario" href="/campanas">Ver campañas</a>
-    <form class="salida-admin" action="/logout" method="post"><button type="submit" class="secundario">Cerrar sesión</button></form>
+    <form class="salida-admin" action="/logout" method="post"><%- include('../partials/_csrfSuperadmin') %><button type="submit" class="secundario">Cerrar sesión</button></form>
   </nav>
 </div></header>
