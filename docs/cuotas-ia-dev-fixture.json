@@ -1,0 +1,10 @@
+{
+  "proposito": "SOLO_FIXTURES_NO_EMPRESAS_REALES",
+  "estado": "CUOTAS_DEV_APROVISIONADAS",
+  "base": "ma_ia_test_d9078f61288c4b228743669559fc0f71",
+  "marca": "97e2f00d-200e-48a7-b4b3-f5fdac1b192e",
+  "empresas": [
+    "f17e1a504314f5e2e16381c4",
+    "f17e1a1c722366c16bc0643e"
+  ]
+}

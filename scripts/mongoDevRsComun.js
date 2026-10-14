@@ -71,11 +71,27 @@ const original = async () => {
 };
 const compararOriginal = async () => {
   const antes = JSON.parse(fs.readFileSync(path.join(ROOT, 'original-baseline.json'), 'utf8'));
-  exigir(JSON.stringify(antes) === JSON.stringify(await original()), 'ORIGINAL_CAMBIO_DETECTADO');
+  const referencia = JSON.parse(fs.readFileSync(path.join(__dirname, '../docs/mongodb-indices-autorizados-v2.json'), 'utf8'));
+  validarReferencia(antes, referencia);
+  exigir(JSON.stringify(referencia.actual) === JSON.stringify(await original()), 'ORIGINAL_CAMBIO_DETECTADO');
   console.log('STANDALONE_ORIGINAL: SIN_CAMBIOS_DE_PROCESO_CONFIGURACION_DATOS_E_INDICES');
+};
+const validarReferencia = (antes, referencia) => {
+  const indice = { v: 2, key: { empresa: 1, 'asistenciaIA.aprobacionHash': 1 },
+    name: 'empresa_1_asistenciaIA.aprobacionHash_1', unique: true,
+    partialFilterExpression: { 'asistenciaIA.aprobacionHash': { $type: 'string' } } };
+  exigir(referencia.version === 2 && JSON.stringify(antes) === JSON.stringify(referencia.anterior), 'REFERENCIA_NO_AUTORIZADA');
+  for (const campo of ['pid', 'configuracion', 'datos']) exigir(antes[campo] === referencia.actual[campo], 'REFERENCIA_NO_AUTORIZADA');
+  exigir(referencia.coleccion === 'campanas' && JSON.stringify(referencia.indice) === JSON.stringify(indice), 'REFERENCIA_NO_AUTORIZADA');
+  const inventario = referencia.inventario;
+  exigir(digest(inventario) === referencia.actual.indices, 'REFERENCIA_NO_AUTORIZADA');
+  const candidatos = inventario.find(([n]) => n === 'campanas')?.[1].filter(i => i.name === indice.name);
+  exigir(candidatos?.length === 1 && JSON.stringify(candidatos[0]) === JSON.stringify(indice), 'REFERENCIA_NO_AUTORIZADA');
+  const previo = inventario.map(([n, indices]) => [n, n === 'campanas' ? indices.filter(i => i.name !== indice.name) : indices]);
+  exigir(digest(previo) === antes.indices, 'REFERENCIA_NO_AUTORIZADA');
 };
 const ejecutar = main => main().catch(() => {
   console.error('ERROR: comprobacion fallida; procedimiento detenido, sin reparaciones. Revisar el entorno y el log local.');
   process.exitCode = 1;
 });
-module.exports = { ROOT, DATA, SET, URI, sleep, exigir, validarOpciones, rutasSeguras, conectar, verificar, esperar, original, compararOriginal, ejecutar };
+module.exports = { ROOT, DATA, SET, URI, sleep, exigir, validarOpciones, validarReferencia, rutasSeguras, conectar, verificar, esperar, original, compararOriginal, ejecutar };

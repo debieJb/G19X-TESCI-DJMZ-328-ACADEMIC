@@ -1,0 +1,192 @@
+{
+  "version": 2,
+  "motivo": "Autorizacion expresa: conservar el indice unico parcial de aprobacion IA como unica diferencia frente a la referencia original.",
+  "anterior": {
+    "pid": 5648,
+    "configuracion": "9b390ad6a91d2f797332814c3616174d05d7f6e5ea7f3538aeb5d69618609f40",
+    "datos": "c135eb12ec1a907ec24d7f6ef1272e9889072bfb81a7c71e661360f9b86f1012",
+    "indices": "5f373677ff2583c0e038d118eba4f7fb097fceb402aee20df41b1463d6262152"
+  },
+  "actual": {
+    "pid": 5648,
+    "configuracion": "9b390ad6a91d2f797332814c3616174d05d7f6e5ea7f3538aeb5d69618609f40",
+    "datos": "c135eb12ec1a907ec24d7f6ef1272e9889072bfb81a7c71e661360f9b86f1012",
+    "indices": "e44c99e9b5c16acdfbef943cc38a0d550c3d7b5baeb7ab41e1f461c8ea5f6681"
+  },
+  "coleccion": "campanas",
+  "indice": {
+    "v": 2,
+    "key": {
+      "empresa": 1,
+      "asistenciaIA.aprobacionHash": 1
+    },
+    "name": "empresa_1_asistenciaIA.aprobacionHash_1",
+    "unique": true,
+    "partialFilterExpression": {
+      "asistenciaIA.aprobacionHash": {
+        "$type": "string"
+      }
+    }
+  },
+  "inventario": [
+    [
+      "campanas",
+      [
+        {
+          "v": 2,
+          "key": {
+            "_id": 1
+          },
+          "name": "_id_"
+        },
+        {
+          "v": 2,
+          "key": {
+            "empresa": 1,
+            "asistenciaIA.aprobacionHash": 1
+          },
+          "name": "empresa_1_asistenciaIA.aprobacionHash_1",
+          "unique": true,
+          "partialFilterExpression": {
+            "asistenciaIA.aprobacionHash": {
+              "$type": "string"
+            }
+          }
+        }
+      ]
+    ],
+    [
+      "conexiongmails",
+      [
+        {
+          "v": 2,
+          "key": {
+            "_id": 1
+          },
+          "name": "_id_"
+        },
+        {
+          "v": 2,
+          "key": {
+            "empresa": 1
+          },
+          "name": "empresa_1",
+          "unique": true
+        },
+        {
+          "v": 2,
+          "key": {
+            "googleSub": 1
+          },
+          "name": "googleSub_1",
+          "unique": true,
+          "partialFilterExpression": {
+            "googleSub": {
+              "$type": "string"
+            }
+          }
+        }
+      ]
+    ],
+    [
+      "contactos",
+      [
+        {
+          "v": 2,
+          "key": {
+            "_id": 1
+          },
+          "name": "_id_"
+        },
+        {
+          "v": 2,
+          "key": {
+            "empresa": 1,
+            "email": 1
+          },
+          "name": "empresa_1_email_1",
+          "unique": true,
+          "partialFilterExpression": {
+            "email": {
+              "$type": "string"
+            }
+          }
+        },
+        {
+          "v": 2,
+          "key": {
+            "empresa": 1,
+            "telefono": 1
+          },
+          "name": "empresa_1_telefono_1",
+          "unique": true,
+          "partialFilterExpression": {
+            "telefono": {
+              "$type": "string"
+            }
+          }
+        }
+      ]
+    ],
+    [
+      "empresas",
+      [
+        {
+          "v": 2,
+          "key": {
+            "_id": 1
+          },
+          "name": "_id_"
+        }
+      ]
+    ],
+    [
+      "estadooauths",
+      [
+        {
+          "v": 2,
+          "key": {
+            "_id": 1
+          },
+          "name": "_id_"
+        },
+        {
+          "v": 2,
+          "key": {
+            "hash": 1
+          },
+          "name": "hash_1",
+          "unique": true
+        },
+        {
+          "v": 2,
+          "key": {
+            "expiraEn": 1
+          },
+          "name": "expiraEn_1",
+          "expireAfterSeconds": 0
+        }
+      ]
+    ],
+    [
+      "usuarios",
+      [
+        {
+          "v": 2,
+          "key": {
+            "_id": 1
+          },
+          "name": "_id_"
+        },
+        {
+          "v": 2,
+          "key": {
+            "email": 1
+          },
+          "name": "email_1",
+          "unique": true
+        }
+      ]
+    ]
+  ]
+}

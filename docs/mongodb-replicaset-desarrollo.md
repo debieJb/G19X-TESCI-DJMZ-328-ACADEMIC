@@ -84,3 +84,7 @@ Primera ejecución detenida por fallo de validación de identidad, conforme a la
 - No se modificó .env, no se importaron datos ni credenciales y no se hizo commit ni push.
 
 La corrección afectaba al nombre de la opción devuelta por `getCmdLineOpts`. Se aplicó sin reparar datos, volver a crear directorios ni reconfigurar el standalone, y se retomó el proceso existente después de verificar su identidad.
+
+## Referencia de indices v2 y bloqueo temporal de envios
+
+La continuacion autorizada conserva la referencia original y utiliza una referencia v2 con la unica adicion aprobada. Ver [historial, definicion y controles](bloqueo-envios-y-referencia-indices.md). Cualquier otra diferencia sigue bloqueando las pruebas.
