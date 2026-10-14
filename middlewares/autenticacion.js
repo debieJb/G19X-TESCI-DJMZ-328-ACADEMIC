@@ -12,9 +12,11 @@ const cargarUsuario = async (req, res, next) => {
     if (req.session.usuarioId) {
       const id = req.session.usuarioId;
       const usuario = typeof id === 'string' && /^[a-f\d]{24}$/i.test(id)
-        ? await Usuario.findById(id).select('nombre email rol empresa').populate('empresa', 'nombre').lean()
+        ? await Usuario.findById(id).select('nombre email rol empresa estadoAcceso').populate('empresa', 'nombre').lean()
         : null;
-      if (usuario) {
+      // Se recarga desde MongoDB en cada petición: una sesión previa deja de
+      // ser válida en cuanto el acceso pasa a pendiente o bloqueado.
+      if (usuario && (usuario.estadoAcceso === undefined || usuario.estadoAcceso === 'activo')) {
         // Lista explícita: incluso una consulta modificada no expone password a las vistas.
         res.locals.usuarioActual = {
           _id: usuario._id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol,

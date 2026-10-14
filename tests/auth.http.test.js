@@ -33,7 +33,7 @@ beforeEach(t => {
     assert.equal(valor, id);
     consultas++;
     return { select: seleccion => {
-      assert.equal(seleccion, 'nombre email rol empresa');
+      assert.equal(seleccion, 'nombre email rol empresa estadoAcceso');
       return { populate: (campo, campos) => {
         assert.equal(campo, 'empresa'); assert.equal(campos, 'nombre');
         return { lean: async () => usuario ? { ...usuario.toObject(), empresa: usuario.empresa, password: hash } : null };
@@ -80,6 +80,30 @@ test('auth: errores genéricos para contraseña incorrecta, usuario inexistente 
     assert.equal(respuesta.headers['set-cookie'], undefined);
   }
   assert.equal(Object.keys(await sesiones()).length, 0);
+});
+
+test('auth: login rechaza usuarios pendientes y bloqueados sin revelar el estado', async () => {
+  for (const estadoAcceso of ['pendiente_verificacion', 'bloqueado']) {
+    usuario.estadoAcceso = estadoAcceso;
+    const respuesta = await entrar(request.agent(app)).expect(401);
+    assert.match(respuesta.text, /Correo o contraseña incorrectos/);
+    assert.equal(respuesta.headers['set-cookie'], undefined);
+    assert.equal(Object.keys(await sesiones()).length, 0);
+  }
+  usuario.estadoAcceso = undefined;
+});
+
+test('auth: revoca una sesión existente al bloquear al usuario y conserva acceso histórico sin estado', async () => {
+  const agente = request.agent(app);
+  await entrar(agente).expect(303);
+  usuario.estadoAcceso = 'bloqueado';
+  await agente.get('/panel').expect(302).expect('Location', '/login');
+  assert.equal(Object.keys(await sesiones()).length, 0);
+
+  usuario.estadoAcceso = undefined;
+  const historico = request.agent(app);
+  await entrar(historico).expect(303);
+  await historico.get('/panel').expect(200);
 });
 
 test('auth: contraseña en texto plano heredada no permite acceso', async () => {
