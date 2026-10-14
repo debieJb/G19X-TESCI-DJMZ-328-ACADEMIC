@@ -13,6 +13,9 @@ const usuarioSchema = new mongoose.Schema({
     }
   },
   rol: { type: String, required: true, enum: ROLES },
+  estadoAcceso: { type: String, enum: ['pendiente_verificacion', 'activo', 'bloqueado'],
+    default: function () { return this.isNew ? 'pendiente_verificacion' : undefined; } },
+  emailVerificadoEn: Date,
   empresa: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Empresa',

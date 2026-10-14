@@ -13,6 +13,13 @@ const configuracionCanal = habilitada => new mongoose.Schema({
 
 const empresaSchema = new mongoose.Schema({
   nombre: { type: String, required: true, trim: true },
+  correoAutomatizaciones: { type: String, trim: true, lowercase: true, maxlength: 320,
+    required: function () { return this.versionAlta === 1; },
+    match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
+  estadoActivacion: { type: String, enum: ['pendiente_verificacion', 'verificada'],
+    required: function () { return this.versionAlta === 1; },
+    default: function () { return this.isNew ? 'pendiente_verificacion' : undefined; } },
+  versionAlta: { type: Number, enum: [1] },
   estado: { type: String, required: true, enum: ['activa', 'inactiva'], default: 'activa' },
   fechaRegistro: { type: Date, required: true, default: Date.now },
   automatizaciones: {
