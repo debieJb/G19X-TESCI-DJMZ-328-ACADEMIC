@@ -54,10 +54,10 @@ for (const rol of ['operador', 'admin_empresa', 'superadmin']) {
 }
 
 test('seguridad empresarial: reconsulta el estado y bloquea la siguiente ejecución tras desactivar', async () => {
-  await email.ejecutarCampana(campana, { rol: 'operador', empresa: A });
+  await assert.rejects(email.ejecutarCampana(campana, { rol: 'operador', empresa: A }), { codigo: 'ENVIOS_BLOQUEADOS' });
   empresa.estado = 'inactiva';
   await assert.rejects(email.ejecutarCampana(campana, { rol: 'operador', empresa: A }), { codigo: 'EMPRESA_INACTIVA' });
-  assert.equal(enviar.mock.callCount(), 1);
+  assert.equal(enviar.mock.callCount(), 0);
   assert.equal(consultarEmpresa.mock.callCount(), 2);
 });
 
@@ -108,8 +108,8 @@ test('seguridad empresarial: proyección real conserva el bloqueo del canal desh
 
 test('compatibilidad: empresa antigua sin estado conserva el default activo', async () => {
   delete empresa.estado;
-  await email.ejecutarCampana(campana, { rol: 'operador', empresa: A });
-  assert.equal(enviar.mock.callCount(), 1);
+  await assert.rejects(email.ejecutarCampana(campana, { rol: 'operador', empresa: A }), { codigo: 'ENVIOS_BLOQUEADOS' });
+  assert.equal(enviar.mock.callCount(), 0);
 });
 
 test('compatibilidad: histórica sin empresa conserva datos y resolución global, nunca ejecuta', async () => {
@@ -189,10 +189,8 @@ for (const tipo of ['todos', 'contactos', 'etiquetas']) {
     const doc = { ...campana, destinatarios: { tipo, contactos: contactos.map(c => c._id), etiquetas: ['vip'] } };
     const resultado = await destinatarios.resolverDestinatarios(doc);
     assert.deepEqual(resultado.map(c => c.email), ['habilitado@example.test', 'historico@example.test']);
-    await email.ejecutarCampana(doc, { rol: 'operador', empresa: A });
-    const payload = JSON.parse(enviar.mock.calls[0].arguments[1].body);
-    assert.deepEqual(payload.destinatarios, resultado);
-    assert.doesNotMatch(JSON.stringify(payload), /canales|consentimiento|ajeno|deshabilitado/);
+    await assert.rejects(email.ejecutarCampana(doc, { rol: 'operador', empresa: A }), { codigo: 'ENVIOS_BLOQUEADOS' });
+    assert.equal(enviar.mock.callCount(), 0);
   });
 }
 
@@ -215,10 +213,9 @@ test('webhook: esquema y servicio rechazan URLs ambiguas y errores no exponen de
 
 test('webhook: desarrollo mantiene HTTP local y el contrato de redirecciones bloqueadas', async () => {
   empresa.automatizaciones.email.webhookUrl = 'http://127.0.0.1:5678/webhook';
-  await email.ejecutarCampana(campana, { rol: 'operador', empresa: A });
-  const [url, opciones] = enviar.mock.calls[0].arguments;
-  assert.equal(url.origin, 'http://127.0.0.1:5678');
-  assert.equal(opciones.redirect, 'manual');
+  await assert.rejects(email.ejecutarCampana(campana, { rol: 'operador', empresa: A }), { codigo: 'ENVIOS_BLOQUEADOS' });
+  assert.equal(String(await resolverWebhook(campana, { rol: 'operador', empresa: A })), 'http://127.0.0.1:5678/webhook');
+  assert.equal(enviar.mock.callCount(), 0);
 });
 
 test('webhook: producción autoriza solo HTTPS del origen global si no hay lista explícita', () => {

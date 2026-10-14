@@ -32,8 +32,8 @@ for (const rol of ['operador', 'admin_empresa', 'superadmin']) {
     const guardar = t.mock.method(Campana.collection, 'updateOne', () => { throw new Error('No guardar'); });
     const borrar = t.mock.method(Campana.collection, 'deleteOne', () => { throw new Error('No borrar'); });
     await cliente.get(`/campanas/${campanaId}`).expect(200);
-    const respuesta = await cliente.post(`/campanas/${campanaId}/ejecutar`).send({ empresa: String(B), estado: 'activa', rol: 'superadmin' }).expect(422);
-    assert.match(respuesta.text, /empresa está inactiva/);
+    const respuesta = await cliente.post(`/campanas/${campanaId}/ejecutar`).send({ empresa: String(B), estado: 'activa', rol: 'superadmin' }).expect(503);
+    assert.match(respuesta.text, /temporalmente bloqueados/);
     assert.doesNotMatch(respuesta.text, /webhook|n8n.example.test/);
     assert.equal(fetch.mock.callCount(), 0);
     assert.equal(guardar.mock.callCount(), 0);
@@ -58,11 +58,11 @@ test('HTTP seguridad: habilitación de email cambia la estimación y se recalcul
   assert.match(formulario.text, /no acredita consentimiento/);
   const detalle = await cliente.get(`/campanas/${campanaId}`).expect(200);
   assert.match(detalle.text, /Cantidad estimada de destinatarios: <strong>0/);
-  await cliente.post(`/campanas/${campanaId}/ejecutar`).send({ canales: { email: true } }).expect(422);
+  await cliente.post(`/campanas/${campanaId}/ejecutar`).send({ canales: { email: true } }).expect(503);
   assert.equal(fetch.mock.callCount(), 0);
   contactos[0].canales.email = true;
-  await cliente.post(`/campanas/${campanaId}/ejecutar`).send({}).expect(303);
-  assert.equal(fetch.mock.callCount(), 1);
+  await cliente.post(`/campanas/${campanaId}/ejecutar`).send({}).expect(503);
+  assert.equal(fetch.mock.callCount(), 0);
 });
 
 test('HTTP seguridad: editor de webhook rechaza formato ambiguo sin guardar ni exponer valores', async t => {

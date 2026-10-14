@@ -10,7 +10,13 @@
   <%- include('../partials/_encabezado', { seccion: 'nueva' }) %>
   <main id="contenido" tabindex="-1" class="formulario-pagina">
     <h1><%= titulo %></h1>
+    <section class="panel" aria-label="Modo de creación"><h2>¿Cómo quieres crear tu campaña?</h2>
+      <div class="acciones"><a class="boton" href="#formulario-manual">Creación manual</a>
+      <% if (['admin_empresa', 'operador'].includes(usuarioActual.rol)) { %><a class="boton secundario" href="/empresa/ia">Creación asistida por IA</a><% } %></div>
+      <p>Ambas opciones guardan un borrador. Ninguna activa envíos automáticamente.</p>
+    </section><div id="formulario-manual">
     <%- include('_formulario') %>
+    </div>
   </main>
 </body>
 </html>

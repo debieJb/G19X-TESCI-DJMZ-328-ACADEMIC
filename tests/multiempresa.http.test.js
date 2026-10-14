@@ -68,8 +68,8 @@ for (const rol of ['admin_empresa', 'operador']) {
   });
   test(`aislamiento: ${rol} ejecuta propia sin aceptar webhook del navegador`, async t => {
     const { cliente } = contexto(t, rol);
-    await cliente.post(`/campanas/${id(10)}/ejecutar`).send({ empresa: String(empresaB), webhookUrl: 'https://evil.example.test', N8N_WEBHOOK_URL: 'https://evil.example.test' }).expect(303);
-    assert.equal(llamadasWebhook[0].url, 'https://global.example.test/hook');
+    await cliente.post(`/campanas/${id(10)}/ejecutar`).send({ empresa: String(empresaB), webhookUrl: 'https://evil.example.test', N8N_WEBHOOK_URL: 'https://evil.example.test' }).expect(503);
+    assert.equal(llamadasWebhook.length, 0);
   });
 }
 
@@ -108,7 +108,7 @@ test('superadmin: administra históricas sin migrarlas, pero no ejecuta sin dest
   const listado = await cliente.get('/campanas').expect(200);
   assert.match(listado.text, /Campaña A/); assert.match(listado.text, /Campaña B/); assert.match(listado.text, /Campaña histórica/);
   await cliente.get(`/campanas/${id(12)}`).expect(200);
-  await cliente.post(`/campanas/${id(12)}/ejecutar`).send({ empresa: String(empresaA) }).expect(422);
+  await cliente.post(`/campanas/${id(12)}/ejecutar`).send({ empresa: String(empresaA) }).expect(503);
   assert.equal(llamadasWebhook.length, 0);
   await cliente.post(`/campanas/${id(12)}/editar`).send({ nombre: 'Histórica editada', objetivo: 'Objetivo', estado: 'pausada', empresa: String(empresaA), creadoPor: String(autor) }).expect(303);
   assert.equal(escrituras[0].cambios.$set.empresa, undefined); assert.equal(escrituras[0].cambios.$set.creadoPor, undefined);

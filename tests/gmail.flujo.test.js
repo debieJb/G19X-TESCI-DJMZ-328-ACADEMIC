@@ -107,17 +107,20 @@ for (const rol of ['operador', 'admin_empresa', 'superadmin']) {
     await cliente.post(`/campanas/${persistido._id}/editar`).type('form').send({ ...campos, estado: 'activa' }).expect(303);
     assert.equal(persistido.estado, 'activa');
     assert.equal(peticiones.length, 0);
+    assert.equal(persistido.versionFlujo, 2);
+    await cliente.post(`/campanas/${persistido._id}/ejecutar`).send({}).expect(503);
+    assert.equal(peticiones.length, 0);
+    // La matriz de respuestas siguiente verifica el contrato de documentos
+    // históricos, representados solo en esta fixture sin versionFlujo.
+    delete persistido.versionFlujo;
     const snapshot = JSON.stringify(persistido);
     for (const [respuesta, esperado] of [[202, 303], [204, 303], [401, 502], [403, 502], [404, 502], [405, 502], [500, 502], [302, 502]]) {
       status = respuesta;
-      const resultado = await cliente.post(`/campanas/${persistido._id}/ejecutar`).send({ asunto: 'Manipulado', webhookUrl: 'https://externo.invalid' }).expect(esperado);
+      const resultado = await cliente.post(`/campanas/${persistido._id}/ejecutar`).send({ asunto: 'Manipulado', webhookUrl: 'https://externo.invalid' }).expect(503);
       assert.equal(resultado.headers['set-cookie'], undefined);
-      if (esperado === 303) {
-        assert.equal(resultado.headers.location, `/campanas/${persistido._id}?automatizacion=enviada`);
-        await cliente.get(resultado.headers.location).expect(200);
-      } else assert.match(resultado.text, /devolvió un error/);
+      assert.match(resultado.text, /temporalmente bloqueados/);
     }
-    assert.equal(peticiones.length, 8);
+    assert.equal(peticiones.length, 0);
     for (const peticion of peticiones) {
       assert.equal(peticion.method, 'POST');
       assert.equal(peticion.ruta, '/webhook/gmail');

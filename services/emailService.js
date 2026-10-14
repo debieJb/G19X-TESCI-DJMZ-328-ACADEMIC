@@ -3,6 +3,7 @@ const { resolverWebhook } = require('./configuracionAutomatizacionesService');
 const destinatariosService = require('./destinatariosService');
 
 const ejecutarCampana = async (campana, usuario) => {
+  if (campana.versionFlujo === 2 || campana.asistenciaIA || campana.automatizacion) throw new ErrorAutomatizacion('CONFIGURACION');
   if (campana.canal !== 'email') throw new ErrorAutomatizacion('CANAL_NO_DISPONIBLE');
   if (['asunto', 'cuerpoTexto'].some(campo => typeof campana[campo] !== 'string' || !campana[campo].trim())) {
     throw new ErrorAutomatizacion('CONTENIDO_EMAIL_INCOMPLETO');
@@ -37,6 +38,9 @@ const ejecutarCampana = async (campana, usuario) => {
     payload.totalDestinatarios = destinatarios.length;
     payload.tipoDestinatarios = campana.destinatarios.tipo;
   }
+  // Bloqueo obligatorio, independiente de variables de entorno y datos del cliente.
+  throw new ErrorAutomatizacion('ENVIOS_BLOQUEADOS');
+  // Transporte conservado hasta integrar Gmail, consentimiento e historial.
   const abort = new AbortController();
   const timer = setTimeout(() => abort.abort(), timeout);
   try {

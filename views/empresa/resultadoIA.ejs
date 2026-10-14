@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title><%= titulo %></title><link rel="stylesheet" href="/css/styles.css"></head>
+<body class="pagina-admin"><%- include('../partials/_encabezado', { seccion: 'ia' }) %>
+<main id="contenido" tabindex="-1"><h1>Revisar propuesta generada por IA</h1>
+<p>Proveedor: <%= resultado.proveedor %>. Revisa exactitud, ofertas y lenguaje. La propuesta no ejecuta campañas ni selecciona contactos.</p>
+<% if (mensaje) { %><p class="aviso-error" role="alert"><%= mensaje %></p><% } %>
+<p>Selecciones conservadas: <%= datos.producto %> · <%= datos.audiencia %> · <%= datos.tono %> · <%= datos.canal %>.</p>
+<% if (tieneImagen) { %><p>Imagen PNG validada y conservada localmente para este borrador. No se envía a la IA.</p><% } %>
+<form method="post" action="/empresa/ia/borrador" class="formulario" id="propuesta-editor"><input type="hidden" name="_csrf" value="<%= iaCsrf %>"><input type="hidden" name="ticket" value="<%= ticket %>">
+<% for (const [campo, etiqueta, maximo] of [['nombre', 'Nombre de campaña', 100], ['objetivo', 'Objetivo', 500], ['asunto', 'Asunto', 220], ['mensaje', 'Mensaje', 5000], ['llamadaAccion', 'Llamada a la acción', 300]]) { %>
+<div class="campo campo-amplio"><label for="<%= campo %>"><%= etiqueta %></label><textarea id="<%= campo %>" name="<%= campo %>" maxlength="<%= maximo %>" required rows="<%= campo === 'mensaje' ? 8 : 2 %>"><%= resultado[campo] %></textarea></div><% } %>
+<div class="campo campo-amplio"><label for="segmentacion">Sugerencias de segmentación (orientativas)</label><textarea id="segmentacion" name="segmentacion" maxlength="1500" rows="5"><%= resultado.segmentacion.join(String.fromCharCode(10)) %></textarea></div>
+<p>La llamada a la acción se añade al mensaje y las sugerencias se conservan como notas, sin seleccionar contactos. Me gusta guarda exclusivamente un borrador sin destinatarios preseleccionados. No activa envíos ni workflows.</p>
+<% if (datos.instrucciones !== undefined) { %>
+<details><summary>Instrucciones y texto intocable</summary><p><%= datos.instrucciones %></p><pre><%= datos.textoProtegido %></pre></details>
+<div class="campo campo-amplio"><label for="cambios">&#191;Qu&#233; quieres cambiar?</label><textarea id="cambios" name="cambios" rows="4" maxlength="1500"></textarea></div>
+<p>Al pedir cambios o generar otra propuesta se env&#237;an a Gemini el texto editable y las instrucciones originales. Revisa y elimina datos personales o sensibles antes de confirmar. Cada solicitud consume cuota.</p>
+<label><input type="checkbox" name="confirmacionPrivacidad" value="CONFIRMO">Confirmo el env&#237;o del texto revisado a Gemini (obligatorio para revisar o regenerar).</label>
+<% } %>
+<div class="acciones"><a class="boton" href="#mensaje">Editar</a><% if (datos.instrucciones !== undefined) { %><button type="submit" formaction="/empresa/ia/revisar" <%= disponible ? '' : 'disabled' %>>Pedir cambios</button><% } %><button type="submit" formaction="/empresa/ia/regenerar" formnovalidate <%= disponible ? '' : 'disabled' %>>Generar otra propuesta</button><button type="submit">Me gusta / Continuar</button><a href="/empresa/ia">Cambiar datos</a></div>
+</form></main><%- include('../partials/_piePublico') %></body></html>

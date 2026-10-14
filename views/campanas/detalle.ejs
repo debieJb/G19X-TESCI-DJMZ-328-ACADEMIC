@@ -30,14 +30,13 @@
     <% if (campana.canal === 'email') { %><%- include('_resumenDestinatarios') %><% } %>
     <% if (mensajeCanal) { %>
       <p class="panel" role="status"><%= mensajeCanal %></p>
-    <% } else if (campana.estado === 'activa') { %>
-      <p>Activar y guardar no ejecuta el envío. Usa este botón para solicitar la ejecución en n8n.</p>
-      <form action="/campanas/<%= campana._id %>/ejecutar" method="post"><%- include('../partials/_csrfSuperadmin') %>
-        <button type="submit">Ejecutar automatización</button>
-      </form>
+    <% } else if (campana.estado === 'activa' && campana.versionFlujo !== 2 && !campana.asistenciaIA && !campana.automatizacion) { %>
+      <p role="status">Todos los env&#237;os est&#225;n temporalmente bloqueados hasta integrar Gmail empresarial, consentimiento e historial.</p>
+      <button type="button" disabled>Env&#237;o temporalmente bloqueado</button>
     <% } %>
     <nav aria-label="Acciones de campaña">
       <a class="boton editar" href="/campanas/<%= campana._id %>/editar">Editar</a>
+      <% if (campana.estado === 'borrador' && ['admin_empresa', 'operador'].includes(usuarioActual.rol)) { %><a class="boton" href="/campanas/<%= campana._id %>/automatizacion">Configurar automatización</a><% } %>
       <% if (puedeCampana('campanas.eliminar', campana)) { %><a class="boton eliminar" href="/campanas/<%= campana._id %>/eliminar">Eliminar</a><% } %>
       <a href="/campanas">Volver al listado</a>
     </nav>

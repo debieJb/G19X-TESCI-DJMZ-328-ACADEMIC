@@ -144,18 +144,29 @@ const crearCampana = async (req, res) => {
       } else valores.empresa = datos.empresa;
     } else valores.empresa = filtroEmpresa(usuario).empresa;
     valores.creadoPor = usuario._id;
+    valores.versionFlujo = 2;
     if (!Object.hasOwn(req.body || {}, 'destinatarios')) {
       datos.destinatarios = valores.destinatarios = { tipo: 'todos', contactos: [], etiquetas: [] };
     } else if (!valores.destinatarios && !errores.destinatarios) errores.destinatarios = 'Selecciona un tipo de destinatarios.';
+    if (req.borradorIAValidado) {
+      valores.asistenciaIA = req.borradorIAValidado.asistenciaIA;
+      valores.imagenLocal = req.borradorIAValidado.imagenLocal;
+      datos.destinatarios = valores.destinatarios = undefined;
+    }
     await cargarOpcionesDestinatarios(res, valores.empresa);
     if (!errores.empresa && !errores.destinatarios) {
       const error = await destinatariosService.validarPertenencia(valores.destinatarios, valores.empresa);
       if (error) errores.destinatarios = error;
     }
     if (Object.keys(errores).length) return mostrarFormulario(res, datos, errores, '', 422);
-    await Campana.create(valores);
+    const creada = await Campana.create(valores);
+    if (req.borradorIAValidado && creada?._id) return res.redirect(303, `/campanas/${creada._id}/automatizacion`);
     return res.redirect(303, '/campanas');
   } catch (error) {
+    if (error.code === 11000 && req.borradorIAValidado && valores.empresa) {
+      const previa = await Campana.findOne({ empresa: valores.empresa, 'asistenciaIA.aprobacionHash': req.borradorIAValidado.asistenciaIA.aprobacionHash }).select('_id').lean();
+      if (previa) return res.redirect(303, `/campanas/${previa._id}/automatizacion`);
+    }
     return responderErrorFormulario(res, error, datos);
   }
 };
@@ -264,13 +275,14 @@ const ejecutarAutomatizacion = async (req, res, next) => {
   });
   try {
     campana = await buscarCampana(req.params.id, res.locals.usuarioActual, 'campanas.ejecutar');
+    if (campana.estado === 'activa' && (campana.versionFlujo === 2 || campana.asistenciaIA || campana.automatizacion)) return mostrarError(503, 'El envío empresarial mediante Gmail OAuth y n8n todavía no está integrado. Configura la automatización; no se envió ninguna solicitud.');
     resumenDestinatarios = await destinatariosService.resumenCampana(campana);
     if (campana.estado !== 'activa') return mostrarError(422, 'Solo puedes ejecutar campañas activas.');
     const mensajeCanal = automatizacionService.mensajeCanalNoDisponible(campana.canal);
     if (mensajeCanal) return mostrarError(422, mensajeCanal);
-    // Los datos y el destino nunca se toman del cuerpo del formulario.
-    await automatizacionService.ejecutarCampana(campana, res.locals.usuarioActual);
-    return res.redirect(303, `/campanas/${req.params.id}?automatizacion=enviada`);
+    const confirmacion = Object.hasOwn(req.body || {}, 'confirmacion') ? req.body.confirmacion : req.get('X-Confirmacion-Envio');
+    if (confirmacion !== 'ENVIAR') return mostrarError(422, 'Debes confirmar explícitamente los destinatarios y el envío real antes de ejecutar.');
+    return mostrarError(503, 'Todos los envíos de campañas están temporalmente bloqueados hasta integrar Gmail empresarial, consentimiento e historial.');
   } catch (error) {
     if ([400, 403, 404].includes(error.status)) return responderErrorRecurso(res, error);
     if (error instanceof automatizacionService.ErrorAutomatizacion) {

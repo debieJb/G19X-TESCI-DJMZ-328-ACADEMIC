@@ -126,27 +126,21 @@ test('destinatarios HTTP: detalle muestra tipo, cantidad válida, contactos y et
   assert.match(respuesta.text, /Etiquetas seleccionadas: ventas, vip/);
 });
 test('destinatarios HTTP: ejecución usa selección persistida, un solo webhook y payload compatible', async () => {
-  await cliente.post(`/campanas/${campanaId}/ejecutar`).send({ destinatarios: { tipo: 'contactos', contactos: [String(id(23))] }, empresa: String(otra) }).expect(303);
-  assert.equal(solicitudes.length, 1);
-  assert.deepEqual(solicitudes[0].payload, {
-    id: String(campanaId), nombre: 'Campaña', objetivo: 'Objetivo', asunto: 'Asunto', cuerpoTexto: 'Mensaje',
-    canal: 'email', estado: 'activa', fechaInicio: null, fechaFin: null,
-    destinatarios: [{ id: String(id(20)), nombre: 'Cliente <seguro>', email: 'cliente@example.test', telefono: null }],
-    totalDestinatarios: 1, tipoDestinatarios: 'todos'
-  });
+  await cliente.post(`/campanas/${campanaId}/ejecutar`).send({ destinatarios: { tipo: 'contactos', contactos: [String(id(23))] }, empresa: String(otra) }).expect(503);
+  assert.equal(solicitudes.length, 0);
   assert.equal(cambios.length, 0);
 });
 test('destinatarios HTTP: no hay destinatarios válidos bloquea webhook con error claro 422', async () => {
   contactos[0].activo = false;
-  const respuesta = await cliente.post(`/campanas/${campanaId}/ejecutar`).send({}).expect(422);
-  assert.match(respuesta.text, /No hay destinatarios válidos/); assert.match(respuesta.text, /role="alert"/);
+  const respuesta = await cliente.post(`/campanas/${campanaId}/ejecutar`).send({}).expect(503);
+  assert.match(respuesta.text, /temporalmente bloqueados/); assert.match(respuesta.text, /role="alert"/);
   assert.equal(solicitudes.length, 0);
 });
 test('destinatarios HTTP: se recalculan después de editar/inactivar/eliminar contactos', async () => {
   campanas[0].destinatarios = { tipo: 'contactos', contactos: [id(20)], etiquetas: [] };
   await cliente.get(`/campanas/${campanaId}`).expect(200);
   contactos = contactos.filter(doc => String(doc._id) !== String(id(20)));
-  await cliente.post(`/campanas/${campanaId}/ejecutar`).send({}).expect(422);
+  await cliente.post(`/campanas/${campanaId}/ejecutar`).send({}).expect(503);
   assert.equal(solicitudes.length, 0);
 });
 test('destinatarios HTTP: campañas antiguas se conservan, pero no ejecutan sin selección autorizada', async () => {
@@ -157,10 +151,10 @@ test('destinatarios HTTP: campañas antiguas se conservan, pero no ejecutan sin 
   assert.equal(cambios[0].update.$set.destinatarios, undefined);
   await editar({ nombre: 'Otra edición', destinatarios: { tipo: '' } }).expect(303);
   assert.equal(cambios[1].update.$set.destinatarios, undefined);
-  await cliente.post(`/campanas/${campanaId}/ejecutar`).send({}).expect(422);
+  await cliente.post(`/campanas/${campanaId}/ejecutar`).send({}).expect(503);
   assert.equal(solicitudes.length, 0);
   usuario.rol = 'superadmin'; usuario.empresa = null;
-  await cliente.post(`/campanas/${id(12)}/ejecutar`).send({}).expect(422);
+  await cliente.post(`/campanas/${id(12)}/ejecutar`).send({}).expect(503);
   assert.equal(solicitudes.length, 0);
 });
 test('destinatarios HTTP: formularios antiguos no borran una selección configurada', async () => {

@@ -24,16 +24,18 @@ const codigo = esperado => error => error.codigo === esperado;
 
 test('webhooks: empresarial válido tiene prioridad y nunca se envía configuración en payload', async () => {
   empresa.automatizaciones.email.webhookUrl = 'https://empresa.example.test/secreto';
-  await automatizacion.ejecutarCampana(campana, usuario);
-  assert.deepEqual(peticiones, ['https://empresa.example.test/secreto']);
-  assert.doesNotMatch(payloads[0], /webhook|secreto|automatizaciones/);
+  await assert.rejects(automatizacion.ejecutarCampana(campana, usuario), codigo('ENVIOS_BLOQUEADOS'));
+  assert.equal(String(await resolverWebhook(campana, usuario)), 'https://empresa.example.test/secreto');
+  assert.deepEqual(peticiones, []);
+  assert.deepEqual(payloads, []);
 });
 
 test('webhooks: empresarial vacío usa fallback global; configuración heredada también', async () => {
-  await automatizacion.ejecutarCampana(campana, usuario);
+  await assert.rejects(automatizacion.ejecutarCampana(campana, usuario), codigo('ENVIOS_BLOQUEADOS'));
   empresa = { nombre: 'Empresa antigua' };
-  await automatizacion.ejecutarCampana(campana, usuario);
-  assert.deepEqual(peticiones, ['https://global.example.test/webhook', 'https://global.example.test/webhook']);
+  await assert.rejects(automatizacion.ejecutarCampana(campana, usuario), codigo('ENVIOS_BLOQUEADOS'));
+  assert.equal(String(await resolverWebhook(campana, usuario)), 'https://global.example.test/webhook');
+  assert.deepEqual(peticiones, []);
 });
 
 test('webhooks: deshabilitada bloquea aun con URL empresarial y global', async () => {

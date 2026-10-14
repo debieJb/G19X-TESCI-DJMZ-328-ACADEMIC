@@ -18,12 +18,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(crearSesion(opcionesSesion));
 app.use(cargarUsuario);
 app.use(require('./middlewares/csrfSuperadmin'));
+app.use(require('./middlewares/csrfCampanas'));
 
 app.use('/', indexRoutes);
 app.use('/', require('./routes/authRoutes'));
 app.use('/panel', require('./routes/panelRoutes'));
 app.use('/admin', require('./routes/adminRoutes'));
 app.use('/empresa/gmail', require('./routes/gmailRoutes'));
+app.use('/empresa/ia', require('./routes/iaRoutes'));
 app.use('/empresa', require('./routes/empresaRoutes'));
 app.use('/campanas', campanaRoutes);
 app.use('/contactos', require('./routes/contactoRoutes'));

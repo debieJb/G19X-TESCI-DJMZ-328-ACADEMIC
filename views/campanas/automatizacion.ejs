@@ -1,0 +1,32 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title><%= titulo %></title><link rel="stylesheet" href="/css/styles.css"></head>
+<body class="pagina-admin"><%- include('../partials/_encabezado', { seccion: 'campanas' }) %><main id="contenido" tabindex="-1">
+<h1>Configurar automatización: <%= campana.nombre %></h1>
+<% if (guardado) { %><p class="panel" role="status">Preparación guardada. La campaña sigue en borrador; no se creó ninguna tarea de envío.</p><% } %>
+<p class="aviso-error" role="status"><%= estado.motivo %></p>
+<section class="panel"><h2>Revisar contenido</h2><p>Canal: <%= estado.canalValido ? 'Email' : 'No compatible' %></p><h3><%= campana.asunto || 'Asunto pendiente' %></h3><pre><%= campana.cuerpoTexto || 'Mensaje pendiente' %></pre>
+<% if (campana.asistenciaIA) { %><p>Producto: <%= campana.asistenciaIA.producto %>. Público: <%= campana.asistenciaIA.audiencia %>. Tono: <%= campana.asistenciaIA.tono %>.</p><h3>Segmentación orientativa</h3><ul><% for (const sugerencia of campana.asistenciaIA.segmentacion || []) { %><li><%= sugerencia %></li><% } %></ul><% } %>
+<% if (campana.imagenLocal) { %><p>Imagen local conservada. Todavía no se incorpora a ningún envío.</p><img src="/campanas/<%= campana._id %>/imagen" alt="Imagen local de la campaña" width="200"><% } %>
+<a href="/campanas/<%= campana._id %>/editar">Editar borrador</a></section>
+<section class="panel"><h2>Gmail de la empresa</h2><p>Estado local: <%= estado.estadoGmail %>. Configuración OAuth: <%= estado.gmailConfigurado ? 'Disponible' : 'Pendiente' %>.</p>
+<p>Correo previsto: <%= estado.correoPrevisto || 'Sin registrar' %>. Correo autorizado: <%= estado.correoAutorizado || 'Sin conectar' %>.</p>
+<p>Identidad coincidente: <%= estado.identidadCoincide ? 'Sí' : 'No' %>. Permiso de envío registrado: <%= estado.permisoEnvio ? 'Sí' : 'No' %>. Esta revisión local no verifica tokens contra Google.</p>
+<% if (usuarioActual.rol === 'admin_empresa') { %><a href="/empresa/gmail">Configurar Gmail</a><% } %></section>
+<section class="panel"><h2>Imagen del borrador</h2>
+<% if (campana.imagenLocal) { %><p>Hay una imagen local guardada. <a href="/campanas/<%= campana._id %>/imagen">Ver imagen</a></p><% } %>
+<form method="post" action="/campanas/<%= campana._id %>/automatizacion/imagen" class="formulario">
+<%- include('../partials/_csrfCampana') %><input type="hidden" name="revisionImagen" value="<%= campana.updatedAt ? campana.updatedAt.toISOString() : '0' %>">
+<label for="imagenArchivo">Añadir o sustituir imagen PNG local (hasta 48 KiB, 1024 × 1024, 8 bits)</label>
+<input type="file" id="imagenArchivo" accept="image/png" disabled><input type="hidden" id="imagen" name="imagen" value="">
+<p id="imagenEstado" role="status">No se envía a Gemini ni por correo. Requiere JavaScript.</p><button type="submit">Guardar imagen sin enviar</button>
+</form></section><script src="/js/imagenCampana.js" defer></script>
+<form method="post" action="/campanas/<%= campana._id %>/automatizacion" class="formulario">
+<%- include('../partials/_csrfCampana') %><input type="hidden" name="revision" value="<%= campana.automatizacion?.revision || 0 %>">
+<fieldset class="campo-amplio"><legend>Destinatarios autorizados de esta empresa</legend><p>Solo contactos activos con email habilitado y consentimiento de marketing documentado. No se considera consentimiento un campo histórico ausente ni canales.email por sí solo.</p>
+<% if (!contactos.length) { %><p>No hay destinatarios con autorización documentada. No se asignará consentimiento automáticamente.</p><% } %>
+<% for (const contacto of contactos) { %><label><input type="checkbox" name="contactos" value="<%= contacto._id %>" <%= (campana.destinatarios?.contactos || []).some(id => String(id) === String(contacto._id)) ? 'checked' : '' %>><%= contacto.nombre %> — <%= contacto.email %></label><% } %></fieldset>
+<div class="campo"><label for="modo">Modalidad deseada</label><select id="modo" name="modo"><option value="inmediato" <%= campana.automatizacion?.modo !== 'programado' ? 'selected' : '' %>>Envío inmediato (solo preparación)</option><option value="programado" <%= campana.automatizacion?.modo === 'programado' ? 'selected' : '' %>>Envío programado (solo preparación)</option></select></div>
+<div class="campo"><label for="fechaProgramada">Fecha futura en UTC (si eliges programado)</label><input id="fechaProgramada" name="fechaProgramada" type="datetime-local" value="<%= campana.automatizacion?.fechaProgramada ? campana.automatizacion.fechaProgramada.toISOString().slice(0,16) : '' %>"></div>
+<button type="submit">Guardar preparación sin enviar</button></form>
+<section class="panel"><h2>Confirmación de envío real</h2><p>Guardar una propuesta o preparación nunca autoriza un envío. Cuando exista el motor real se requerirá una confirmación independiente.</p>
+<form method="post" action="/campanas/<%= campana._id %>/automatizacion/confirmar"><%- include('../partials/_csrfCampana') %><label><input type="checkbox" name="confirmacion" value="ENVIAR" required disabled>Confirmo los destinatarios, contenido y envío real</label><button type="submit" disabled>Envío real no disponible</button></form></section>
+<a href="/campanas/<%= campana._id %>">Ver borrador</a> · <a href="/campanas">Campañas</a></main></body></html>

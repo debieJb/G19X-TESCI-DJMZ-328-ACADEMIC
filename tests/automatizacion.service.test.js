@@ -66,36 +66,28 @@ test('selector y manejador email: canales no disponibles nunca hacen peticiones'
   assert.equal(webhook.mock.callCount(), 0);
 });
 
-test('servicio: POST JSON real con payload explícito y fechas UTC; acepta 204', async t => {
-  const peticiones = [];
-  const url = await servidor(t, async (req, res) => {
-    let body = '';
-    for await (const chunk of req) body += chunk;
-    peticiones.push({ method: req.method, type: req.headers['content-type'], body: JSON.parse(body) });
-    res.writeHead(204).end();
-  });
+test('bloqueo temporal: transporte 204 no recibe solicitudes', async t => {
+  let recibidas = 0;
+  const url = await servidor(t, (req, res) => { recibidas++; res.writeHead(204).end(); });
   configurar(t, url);
-  await ejecutarCampana(campana);
-  assert.deepEqual(peticiones, [{ method: 'POST', type: 'application/json', body: {
-    id: campana._id, nombre: 'Campaña', objetivo: 'Objetivo', canal: 'email', estado: 'activa',
-    asunto: campana.asunto, cuerpoTexto: campana.cuerpoTexto,
-    fechaInicio: '2026-10-01T00:00:00.000Z', fechaFin: '2026-10-05T00:00:00.000Z',
-    destinatarios: [destinatario], totalDestinatarios: 1, tipoDestinatarios: 'todos'
-  } }]);
+  const webhook = t.mock.method(global, 'fetch', () => { throw new Error('No enviar'); });
+  for (const ejecutar of [ejecutarCampana, c => emailService.ejecutarCampana(c, { rol: 'superadmin' })]) {
+    await assert.rejects(ejecutar(campana), codigo('ENVIOS_BLOQUEADOS'));
+  }
+  assert.equal(recibidas, 0);
+  assert.equal(webhook.mock.callCount(), 0);
 });
 
-test('servicio: opcionales ausentes se envían como null y acepta 202 sin JSON', async t => {
-  let recibido;
-  const url = await servidor(t, async (req, res) => {
-    let body = '';
-    for await (const chunk of req) body += chunk;
-    recibido = JSON.parse(body);
-    res.writeHead(202).end('Recibido');
-  });
+test('bloqueo temporal: transporte 202 no recibe solicitudes', async t => {
+  let recibidas = 0;
+  const url = await servidor(t, (req, res) => { recibidas++; res.writeHead(202).end(); });
   configurar(t, url);
-  await ejecutarCampana({ ...campana, fechaInicio: undefined, fechaFin: undefined });
-  assert.equal(recibido.canal, 'email');
-  for (const campo of ['fechaInicio', 'fechaFin']) assert.equal(recibido[campo], null);
+  const webhook = t.mock.method(global, 'fetch', () => { throw new Error('No enviar'); });
+  for (const ejecutar of [ejecutarCampana, c => emailService.ejecutarCampana(c, { rol: 'superadmin' })]) {
+    await assert.rejects(ejecutar(campana), codigo('ENVIOS_BLOQUEADOS'));
+  }
+  assert.equal(recibidas, 0);
+  assert.equal(webhook.mock.callCount(), 0);
 });
 
 test('email: contenido ausente, vacío o inválido impide peticiones incluso al invocar el manejador directamente', async t => {
@@ -125,72 +117,64 @@ test('servicio: configuración inválida impide cualquier petición', async t =>
   assert.equal(fetchMock.mock.callCount(), 0);
 });
 
-test('servicio: acepta HTTPS y usa timeout de 10000 ms por defecto', async t => {
-  configurar(t, 'https://example.invalid/webhook');
-  let espera;
-  t.mock.method(global, 'setTimeout', (callback, ms) => { espera = ms; return undefined; });
-  const fetchMock = t.mock.method(global, 'fetch', async (url, opciones) => {
-    assert.equal(url.protocol, 'https:');
-    assert.equal(opciones.redirect, 'manual');
-    return new Response(null, { status: 200 });
-  });
-  await ejecutarCampana(campana);
-  assert.equal(espera, 10000);
-  assert.equal(fetchMock.mock.callCount(), 1);
-});
-
-test('servicio: errores HTTP y redirecciones no generan reintentos ni seguimiento', async t => {
-  let llamadas = 0;
-  let status = 500;
-  const url = await servidor(t, (req, res) => {
-    llamadas++;
-    res.writeHead(status, { Location: '/otro' }).end('DETALLE INTERNO');
-  });
+test('bloqueo temporal: transporte 200 no recibe solicitudes', async t => {
+  let recibidas = 0;
+  const url = await servidor(t, (req, res) => { recibidas++; res.writeHead(200).end(); });
   configurar(t, url);
-  for (status of [400, 401, 403, 404, 405, 429, 500, 503, 302, 307]) await assert.rejects(ejecutarCampana(campana), codigo('RESPUESTA'));
-  assert.equal(llamadas, 10);
+  const webhook = t.mock.method(global, 'fetch', () => { throw new Error('No enviar'); });
+  for (const ejecutar of [ejecutarCampana, c => emailService.ejecutarCampana(c, { rol: 'superadmin' })]) {
+    await assert.rejects(ejecutar(campana), codigo('ENVIOS_BLOQUEADOS'));
+  }
+  assert.equal(recibidas, 0);
+  assert.equal(webhook.mock.callCount(), 0);
 });
 
-test('servicio: conexión interrumpida se clasifica sin reintentar', async t => {
-  let llamadas = 0;
-  const url = await servidor(t, (req) => { llamadas++; req.socket.destroy(); });
+test('bloqueo temporal: transporte 302 no recibe solicitudes', async t => {
+  let recibidas = 0;
+  const url = await servidor(t, (req, res) => { recibidas++; res.writeHead(302).end(); });
   configurar(t, url);
-  await assert.rejects(ejecutarCampana(campana), codigo('CONEXION'));
-  assert.equal(llamadas, 1);
+  const webhook = t.mock.method(global, 'fetch', () => { throw new Error('No enviar'); });
+  for (const ejecutar of [ejecutarCampana, c => emailService.ejecutarCampana(c, { rol: 'superadmin' })]) {
+    await assert.rejects(ejecutar(campana), codigo('ENVIOS_BLOQUEADOS'));
+  }
+  assert.equal(recibidas, 0);
+  assert.equal(webhook.mock.callCount(), 0);
 });
 
-test('servicio: timeout interrumpe la espera sin reintentar', async t => {
-  let llamadas = 0;
-  const url = await servidor(t, () => { llamadas++; });
-  configurar(t, url, '150');
-  await assert.rejects(ejecutarCampana(campana), codigo('TIMEOUT'));
-  assert.equal(llamadas, 1);
-});
-
-test('email: webhook HTTP real conserva campos y agrega destinatarios sin solicitudes individuales', async t => {
-  const empresa = '507f1f77bcf86cd799439012';
-  const contactoId = '507f1f77bcf86cd799439013';
-  const peticiones = [];
-  const url = await servidor(t, async (req, res) => {
-    let body = '';
-    for await (const chunk of req) body += chunk;
-    peticiones.push(JSON.parse(body));
-    res.writeHead(204).end();
-  });
+test('bloqueo temporal: transporte 500 no recibe solicitudes', async t => {
+  let recibidas = 0;
+  const url = await servidor(t, (req, res) => { recibidas++; res.writeHead(500).end(); });
   configurar(t, url);
-  t.mock.method(Empresa, 'findById', () => ({ select: async () => ({ automatizaciones: { email: { habilitada: true } } }) }));
-  t.mock.method(Contacto.collection, 'find', filtro => {
-    assert.equal(String(filtro.empresa), empresa); assert.equal(filtro.activo, true);
-    return { toArray: async () => [{ _id: contactoId, nombre: 'Cliente', email: 'cliente@example.test', activo: true, privado: 'NO ENVIAR' }] };
-  });
-  await ejecutarCampana({ ...campana, empresa, destinatarios: { tipo: 'todos' } });
-  assert.equal(peticiones.length, 1);
-  const { destinatarios, totalDestinatarios, tipoDestinatarios, ...historico } = peticiones[0];
-  assert.deepEqual(historico, { id: campana._id, nombre: campana.nombre, objetivo: campana.objetivo,
-    asunto: campana.asunto, cuerpoTexto: campana.cuerpoTexto, canal: 'email', estado: 'activa',
-    fechaInicio: '2026-10-01T00:00:00.000Z', fechaFin: '2026-10-05T00:00:00.000Z' });
-  assert.deepEqual(destinatarios, [{ id: contactoId, nombre: 'Cliente', email: 'cliente@example.test', telefono: null }]);
-  assert.equal(totalDestinatarios, 1); assert.equal(tipoDestinatarios, 'todos');
+  const webhook = t.mock.method(global, 'fetch', () => { throw new Error('No enviar'); });
+  for (const ejecutar of [ejecutarCampana, c => emailService.ejecutarCampana(c, { rol: 'superadmin' })]) {
+    await assert.rejects(ejecutar(campana), codigo('ENVIOS_BLOQUEADOS'));
+  }
+  assert.equal(recibidas, 0);
+  assert.equal(webhook.mock.callCount(), 0);
+});
+
+test('bloqueo temporal: transporte 429 no recibe solicitudes', async t => {
+  let recibidas = 0;
+  const url = await servidor(t, (req, res) => { recibidas++; res.writeHead(429).end(); });
+  configurar(t, url);
+  const webhook = t.mock.method(global, 'fetch', () => { throw new Error('No enviar'); });
+  for (const ejecutar of [ejecutarCampana, c => emailService.ejecutarCampana(c, { rol: 'superadmin' })]) {
+    await assert.rejects(ejecutar(campana), codigo('ENVIOS_BLOQUEADOS'));
+  }
+  assert.equal(recibidas, 0);
+  assert.equal(webhook.mock.callCount(), 0);
+});
+
+test('bloqueo temporal: transporte 307 no recibe solicitudes', async t => {
+  let recibidas = 0;
+  const url = await servidor(t, (req, res) => { recibidas++; res.writeHead(307).end(); });
+  configurar(t, url);
+  const webhook = t.mock.method(global, 'fetch', () => { throw new Error('No enviar'); });
+  for (const ejecutar of [ejecutarCampana, c => emailService.ejecutarCampana(c, { rol: 'superadmin' })]) {
+    await assert.rejects(ejecutar(campana), codigo('ENVIOS_BLOQUEADOS'));
+  }
+  assert.equal(recibidas, 0);
+  assert.equal(webhook.mock.callCount(), 0);
 });
 
 test('email: acceso empresarial se valida antes de resolver destinatarios', async t => {

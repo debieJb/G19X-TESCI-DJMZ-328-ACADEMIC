@@ -73,27 +73,21 @@ test('automatización: botón POST solo para activas; GET no ejecuta', async t =
   for (const estado of ['borrador', 'programada', 'activa', 'pausada', 'finalizada']) {
     documento.estado = estado;
     const respuesta = await request(app).get(`/campanas/${id}`).expect(200);
-    assert.equal(respuesta.text.includes('Ejecutar automatización'), estado === 'activa');
-    if (estado === 'activa') assert.ok(respuesta.text.includes(`action="/campanas/${id}/ejecutar" method="post"`));
+    assert.equal(respuesta.text.includes('Ejecutar automatización'), false);
+    assert.ok(!respuesta.text.includes(`action="/campanas/${id}/ejecutar"`));
   }
   await request(app).get(`/campanas/${id}/ejecutar`).expect(404);
   assert.equal(ejecutar.mock.callCount(), 0);
 });
 
-test('automatización: usa datos persistidos, ignora el cuerpo y no guarda cambios', async t => {
+test('bloqueo HTTP: ignora datos manipulados y no guarda ni delega', async t => {
   const ejecutar = t.mock.method(automatizacion, 'ejecutarCampana', async () => {});
   const anterior = documento.toObject();
-  const respuesta = await post(`/campanas/${id}/ejecutar`, {
-    nombre: 'MANIPULADO', estado: 'finalizada', canal: 'redes_sociales', _id: ausente, N8N_WEBHOOK_URL: 'http://malicioso.invalid'
-  }).expect(303).expect('Location', `/campanas/${id}?automatizacion=enviada`);
-  assert.equal(ejecutar.mock.callCount(), 1);
-  assert.equal(ejecutar.mock.calls[0].arguments[0], documento);
+  const respuesta = await post(`/campanas/${id}/ejecutar`, { confirmacion: 'ENVIAR', nombre: 'MANIPULADO', estado: 'finalizada', canal: 'email' }).expect(503);
+  assert.match(respuesta.text, /temporalmente bloqueados/);
+  assert.equal(ejecutar.mock.callCount(), 0);
   assert.deepEqual(documento.toObject(), anterior);
   for (const metodo of [guardar, crear, borrar]) assert.equal(metodo.mock.callCount(), 0);
-  const detalle = await request(app).get(respuesta.headers.location).expect(200);
-  assert.match(detalle.text, /Solicitud enviada a la automatización/);
-  assert.ok(!detalle.text.includes('malicioso.invalid'));
-  assert.equal(ejecutar.mock.callCount(), 1);
 });
 
 test('automatización: valida id, existencia y estado sin llamar al servicio', async t => {
@@ -150,8 +144,8 @@ test('automatización: errores del servicio se muestran sin filtrar detalles ext
       error.message = 'https://secreto.invalid/webhook';
       throw error;
     });
-    const respuesta = await post(`/campanas/${id}/ejecutar`, {}).expect(status);
-    assert.ok(respuesta.text.includes(mensaje));
+    const respuesta = await post(`/campanas/${id}/ejecutar`, {}).expect(503);
+    assert.match(respuesta.text, /temporalmente bloqueados/);
     assert.ok(!respuesta.text.includes('secreto.invalid'));
     assert.match(respuesta.text, /role="alert"/);
   }
@@ -162,11 +156,11 @@ test('automatización: errores del servicio se muestran sin filtrar detalles ext
 test('automatización: fallos de MongoDB e inesperados mantienen el manejo existente', async t => {
   t.mock.method(console, 'error', () => {});
   const ejecutar = t.mock.method(automatizacion, 'ejecutarCampana', async () => { throw new Error('SECRETO'); });
-  const respuesta = await post(`/campanas/${id}/ejecutar`, {}).expect(500);
+  const respuesta = await post(`/campanas/${id}/ejecutar`, {}).expect(503);
   assert.ok(!respuesta.text.includes('SECRETO'));
   buscar.mock.mockImplementation(async () => { throw Object.assign(new Error(), { name: 'MongoNetworkError' }); });
   await post(`/campanas/${id}/ejecutar`, {}).expect(503);
-  assert.equal(ejecutar.mock.callCount(), 1);
+  assert.equal(ejecutar.mock.callCount(), 0);
 });
 
 test('crear: rechaza estados distintos de borrador sin guardar', async () => {
@@ -268,7 +262,7 @@ test('crear: 303, campos permitidos, borrador y opcionales vacíos', async () =>
   await post('/campanas', { nombre: ' Nueva ', objetivo: ' Objetivo ', fechaInicio: '', fechaFin: '', admin: 'true', _id: ausente })
     .expect(303).expect('Location', '/campanas');
   const valores = crear.mock.calls[0].arguments[0];
-  assert.deepEqual(Object.keys(valores).sort(), ['nombre', 'objetivo', 'canal', 'estado', 'fechaInicio', 'fechaFin', 'asunto', 'cuerpoTexto', 'publicacion', 'empresa', 'creadoPor', 'destinatarios'].sort());
+  assert.deepEqual(Object.keys(valores).sort(), ['nombre', 'objetivo', 'canal', 'estado', 'fechaInicio', 'fechaFin', 'asunto', 'cuerpoTexto', 'publicacion', 'empresa', 'creadoPor', 'destinatarios', 'versionFlujo'].sort());
   assert.deepEqual(valores.destinatarios, { tipo: 'todos', contactos: [], etiquetas: [] });
   assert.equal(valores.nombre, 'Nueva');
   assert.equal(valores.objetivo, 'Objetivo');
@@ -420,8 +414,8 @@ test('email: ejecutar sin contenido guardado devuelve 422 y no llama al webhook'
       documento.cuerpoTexto = 'Texto';
       documento[campo] = valor;
       const anterior = documento.toObject();
-      const respuesta = await post(`/campanas/${id}/ejecutar`, { asunto: 'No usar', cuerpoTexto: 'No usar' }).expect(422);
-      assert.match(respuesta.text, /Completa el asunto y el cuerpo de texto/);
+      const respuesta = await post(`/campanas/${id}/ejecutar`, { asunto: 'No usar', cuerpoTexto: 'No usar' }).expect(503);
+      assert.match(respuesta.text, /temporalmente bloqueados/);
       assert.match(respuesta.text, /role="alert"/);
       assert.deepEqual(documento.toObject(), anterior);
     }

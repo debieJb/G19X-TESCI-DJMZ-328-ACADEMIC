@@ -115,9 +115,9 @@ test('regresión: activar no envía; ejecutar email usa destinatarios propios y 
   assert.equal(webhook.mock.callCount(), 0);
   for (const [http, esperado] of [[202, 303], [401, 502], [404, 502], [500, 502]]) {
     status = http;
-    await cliente.post(`/campanas/${id}/ejecutar`).send({ asunto: 'Manipulado' }).expect(esperado);
+    await cliente.post(`/campanas/${id}/ejecutar`).send({ asunto: 'Manipulado' }).expect(503);
   }
-  assert.equal(webhook.mock.callCount(), 4);
+  assert.equal(webhook.mock.callCount(), 0);
   await cliente.get(`/campanas/${id}/editar`).expect(200);
   assert.deepEqual(Object.keys(await sesiones(store)), antes);
 });

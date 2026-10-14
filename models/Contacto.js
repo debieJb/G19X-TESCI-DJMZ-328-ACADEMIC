@@ -14,6 +14,11 @@ const contactoSchema = new mongoose.Schema({
     sms: { type: Boolean, default: false }
   },
   activo: { type: Boolean, default: true },
+  // Ausente en históricos: nunca inferir consentimiento desde canales.email.
+  consentimientoMarketing: { type: new mongoose.Schema({
+    estado: { type: String, enum: ['otorgado', 'revocado'], required: true }, fecha: { type: Date, required: true },
+    fuente: { type: String, required: true, trim: true, maxlength: 300 }
+  }, { _id: false }), default: undefined },
   creadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', immutable: true }
 }, { timestamps: true });
 contactoSchema.pre('validate', function () {

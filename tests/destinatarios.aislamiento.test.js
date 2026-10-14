@@ -49,16 +49,14 @@ for (const rol of ['operador', 'admin_empresa', 'superadmin']) {
     const selecciones = [{ tipo: 'todos' }, { tipo: 'contactos', contactos: [id(10), id(11), id(12)] }, { tipo: 'etiquetas', etiquetas: ['compartida'] }];
     for (const destinatarios of selecciones) {
       campana.destinatarios = destinatarios;
-      await cliente.post(`/campanas/${campanaId}/ejecutar`).send({ empresa: String(B), rol: 'superadmin', destinatarios: { tipo: 'contactos', contactos: [String(id(11))] }, email: 'ajeno@example.test' }).expect(303);
-      const payload = recibidos.at(-1);
-      assert.deepEqual(payload.destinatarios, [{ id: String(id(10)), nombre: 'Propio', email: 'igual@example.test', telefono: null }]);
-      assert.equal(payload.totalDestinatarios, 1);
-      assert.equal(payload.tipoDestinatarios, destinatarios.tipo);
-      assert.doesNotMatch(JSON.stringify(payload), /Ajeno|Inactivo|PRIVADO|ajeno@example.test|webhook/);
+      await cliente.post(`/campanas/${campanaId}/ejecutar`).send({ empresa: String(B), rol: 'superadmin', destinatarios: { tipo: 'contactos', contactos: [String(id(11))] }, email: 'ajeno@example.test' }).expect(503);
+      const propios = await require('../services/destinatariosService').resolverDestinatarios(campana);
+      assert.deepEqual(propios.map(c => c.email), ['igual@example.test']);
+      assert.equal(recibidos.length, 0);
     }
     contactos[0].activo = false;
-    await cliente.post(`/campanas/${campanaId}/ejecutar`).send({}).expect(422);
-    assert.equal(recibidos.length, 3);
+    await cliente.post(`/campanas/${campanaId}/ejecutar`).send({}).expect(503);
+    assert.equal(recibidos.length, 0);
     assert.equal(guardar.mock.callCount(), 0);
   });
 }
