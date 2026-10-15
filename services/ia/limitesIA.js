@@ -1,6 +1,16 @@
 const ErrorIA = require('./ErrorIA');
-const almacen = require('./almacenCuotasDev');
+const almacenDev = require('./almacenCuotasDev');
+const almacenProtegido = require('./almacenCuotasProtegido');
 const ocupadas = new Set();
+const seleccionarAlmacen = (env = process.env) => {
+  if (env.NODE_ENV === 'production') {
+    if (env.AI_QUOTA_BACKEND !== undefined && env.AI_QUOTA_BACKEND !== 'protected') throw new ErrorIA('PROVEEDOR');
+    return almacenProtegido;
+  }
+  if (env.AI_QUOTA_BACKEND === 'protected') return almacenProtegido;
+  if (env.AI_QUOTA_BACKEND === undefined || env.AI_QUOTA_BACKEND === 'dev_fixture') return almacenDev;
+  throw new ErrorIA('PROVEEDOR');
+};
 const reservar = empresa => {
   if (ocupadas.size >= 2 || ocupadas.has(empresa)) throw new ErrorIA('LIMITE');
   ocupadas.add(empresa);
@@ -9,7 +19,7 @@ const reservar = empresa => {
 const consumir = async (empresa, ahora = Date.now()) => {
   let Uso;
   try {
-    Uso = await almacen.obtener(empresa);
+    Uso = await seleccionarAlmacen().obtener(empresa);
   } catch { throw new ErrorIA('PROVEEDOR'); }
   for (const [tipo, duracion, maximo] of [['minuto', 60000, 3], ['dia', 86400000, 20]]) {
     const inicio = Math.floor(ahora / duracion);
@@ -20,4 +30,4 @@ const consumir = async (empresa, ahora = Date.now()) => {
     } catch (error) { if (error.code === 11000) throw new ErrorIA('LIMITE'); throw new ErrorIA('PROVEEDOR'); }
   }
 };
-module.exports = { reservar, consumir };
+module.exports = { reservar, consumir, seleccionarAlmacen };

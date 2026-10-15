@@ -16,4 +16,9 @@ const crearModelo = conexion => {
     || opciones.hosts[0].port !== 27018 || opciones.replicaSet !== 'marketingDevRs') throw new Error('CUOTAS_CONEXION_NO_AUTORIZADA');
   return conexion.models.UsoIA || conexion.model('UsoIA', schema.clone(), 'usoias');
 };
-module.exports = { schema, crearModelo };
+const crearModeloProtegido = conexion => {
+  if (!conexion || conexion === mongoose.connection || conexion.readyState !== 1
+    || conexion.name !== 'plurione_ai_quota') throw new Error('CUOTAS_CONEXION_NO_AUTORIZADA');
+  return conexion.models.UsoIA || conexion.model('UsoIA', schema.clone(), 'usoias');
+};
+module.exports = { schema, crearModelo, crearModeloProtegido };

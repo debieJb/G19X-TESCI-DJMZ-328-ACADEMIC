@@ -2,6 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const almacen = require('../services/ia/almacenCuotasDev');
 const limites = require('../services/ia/limitesIA');
+const almacenProtegido = require('../services/ia/almacenCuotasProtegido');
 const fixture = t => {
   const cantidades = new Map();
   const Uso = { findOneAndUpdate: async (filtro, update, options) => {
@@ -40,4 +41,11 @@ test('IA cuotas: concurrencia global máxima dos y liberación explícita', () =
   try { assert.throws(() => limites.reservar('empresa-c'), e => e.status === 429); assert.throws(() => limites.reservar('empresa-a'), e => e.status === 429); }
   finally { uno(); dos(); }
   limites.reservar('empresa-c')();
+});
+
+test('IA cuotas: producción y selección protegida nunca recurren al almacén ficticio', () => {
+  assert.equal(limites.seleccionarAlmacen({ NODE_ENV: 'production' }), almacenProtegido);
+  assert.equal(limites.seleccionarAlmacen({ NODE_ENV: 'development', AI_QUOTA_BACKEND: 'protected' }), almacenProtegido);
+  assert.equal(limites.seleccionarAlmacen({ NODE_ENV: 'test' }), almacen);
+  assert.throws(() => limites.seleccionarAlmacen({ NODE_ENV: 'production', AI_QUOTA_BACKEND: 'dev_fixture' }), e => e.codigo === 'PROVEEDOR');
 });
