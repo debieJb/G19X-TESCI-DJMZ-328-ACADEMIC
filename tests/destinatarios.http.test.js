@@ -1,3 +1,4 @@
+const { consentimientoPrueba } = require('./soporte/consentimiento');
 const { test, beforeEach, mock } = require('node:test');
 const assert = require('node:assert/strict');
 const mongoose = require('mongoose');
@@ -27,7 +28,7 @@ beforeEach(t => {
   contactos = [{ _id: id(20), empresa, nombre: 'Cliente <seguro>', email: 'cliente@example.test', activo: true, etiquetas: ['vip', 'ventas'] },
     { _id: id(21), empresa, nombre: 'Sin email', telefono: '555', activo: true, etiquetas: ['ventas'] },
     { _id: id(22), empresa, nombre: 'Inactivo', email: 'inactivo@example.test', activo: false, etiquetas: ['vip'] },
-    { _id: id(23), empresa: otra, nombre: 'CONTACTO SECRETO', email: 'secreto@example.test', activo: true, etiquetas: ['ajena'] }];
+    { _id: id(23), empresa: otra, nombre: 'CONTACTO SECRETO', email: 'secreto@example.test', activo: true, etiquetas: ['ajena'] }].map(contacto => ({ ...consentimientoPrueba(), ...contacto }));
   guardados = []; cambios = []; solicitudes = []; filtros = [];
   t.mock.method(Campana.collection, 'findOne', async filtro => campanas.find(doc => coincide(doc, filtro)) || null);
   t.mock.method(Campana.collection, 'insertOne', async doc => { guardados.push(doc); return { insertedId: doc._id }; });

@@ -1,14 +1,13 @@
 const Contacto = require('../models/Contacto');
 const ErrorAutomatizacion = require('./ErrorAutomatizacion');
 const { normalizarEmpresaId } = require('./accesoEmpresaService');
+const { consentimiento, emailNormalizado } = require('./elegibilidadEmailService');
 const tipos = Object.freeze({ todos: 'Todos los contactos activos', contactos: 'Contactos específicos', etiquetas: 'Por etiquetas' });
 const idValido = valor => typeof valor === 'string' && /^[a-f\d]{24}$/i.test(valor);
 const empresaDe = campana => normalizarEmpresaId(campana.empresa);
 const emailValido = valor => typeof valor === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor.trim());
 const aptoParaCanal = (contacto, canal) => contacto.activo === true && (canal === 'email'
-  // Habilitación técnica, no consentimiento. Ausente conserva el flujo histórico;
-  // un valor presente solo habilita con true (incluido false: excluir).
-  ? emailValido(contacto.email) && (contacto.canales?.email === undefined || contacto.canales.email === true)
+  ? consentimiento(contacto)
   : ['whatsapp', 'sms'].includes(canal) ? typeof contacto.telefono === 'string' && !!contacto.telefono.trim() : true);
 
 // Validar el cuerpo explícitamente antes de permitir casts de Mongoose.
@@ -53,7 +52,7 @@ const validarPertenencia = async (seleccion, empresa) => {
   return '';
 };
 
-const resolverDestinatarios = async campana => {
+const resolverDestinatarios = async (campana, { modelo = Contacto, session, maximo } = {}) => {
   // No convertir campañas históricas en consultas globales ni migrarlas implícitamente.
   if (!campana.destinatarios) return [];
   const empresa = empresaDe(campana);
@@ -68,12 +67,17 @@ const resolverDestinatarios = async campana => {
   if (seleccion.seleccion.tipo === 'etiquetas') filtro.etiquetas = { $in: seleccion.seleccion.etiquetas };
   if (campana.canal === 'email') filtro.email = { $type: 'string' };
   if (['whatsapp', 'sms'].includes(campana.canal)) filtro.telefono = { $type: 'string' };
-  const contactos = await Contacto.find(filtro).select('nombre email telefono activo canales.email').sort({ _id: 1 }).lean();
+  let consulta = modelo.find(filtro).select('empresa nombre email telefono activo canales.email consentimientoMarketing').sort({ _id: 1 });
+  if (session) consulta = consulta.session(session);
+  if (maximo) consulta = consulta.limit(maximo);
+  const contactos = await consulta.lean();
+  if (maximo && contactos.length >= maximo) throw new ErrorAutomatizacion('DESTINATARIOS_INVALIDOS');
   const unicos = new Map();
   for (const contacto of contactos) {
     if (!aptoParaCanal(contacto, campana.canal)) continue;
     const id = String(contacto._id);
-    unicos.set(id, { id, nombre: contacto.nombre,
+    if (normalizarEmpresaId(contacto.empresa) !== empresa) continue;
+    unicos.set(campana.canal === 'email' ? emailNormalizado(contacto.email) : id, { id, nombre: contacto.nombre,
       email: emailValido(contacto.email) ? contacto.email.trim().toLowerCase() : null,
       telefono: typeof contacto.telefono === 'string' && contacto.telefono.trim() ? contacto.telefono.trim() : null });
   }

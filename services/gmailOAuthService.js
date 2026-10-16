@@ -109,19 +109,24 @@ const completar = async (usuario, sesionId, query) => {
   } catch (error) { if (error.code === 11000) throw new ErrorGmail('CUENTA_OCUPADA'); throw error; }
 };
 
-const obtenerAccessToken = async usuario => {
-  const empresa = await acceso(usuario, true);
+// contexto es exclusivamente interno; nunca se deriva de req.body.
+const obtenerAccessToken = async (usuario, contexto = {}) => {
+  const ModeloConexion = contexto.Conexion || Conexion;
+  const comprobarAcceso = contexto.acceso || acceso;
+  const salidaToken = (accessToken, doc, versionConexion = doc.versionConexion) => contexto.conIdentidad
+    ? { accessToken, googleSub: doc.googleSub, email: doc.email, versionConexion } : accessToken;
+  const empresa = await comprobarAcceso(usuario, true);
   const config = google.configuracion();
-  const conexion = await Conexion.findOne({ empresa }).select(TOKENS);
+  const conexion = await ModeloConexion.findOne({ empresa }).select(TOKENS);
   if (!conexion || conexion.estado === 'desconectada' || conexion.estado === 'revocacion_pendiente') throw new ErrorGmail('SIN_CONEXION');
   if (conexion.estado !== 'conectada' || conexion.clienteOAuthHash !== config.hash) throw new ErrorGmail('RECONEXION');
   if (conexion.expiraEn?.getTime() > Date.now() + 60000 && conexion.accessTokenCifrado) {
-    return cifrado.descifrar(conexion.accessTokenCifrado, empresa, 'access');
+    return salidaToken(cifrado.descifrar(conexion.accessTokenCifrado, empresa, 'access'), conexion);
   }
   if (!conexion.refreshTokenCifrado) throw new ErrorGmail('RECONEXION');
   const bloqueo = aleatorio();
   const filtro = { empresa, estado: 'conectada', versionConexion: conexion.versionConexion };
-  const tomado = await Conexion.updateOne({ ...filtro, $or: [{ bloqueoHasta: { $exists: false } }, { bloqueoHasta: { $lte: new Date() } }] },
+  const tomado = await ModeloConexion.updateOne({ ...filtro, $or: [{ bloqueoHasta: { $exists: false } }, { bloqueoHasta: { $lte: new Date() } }] },
     { $set: { bloqueoRenovacion: bloqueo, bloqueoHasta: new Date(Date.now() + 45000) } });
   if (!tomado.matchedCount) throw new ErrorGmail('CONFLICTO');
   const protegido = { ...filtro, bloqueoRenovacion: bloqueo };
@@ -131,24 +136,24 @@ const obtenerAccessToken = async usuario => {
     const { credentials: tokens } = await cliente.refreshAccessToken();
     validarTokens(tokens);
     if (tokens.scope !== undefined) validarScopes(tokens.scope);
-    await acceso(usuario, true);
-    const resultado = await Conexion.updateOne(protegido, { $set: {
+    await comprobarAcceso(usuario, true);
+    const resultado = await ModeloConexion.updateOne(protegido, { $set: {
       accessTokenCifrado: cifrado.cifrar(tokens.access_token, empresa, 'access'),
       refreshTokenCifrado: cifrado.cifrar(textoToken(tokens.refresh_token) ? tokens.refresh_token
         : cifrado.descifrar(conexion.refreshTokenCifrado, empresa, 'refresh'), empresa, 'refresh'),
       expiraEn: new Date(tokens.expiry_date), renovadoEn: new Date()
     }, $inc: { versionConexion: 1 }, $unset: { bloqueoRenovacion: 1, bloqueoHasta: 1 } }, { runValidators: true });
     if (!resultado.matchedCount) throw new ErrorGmail('CONFLICTO');
-    return tokens.access_token;
+    return salidaToken(tokens.access_token, conexion, conexion.versionConexion + 1);
   } catch (error) {
     if (error.response?.data?.error === 'invalid_grant' || (error instanceof ErrorGmail && error.codigo === 'SCOPES')) {
-      await Conexion.updateOne(protegido, { $set: { estado: 'requiere_reconexion' }, $inc: { versionConexion: 1 }, $unset: { accessTokenCifrado: 1, expiraEn: 1, bloqueoRenovacion: 1, bloqueoHasta: 1 } });
+      await ModeloConexion.updateOne(protegido, { $set: { estado: 'requiere_reconexion' }, $inc: { versionConexion: 1 }, $unset: { accessTokenCifrado: 1, expiraEn: 1, bloqueoRenovacion: 1, bloqueoHasta: 1 } });
       throw new ErrorGmail('RECONEXION');
     }
     if (error instanceof ErrorGmail) throw error;
     throw new ErrorGmail('GOOGLE');
   } finally {
-    await Conexion.updateOne(protegido, { $unset: { bloqueoRenovacion: 1, bloqueoHasta: 1 } });
+    await ModeloConexion.updateOne(protegido, { $unset: { bloqueoRenovacion: 1, bloqueoHasta: 1 } });
   }
 };
 

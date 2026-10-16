@@ -1,3 +1,4 @@
+const { consentimientoPrueba } = require('./soporte/consentimiento');
 const { test, beforeEach, mock } = require('node:test');
 const assert = require('node:assert/strict');
 const mongoose = require('mongoose');
@@ -39,7 +40,7 @@ beforeEach(t => {
   consultarContactos = t.mock.method(Contacto.collection, 'find', (filtro, opciones) => {
     assert.equal(String(filtro.empresa), String(A));
     assert.equal(opciones.projection['canales.email'], 1);
-    return { toArray: async () => [{ _id: id(10), nombre: 'Propio', email: 'propio@example.test', activo: true }] };
+    return { toArray: async () => [{ _id: id(10), empresa: A, ...consentimientoPrueba(), nombre: 'Propio', email: 'propio@example.test', activo: true }] };
   });
   enviar = t.mock.method(global, 'fetch', async () => new Response(null, { status: 204 }));
 });
@@ -171,7 +172,7 @@ test('compatibilidad: una asignación explícita de relaciones ausentes no permi
 });
 
 for (const tipo of ['todos', 'contactos', 'etiquetas']) {
-  test(`canales.email: ${tipo} excluye deshabilitados y conserva ausentes sin mezclar empresas`, async t => {
+  test(`canales.email: ${tipo} excluye deshabilitados y excluye ausentes sin mezclar empresas`, async t => {
     const contactos = [
       { _id: id(10), empresa: A, activo: true, email: 'habilitado@example.test', canales: { email: true }, etiquetas: ['vip'] },
       { _id: id(11), empresa: A, activo: true, email: 'deshabilitado@example.test', canales: { email: false }, etiquetas: ['vip'] },
@@ -181,6 +182,7 @@ for (const tipo of ['todos', 'contactos', 'etiquetas']) {
       { _id: id(15), empresa: A, activo: true, email: 'corrupto@example.test', canales: { email: 'true' }, etiquetas: ['vip'] }
     ];
     for (const contacto of contactos) contacto.nombre = 'Contacto de prueba';
+    for (const contacto of contactos) contacto.consentimientoMarketing = consentimientoPrueba().consentimientoMarketing;
     t.mock.method(Contacto.collection, 'find', (filtro, opciones) => {
       assert.equal(String(filtro.empresa), String(A));
       assert.equal(opciones.projection['canales.email'], 1);
@@ -188,7 +190,7 @@ for (const tipo of ['todos', 'contactos', 'etiquetas']) {
     });
     const doc = { ...campana, destinatarios: { tipo, contactos: contactos.map(c => c._id), etiquetas: ['vip'] } };
     const resultado = await destinatarios.resolverDestinatarios(doc);
-    assert.deepEqual(resultado.map(c => c.email), ['habilitado@example.test', 'historico@example.test']);
+    assert.deepEqual(resultado.map(c => c.email), [contactos[0].email]);
     await assert.rejects(email.ejecutarCampana(doc, { rol: 'operador', empresa: A }), { codigo: 'ENVIOS_BLOQUEADOS' });
     assert.equal(enviar.mock.callCount(), 0);
   });

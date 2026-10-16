@@ -1,3 +1,4 @@
+const { passwordSintetica } = require('../tests/soporte/registroFixture');
 // Ejecución explícita: node --test pruebas-integracion/registroEmpresarial.js
 // No carga .env ni comparte la conexión de Express.
 const { test, before, after } = require('node:test');
@@ -8,11 +9,13 @@ const bcrypt = require('bcryptjs');
 const rs = require('../scripts/mongoDevRsComun');
 const { registrar } = require('../services/registroEmpresarialService');
 const entrada = () => ({ nombreEmpresa: 'Empresa ficticia', correoAutomatizaciones: 'auto@example.test', nombreAdministrador: 'Admin ficticio',
-  correoAdministrador: 'acceso@example.test', password: 'Frase-ficticia-larga-2026' });
+  correoAdministrador: 'acceso@example.test', password: passwordSintetica() });
 before(async () => { const c = await rs.conectar(); try { await rs.verificar(c); await rs.compararOriginal(); } finally { await c.close(); } });
 after(async () => { await rs.compararOriginal(); assert.equal(mongoose.connection.readyState, 0); });
 
 const fixture = async t => {
+  // Una entrada estable por caso conserva los reintentos idempotentes.
+  const datos = entrada();
   const base = 'ma_tx_test_' + randomUUID().replaceAll('-', '');
   const marca = randomUUID();
   const conexion = await mongoose.createConnection(rs.URI, { dbName: base, autoIndex: false, autoCreate: false, serverSelectionTimeoutMS: 3000 }).asPromise();
@@ -30,15 +33,15 @@ const fixture = async t => {
     m[nombre] = conexion.model(nombre, require(`../models/${nombre}`).schema.clone());
     await m[nombre].createCollection(); await m[nombre].createIndexes();
   }
-  const actor = new m.Usuario({ nombre: 'Superadmin ficticio', email: 'super@example.test', rol: 'superadmin', password: 'Super-ficticio-largo-2026', estadoAcceso: 'activo' });
+  const actor = new m.Usuario({ nombre: 'Superadmin ficticio', email: 'super@example.test', rol: 'superadmin', password: passwordSintetica(), estadoAcceso: 'activo' });
   await actor.save();
-  const ejecutar = (cambios = {}) => registrar({ conexion, actorId: actor._id, datos: entrada(), claveIdempotencia: 'clave-ficticia-idempotente-1', ...cambios });
+  const ejecutar = (cambios = {}) => registrar({ conexion, actorId: actor._id, datos: { ...datos }, claveIdempotencia: 'clave-ficticia-idempotente-1', ...cambios });
   const conteos = async () => [await m.Empresa.countDocuments(), await m.Usuario.countDocuments({ rol: 'admin_empresa' }), await m.TareaCorreo.countDocuments()];
-  return { conexion, m, actor, ejecutar, conteos };
+  return { conexion, m, actor, ejecutar, conteos, datos };
 };
 
 test('integración alta: commit de empresa, administrador bcrypt y tarea sin token', async t => {
-  const { m, ejecutar, conteos } = await fixture(t);
+  const { m, ejecutar, conteos, datos } = await fixture(t);
   const resultado = await ejecutar();
   assert.deepEqual(await conteos(), [1, 1, 1]);
   const empresa = await m.Empresa.findById(resultado.empresaId).lean();
@@ -48,10 +51,10 @@ test('integración alta: commit de empresa, administrador bcrypt y tarea sin tok
   assert.equal(empresa.correoAutomatizaciones, 'auto@example.test');
   assert.equal(usuario.estadoAcceso, 'pendiente_verificacion'); assert.equal(usuario.emailVerificadoEn, undefined);
   assert.equal(String(usuario.empresa), resultado.empresaId); assert.equal(usuario.rol, 'admin_empresa');
-  assert.match(usuario.password, /^\$2[ab]\$12\$/); assert.equal(await bcrypt.compare(entrada().password, usuario.password), true);
+  assert.match(usuario.password, /^\$2[ab]\$12\$/); assert.equal(await bcrypt.compare(datos.password, usuario.password), true);
   assert.equal(tarea.correoDestino, usuario.email); assert.equal(tarea.estado, 'pendiente_configuracion');
   const raw = JSON.stringify(await m.TareaCorreo.collection.findOne({ _id: tarea._id }));
-  assert.ok(!raw.includes(entrada().password)); assert.equal(tarea.token, undefined);
+  assert.ok(!raw.includes(datos.password)); assert.equal(tarea.token, undefined);
   assert.equal(await m.VerificacionCorreo.countDocuments(), 0);
 });
 
@@ -95,9 +98,9 @@ test('integración alta: claves diferentes concurrentes respetan email único', 
 });
 
 test('integración alta: misma clave con otro correo o password produce conflicto', async t => {
-  const { ejecutar, conteos } = await fixture(t); await ejecutar();
-  for (const cambio of [{ correoAdministrador: 'otra@example.test' }, { password: 'Otra-frase-ficticia-2026' }]) {
-    await assert.rejects(ejecutar({ datos: { ...entrada(), ...cambio } }), /IDEMPOTENCIA_CONFLICTO/);
+  const { ejecutar, conteos, datos } = await fixture(t); await ejecutar();
+  for (const cambio of [{ correoAdministrador: 'otra@example.test' }, { password: passwordSintetica() }]) {
+    await assert.rejects(ejecutar({ datos: { ...datos, ...cambio } }), /IDEMPOTENCIA_CONFLICTO/);
   }
   assert.deepEqual(await conteos(), [1, 1, 1]);
 });
@@ -133,7 +136,7 @@ test('integración alta: histórico sin metadatos no se modifica al registrar ot
   await m.Empresa.collection.insertOne({ _id: id, nombre: 'Histórica ficticia', estado: 'activa' });
   const usuarioId = new mongoose.Types.ObjectId();
   await m.Usuario.collection.insertOne({ _id: usuarioId, nombre: 'Usuario histórico ficticio', email: 'historico@example.test',
-    rol: 'operador', empresa: id, password: await bcrypt.hash('Clave-historica-ficticia', 4) });
+    rol: 'operador', empresa: id, password: await bcrypt.hash(passwordSintetica(), 4) });
   const antes = await m.Empresa.collection.findOne({ _id: id });
   const usuarioAntes = await m.Usuario.collection.findOne({ _id: usuarioId });
   await ejecutar();

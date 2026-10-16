@@ -1,0 +1,9 @@
+{
+  "aprobado": false,
+  "base": "marketing_piloto_pendiente",
+  "replicaSet": "PENDIENTE_APROBACION",
+  "miembros": ["db-piloto.example.invalid:27017"],
+  "trustProxy": [],
+  "host": "127.0.0.1",
+  "puerto": 3100
+}

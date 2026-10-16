@@ -12,6 +12,11 @@ router.get('/:id/automatizacion', automatizacion.mostrar);
 router.post('/:id/automatizacion', automatizacion.guardar);
 router.post('/:id/automatizacion/imagen', automatizacion.guardarImagen);
 router.post('/:id/automatizacion/confirmar', automatizacion.confirmar);
+// Camino Gmail independiente: CSRF global de campañas + autenticación y empresa.
+router.post('/:id/gmail/confirmar', require('../controllers/enviosGmailController').confirmar);
+router.post('/:id/gmail/piloto/autorizar', require('../controllers/enviosGmailController').autorizar);
+router.post('/:id/gmail/piloto/revocar', require('../controllers/enviosGmailController').revocar);
+router.get('/:id/gmail/ejecucion', require('../controllers/enviosGmailController').consultar);
 router.get('/:id/imagen', automatizacion.imagen);
 router.get('/:id/editar', controller.mostrarFormularioEdicion);
 router.post('/:id/editar', controller.actualizarCampana);

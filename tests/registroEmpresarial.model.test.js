@@ -1,3 +1,4 @@
+const { passwordSintetica } = require('./soporte/registroFixture');
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const mongoose = require('mongoose');
@@ -9,7 +10,7 @@ const politica = require('../services/compatibilidadAltaService');
 const { registrar, validar } = require('../services/registroEmpresarialService');
 const id = () => new mongoose.Types.ObjectId();
 const entrada = () => ({ nombreEmpresa: 'Empresa ficticia', correoAutomatizaciones: 'auto@example.test',
-  nombreAdministrador: 'Administrador ficticio', correoAdministrador: 'acceso@example.test', password: 'Frase-segura-ficticia-2026' });
+  nombreAdministrador: 'Administrador ficticio', correoAdministrador: 'acceso@example.test', password: passwordSintetica() });
 
 test('alta: históricos conservan ausencia de metadatos y no acreditan verificación', () => {
   const empresa = Empresa.hydrate({ _id: id(), nombre: 'Histórica' });
@@ -85,7 +86,7 @@ test('alta: modelos de correo rechazan secretos y solo admiten hash no recuperab
   const tarea = { empresa: id(), usuario: id(), creadoPor: id(), correoDestino: 'a@example.test', tipo: 'verificar_acceso',
     versionAlta: 1, idempotenciaHash: 'b'.repeat(64), solicitudHash: 'c'.repeat(64) };
   await new Tarea(tarea).validate();
-  assert.throws(() => new Tarea({ ...tarea, password: 'prohibida' }), /strict/i);
+  assert.throws(() => new Tarea({ ...tarea, password: passwordSintetica() }), /strict/i);
   assert.throws(() => new Tarea({ ...tarea, token: 'prohibido' }), /strict/i);
   assert.equal(new Tarea(tarea).estado, 'pendiente_configuracion');
   assert.equal(new Tarea(tarea).toJSON().solicitudHash, undefined);

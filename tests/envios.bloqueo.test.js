@@ -1,3 +1,4 @@
+const { consentimientoPrueba } = require('./soporte/consentimiento');
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const mongoose = require('mongoose');
@@ -39,7 +40,7 @@ for (const rol of ['superadmin', 'admin_empresa', 'operador']) {
 test('bloqueo directo: selector y email rechazan antes del transporte aunque toda la configuración histórica sea válida', async t => {
   t.mock.method(Empresa, 'findById', () => ({ select: async () => ({ estado: 'activa',
     automatizaciones: { email: { habilitada: true, webhookUrl: 'http://127.0.0.1:27018/no-enviar' } } }) }));
-  t.mock.method(Contacto.collection, 'find', () => ({ toArray: async () => [{ _id: actor, activo: true, email: 'ficticio@example.test' }] }));
+  t.mock.method(Contacto.collection, 'find', () => ({ toArray: async () => [{ _id: actor, empresa: A, ...consentimientoPrueba(), activo: true, email: 'ficticio@example.test' }] }));
   const fetch = t.mock.method(global, 'fetch', () => { throw Error('No enviar'); });
   const doc = { _id: id, empresa: A, canal: 'email', asunto: 'Prueba', cuerpoTexto: 'Prueba', destinatarios: { tipo: 'todos' } };
   for (const servicio of [selector, email]) {

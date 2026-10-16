@@ -5,3 +5,25 @@ node_modules/
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Variables de entorno y credenciales
+.env
+.env.*
+!.env.example
+
+# Claves y certificados privados
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Archivos locales de credenciales
+credentials.json
+client_secret*.json
+service-account*.json
+secrets.json
+
+# Copias de seguridad sensibles
+*.db
+*.sqlite
+*.sqlite3

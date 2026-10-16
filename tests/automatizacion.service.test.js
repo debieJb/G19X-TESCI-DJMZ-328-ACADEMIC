@@ -1,3 +1,4 @@
+const { consentimientoPrueba } = require('./soporte/consentimiento');
 const { test, beforeEach } = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
@@ -20,7 +21,7 @@ beforeEach(t => {
   t.mock.method(Contacto.collection, 'find', filtro => {
     assert.equal(String(filtro.empresa), campana.empresa);
     assert.equal(filtro.activo, true);
-    return { toArray: async () => [{ _id: destinatario.id, nombre: destinatario.nombre, email: destinatario.email, activo: true }] };
+    return { toArray: async () => [{ _id: destinatario.id, empresa: campana.empresa, ...consentimientoPrueba(), nombre: destinatario.nombre, email: destinatario.email, activo: true }] };
   });
 });
 

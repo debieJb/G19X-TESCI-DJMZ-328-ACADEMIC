@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registro empresarial · Marketing Automation</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <a class="saltar" href="#contenido">Saltar al contenido</a>
+  <main id="contenido" tabindex="-1" class="panel">
+    <h1>Registro empresarial</h1>
+    <% if (mensaje) { %><p role="status" aria-live="polite"><%= mensaje %></p><% } %>
+    <% if (paso === 'solicitud') { %>
+      <p>Primero confirma el correo de tu empresa. Después podrás configurar tu administrador y contraseña.</p>
+      <form method="post" action="/registro">
+        <input type="hidden" name="_csrf" value="<%= registroCsrf %>">
+        <input type="hidden" name="idempotencia" value="<%= idempotencia %>">
+        <label for="empresa">Nombre de la empresa</label>
+        <input id="empresa" name="nombreEmpresa" autocomplete="organization" maxlength="200" required>
+        <label for="correo">Correo empresarial</label>
+        <input id="correo" name="correo" type="email" autocomplete="email" maxlength="320" required>
+        <button type="submit">Solicitar verificación</button>
+      </form>
+    <% } else if (paso === 'reenvio') { %>
+      <form method="post" action="/registro/reenviar">
+        <input type="hidden" name="_csrf" value="<%= registroCsrf %>">
+        <label for="correo">Correo empresarial</label>
+        <input id="correo" name="correo" type="email" autocomplete="email" maxlength="320" required>
+        <button type="submit">Solicitar otro enlace</button>
+      </form>
+    <% } else if (paso === 'verificacion') { %>
+      <p>Confirma que solicitaste este registro. El enlace puede utilizarse una sola vez.</p>
+      <form method="post" action="/registro/verificar">
+        <input type="hidden" name="_csrf" value="<%= registroCsrf %>">
+        <button type="submit">Verificar mi correo</button>
+      </form>
+    <% } else if (paso === 'administrador') { %>
+      <p>Tu correo fue verificado. Dispones de 20 minutos para completar este paso en este navegador.</p>
+      <form method="post" action="/registro/administrador">
+        <input type="hidden" name="_csrf" value="<%= registroCsrf %>">
+        <label for="empresa">Confirma el nombre de tu empresa</label>
+        <input id="empresa" name="nombreEmpresa" autocomplete="organization" maxlength="200" required>
+        <label for="nombre">Nombre del administrador</label>
+        <input id="nombre" name="nombreAdministrador" autocomplete="name" maxlength="200" required>
+        <p id="password-ayuda">Al menos 16 caracteres y cuatro caracteres diferentes; máximo 72 bytes. No uses una contraseña compartida.</p>
+        <label for="password">Nueva contraseña</label>
+        <input id="password" name="password" type="password" autocomplete="new-password" minlength="16" maxlength="72" aria-describedby="password-ayuda" required>
+        <label for="confirmacion">Confirma la contraseña</label>
+        <input id="confirmacion" name="confirmacionPassword" type="password" autocomplete="new-password" minlength="16" maxlength="72" required>
+        <button type="submit">Crear administrador</button>
+      </form>
+    <% } %>
+    <nav aria-label="Opciones del registro">
+      <a href="/registro">Solicitar registro</a>
+      <a href="/registro/reenviar">Solicitar otro enlace</a>
+      <a href="/login">Iniciar sesión</a>
+    </nav>
+  </main>
+</body>
+</html>

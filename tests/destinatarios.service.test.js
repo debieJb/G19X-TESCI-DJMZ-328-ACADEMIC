@@ -1,3 +1,4 @@
+const { consentimientoPrueba } = require('./soporte/consentimiento');
 const { test, beforeEach, mock } = require('node:test');
 const assert = require('node:assert/strict');
 const mongoose = require('mongoose');
@@ -24,7 +25,7 @@ beforeEach(t => {
     { _id: id(13), empresa, nombre: 'Inactivo', activo: false, email: 'inactivo@example.test', telefono: '333', etiquetas: ['vip', 'inactivos'] },
     { _id: id(14), empresa, nombre: 'Inválido', activo: true, email: 'incorrecto', telefono: ' ', etiquetas: [] },
     { _id: id(15), empresa: otra, nombre: 'Ajeno', activo: true, email: 'ajeno@example.test', telefono: '444', etiquetas: ['vip', 'ajena'] }
-  ];
+  ].map(contacto => ({ ...consentimientoPrueba(), ...contacto }));
   filtros = [];
   t.mock.method(Contacto.collection, 'find', filtro => {
     filtros.push(filtro);

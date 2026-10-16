@@ -1,3 +1,4 @@
+const { consentimientoPrueba } = require('./soporte/consentimiento');
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
@@ -34,7 +35,7 @@ for (const rol of ['operador', 'admin_empresa', 'superadmin']) {
       { _id: id(11), empresa: B, nombre: 'Ajeno', activo: true, email: 'igual@example.test', etiquetas: ['compartida'] },
       { _id: id(12), empresa: A, nombre: 'Inactivo', activo: false, email: 'inactivo@example.test', etiquetas: ['compartida'] },
       { _id: id(13), empresa: A, nombre: 'Inválido', activo: true, email: 'invalido', etiquetas: ['compartida'] }
-    ];
+    ].map(contacto => ({ ...consentimientoPrueba(), ...contacto }));
     const campana = { _id: campanaId, empresa: A, nombre: 'Correo', objetivo: 'Objetivo', canal: 'email', estado: 'activa', asunto: 'Asunto', cuerpoTexto: 'Mensaje' };
     t.mock.method(Campana.collection, 'findOne', async filtro => coincide(campana, filtro) ? { ...campana } : null);
     t.mock.method(Contacto.collection, 'find', filtro => {

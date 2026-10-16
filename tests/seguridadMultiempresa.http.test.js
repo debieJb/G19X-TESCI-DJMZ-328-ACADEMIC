@@ -1,11 +1,16 @@
-const { test, mock } = require('node:test');
+const { test, mock, after } = require('node:test');
 const assert = require('node:assert/strict');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 for (const [objeto, metodo] of [[dotenv, 'config'], [mongoose, 'connect'], [mongoose, 'createConnection'], [mongoose.Connection.prototype, 'openUri']]) {
   mock.method(objeto, metodo, () => { throw new Error('Acceso externo prohibido'); });
 }
-process.env.SESSION_SECRET = 'seguridad-etapa1-solo-pruebas';
+const sessionSecretAnterior = process.env.SESSION_SECRET;
+after(() => {
+  if (sessionSecretAnterior === undefined) delete process.env.SESSION_SECRET;
+  else process.env.SESSION_SECRET = sessionSecretAnterior;
+});
+process.env.SESSION_SECRET = require('node:crypto').randomBytes(32).toString('hex');
 const { crearContexto } = require('./soporte/sesion');
 const Empresa = require('../models/Empresa');
 const Campana = require('../models/Campana');

@@ -16,11 +16,20 @@ const contactoSchema = new mongoose.Schema({
   activo: { type: Boolean, default: true },
   // Ausente en históricos: nunca inferir consentimiento desde canales.email.
   consentimientoMarketing: { type: new mongoose.Schema({
-    estado: { type: String, enum: ['otorgado', 'revocado'], required: true }, fecha: { type: Date, required: true },
-    fuente: { type: String, required: true, trim: true, maxlength: 300 }
+    estado: { type: String, enum: ['otorgado', 'revocado'], required: true }, fecha: { type: Date, required: true,
+      validate: { validator: fecha => +fecha <= Date.now(), message: 'La fecha no puede ser futura.' } },
+    fuente: { type: String, required: true, trim: true, maxlength: 300 },
+    registradoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' }, registradoEn: Date,
+    emailHash: { type: String, match: /^[a-f0-9]{64}$/ }
   }, { _id: false }), default: undefined },
+  historialConsentimiento: { type: [new mongoose.Schema({
+    estado: { type: String, enum: ['otorgado', 'revocado'], required: true },
+    fecha: { type: Date, required: true }, fuente: { type: String, required: true, maxlength: 300 },
+    registradoPor: { type: mongoose.Schema.Types.ObjectId, required: true }, registradoEn: { type: Date, required: true },
+    emailHash: { type: String, match: /^[a-f0-9]{64}$/ }
+  }, { _id: false })], default: [] },
   creadoPor: { type: mongoose.Schema.Types.ObjectId, ref: 'Usuario', immutable: true }
-}, { timestamps: true });
+}, { timestamps: true, optimisticConcurrency: true });
 contactoSchema.pre('validate', function () {
   if (!this.email && !this.telefono) this.invalidate('email', 'Introduce al menos email o teléfono.');
 });

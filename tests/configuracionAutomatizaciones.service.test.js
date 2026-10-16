@@ -1,3 +1,4 @@
+const { consentimientoPrueba } = require('./soporte/consentimiento');
 const { test, beforeEach } = require('node:test');
 const assert = require('node:assert/strict');
 const Empresa = require('../models/Empresa');
@@ -9,7 +10,7 @@ const usuario = { rol: 'operador', empresa: empresaId };
 const campana = { _id: empresaId, empresa: empresaId, destinatarios: { tipo: 'todos' }, nombre: 'Campaña', objetivo: 'Objetivo', estado: 'activa', canal: 'email', asunto: 'Asunto', cuerpoTexto: 'Texto' };
 let empresa, peticiones, payloads;
 beforeEach(t => {
-  t.mock.method(Contacto.collection, 'find', () => ({ toArray: async () => [{ _id: empresaId, activo: true, email: 'prueba@example.test' }] }));
+  t.mock.method(Contacto.collection, 'find', () => ({ toArray: async () => [{ _id: empresaId, empresa: empresaId, ...consentimientoPrueba(), activo: true, email: 'prueba@example.test' }] }));
   empresa = new Empresa({ nombre: 'Empresa' }); peticiones = []; payloads = [];
   t.mock.method(Empresa, 'findById', id => {
     assert.equal(String(id), empresaId);

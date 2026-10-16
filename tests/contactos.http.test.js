@@ -193,3 +193,33 @@ test('contactos: eliminación concurrente devuelve 404', async () => {
   borrar.mock.mockImplementation(async () => ({ deletedCount: 0 }));
   await post(`/contactos/${id}/eliminar`, {}).expect(404);
 });
+const evidencia = () => ({ accionConsentimiento: 'otorgar', fechaConsentimiento: new Date(Date.now() - 1000).toISOString(),
+  fuenteConsentimiento: 'Acta sintetica numero 1', confirmarConsentimiento: 'true' });
+test('consentimiento HTTP: captura, conserva historia y revoca con autor del servidor', async () => {
+  await post(`/contactos/${id}/editar`, { nombre: 'Cliente', email: 'cliente@example.test', ...evidencia(), registradoPor: ajeno }).expect(303);
+  assert.equal(documentos[0].consentimientoMarketing.estado, 'otorgado');
+  assert.equal(String(documentos[0].consentimientoMarketing.registradoPor), autor);
+  await post(`/contactos/${id}/editar`, { nombre: 'Cliente', email: 'cliente@example.test', accionConsentimiento: 'revocar',
+    fuenteConsentimiento: 'Solicitud sintetica del titular', confirmarConsentimiento: 'true' }).expect(303);
+  assert.equal(documentos[0].consentimientoMarketing.estado, 'revocado'); assert.equal(documentos[0].historialConsentimiento.length, 2);
+});
+test('consentimiento HTTP: evidencia incompleta, futura o manipulada no guarda', async () => {
+  for (const cambio of [{ fuenteConsentimiento: '' }, { confirmarConsentimiento: 'false' },
+    { fechaConsentimiento: new Date(Date.now() + 3600000).toISOString() }, { fechaConsentimiento: {} }, { accionConsentimiento: ['otorgar'] }]) {
+    await cliente.post(`/contactos/${id}/editar`).send({ nombre: 'Cliente', email: 'cliente@example.test', ...evidencia(), ...cambio }).expect(422);
+  }
+  assert.equal(guardar.mock.callCount(), 0);
+});
+test('consentimiento HTTP: cambio de email revoca consentimiento previo; no cruza empresas', async () => {
+  await post(`/contactos/${id}/editar`, { nombre: 'Cliente', email: 'cliente@example.test', ...evidencia() }).expect(303);
+  await post(`/contactos/${id}/editar`, { nombre: 'Cliente', email: 'otro@example.test' }).expect(303);
+  assert.equal(documentos[0].consentimientoMarketing.estado, 'revocado');
+  await post(`/contactos/${ajeno}/editar`, { nombre: 'Ajeno', email: 'ajeno@example.test', ...evidencia() }).expect(404);
+});
+test('consentimiento HTTP: falta CSRF bloquea otorgamiento y revocacion', async () => {
+  const request = require('supertest'), c = await cliente.get(`/contactos/${id}/editar`).expect(200);
+  assert.ok(c.text.includes('Consentimiento de marketing'));
+  for (const accionConsentimiento of ['otorgar', 'revocar']) await request(require('../app')).post(`/contactos/${id}/editar`).send({ ...evidencia(), accionConsentimiento }).expect(302);
+  await cliente.post(`/contactos/${id}/editar`).send({ nombre: 'Cliente', email: 'cliente@example.test', ...evidencia(), _csrf: 'invalido' }).expect(403);
+  assert.equal(guardar.mock.callCount(), 0);
+});

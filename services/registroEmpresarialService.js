@@ -6,6 +6,9 @@ class ErrorRegistro extends Error {
 }
 const exigir = (ok, codigo) => { if (!ok) throw new ErrorRegistro(codigo); };
 const texto = valor => typeof valor === 'string' ? valor.trim() : '';
+const opcionesTransaccion = Object.freeze({ readPreference: 'primary', readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' }, maxCommitTimeMS: 5000, timeoutMS: 20000 });
+const validarPassword = password => exigir(typeof password === 'string' && [...password].length >= 16
+  && Buffer.byteLength(password, 'utf8') <= 72 && new Set(password).size >= 4, 'PASSWORD_INSEGURA');
 const validar = (datos, clave) => {
   const campos = ['nombreEmpresa', 'correoAutomatizaciones', 'nombreAdministrador', 'correoAdministrador', 'password'];
   exigir(datos && typeof datos === 'object' && !Array.isArray(datos) && Object.keys(datos).every(k => campos.includes(k)), 'DATOS_INVALIDOS');
@@ -16,19 +19,32 @@ const validar = (datos, clave) => {
     exigir(typeof datos[k] === 'string' && limpio[k].length <= 320 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(limpio[k]), 'DATOS_INVALIDOS');
     limpio[k] = limpio[k].toLowerCase();
   }
-  exigir(typeof datos.password === 'string' && [...datos.password].length >= 16
-    && Buffer.byteLength(datos.password, 'utf8') <= 72 && new Set(datos.password).size >= 4, 'PASSWORD_INSEGURA');
+  validarPassword(datos.password);
   return { limpio, password: datos.password, idempotenciaHash: hash(clave), solicitudHash: hash(JSON.stringify(limpio)) };
 };
 const modelos = conexion => Object.fromEntries(['Empresa', 'Usuario', 'TareaCorreo'].map(nombre => {
   const schema = require(`../models/${nombre}`).schema.clone().set('autoIndex', false).set('autoCreate', false);
   return [nombre, conexion.models[nombre] || conexion.model(nombre, schema)];
 }));
-const preparar = async conexion => {
+const validarTopologia = async conexion => {
   exigir(conexion?.readyState === 1 && conexion.db, 'CONEXION_REQUERIDA');
   const hello = await conexion.db.admin().command({ hello: 1 });
   exigir(hello.isWritablePrimary === true && hello.logicalSessionTimeoutMinutes !== undefined
     && ((hello.setName && hello.maxWireVersion >= 7) || (hello.msg === 'isdbgrid' && hello.maxWireVersion >= 8)), 'TRANSACCIONES_REQUERIDAS');
+};
+// Se reutiliza en ambos contratos. El autoservicio solo llama tras verificar correo.
+const crearEmpresaAdministrador = async (m, entrada, session, verificadoEn) => {
+  const empresa = new m.Empresa({ nombre: entrada.limpio.nombreEmpresa, correoAutomatizaciones: entrada.limpio.correoAutomatizaciones,
+    estado: 'activa', estadoActivacion: verificadoEn ? 'verificada' : 'pendiente_verificacion', versionAlta: 1 });
+  await empresa.save({ session });
+  const usuario = new m.Usuario({ nombre: entrada.limpio.nombreAdministrador, email: entrada.limpio.correoAdministrador,
+    password: entrada.password, rol: 'admin_empresa', empresa: empresa._id,
+    estadoAcceso: verificadoEn ? 'activo' : 'pendiente_verificacion', emailVerificadoEn: verificadoEn });
+  await usuario.save({ session });
+  return { empresa, usuario };
+};
+const preparar = async conexion => {
+  await validarTopologia(conexion);
   const m = modelos(conexion);
   // El servicio nunca crea índices ni colecciones. Deben provisionarse antes de habilitarlo.
   for (const [modelo, campos] of [[m.Usuario, { email: 1 }], [m.TareaCorreo, { creadoPor: 1, idempotenciaHash: 1 }],
@@ -68,18 +84,13 @@ const registrar = async ({ conexion, actorId, datos, claveIdempotencia }) => {
         await autorizar(session);
         const previa = await recuperar(session);
         if (previa) return previa;
-        const empresa = new m.Empresa({ nombre: entrada.limpio.nombreEmpresa, correoAutomatizaciones: entrada.limpio.correoAutomatizaciones,
-          estado: 'activa', estadoActivacion: 'pendiente_verificacion', versionAlta: 1 });
-        await empresa.save({ session });
-        const usuario = new m.Usuario({ nombre: entrada.limpio.nombreAdministrador, email: entrada.limpio.correoAdministrador,
-          password: entrada.password, rol: 'admin_empresa', empresa: empresa._id, estadoAcceso: 'pendiente_verificacion' });
-        await usuario.save({ session });
+        const { empresa, usuario } = await crearEmpresaAdministrador(m, entrada, session);
         const tarea = new m.TareaCorreo({ empresa: empresa._id, usuario: usuario._id, creadoPor: actor, tipo: 'verificar_acceso',
           versionAlta: 1, correoDestino: usuario.email, estado: 'pendiente_configuracion',
           idempotenciaHash: entrada.idempotenciaHash, solicitudHash: entrada.solicitudHash });
         await tarea.save({ session });
         return salida(tarea, empresa);
-      }, { readPreference: 'primary', readConcern: { level: 'snapshot' }, writeConcern: { w: 'majority' }, maxCommitTimeMS: 5000, timeoutMS: 20000 });
+      }, opcionesTransaccion);
     } catch (error) {
       if (error.code === 11000) {
         await autorizar();
@@ -94,4 +105,4 @@ const registrar = async ({ conexion, actorId, datos, claveIdempotencia }) => {
     throw new ErrorRegistro('REGISTRO_NO_COMPLETADO');
   }
 };
-module.exports = { registrar, ErrorRegistro, validar };
+module.exports = { registrar, ErrorRegistro, validar, validarPassword, validarTopologia, crearEmpresaAdministrador, opcionesTransaccion };

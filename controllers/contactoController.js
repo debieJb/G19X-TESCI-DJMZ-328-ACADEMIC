@@ -2,6 +2,7 @@ const Contacto = require('../models/Contacto');
 const Empresa = require('../models/Empresa');
 const { filtroEmpresa } = require('../services/accesoCampanasService');
 const { buscarContacto } = require('../services/accesoContactosService');
+const consentimiento = require('../services/consentimientoContactoService');
 const conexion = error => ['MongoServerSelectionError', 'MongooseServerSelectionError', 'MongoNetworkError', 'MongoNetworkTimeoutError', 'MongoTopologyClosedError', 'MongoNotConnectedError'].includes(error.name) || /buffering timed out/i.test(error.message || '');
 const formulario = (res, datos, errores = {}, status = 200, id = null) => res.status(status).render(id ? 'contactos/editar' : 'contactos/nuevo', {
   titulo: id ? 'Editar contacto' : 'Nuevo contacto', datos, errores,
@@ -66,6 +67,9 @@ const mostrarFormularioEdicion = async (req, res, next) => {
 };
 const guardar = editar => async (req, res, next) => {
   const { datos, errores, valores } = validar(req.body);
+  let cambio;
+  try { cambio = consentimiento.validarCambio(req.body || {}); }
+  catch { errores.consentimiento = 'Indica una accion, fecha no futura, referencia de evidencia y confirmacion validas.'; }
   const id = editar ? req.params.id : null;
   try {
     const usuario = res.locals.usuarioActual;
@@ -79,16 +83,30 @@ const guardar = editar => async (req, res, next) => {
       valores.creadoPor = usuario._id;
     }
     if (Object.keys(errores).length) return formulario(res, datos, errores, 422, id);
+    const destino = contacto || new Contacto(valores);
+    try { consentimiento.aplicarCambio(destino, cambio, { actorId: usuario._id, email: valores.email }); }
+    catch { return formulario(res, datos, { consentimiento: 'El consentimiento requiere un email valido.' }, 422, id); }
     if (editar) {
       contacto.set('canales.email', valores.canales.email);
       delete valores.canales;
       Object.assign(contacto, valores);
       await contacto.save();
     }
-    else await Contacto.create(valores);
+    else {
+      if (destino.consentimientoMarketing) {
+        valores.consentimientoMarketing = destino.consentimientoMarketing.toObject();
+        valores.historialConsentimiento = destino.historialConsentimiento.map(r => r.toObject());
+      }
+      await Contacto.create(valores);
+    }
     return res.redirect(303, editar ? `/contactos/${id}` : '/contactos');
   } catch (error) {
-    if (error.name === 'VersionError') return formulario(res, datos, { datos: 'El contacto cambió durante el guardado. Vuelve a consultarlo antes de editar.' }, 409, id);
+    if (error.name === 'VersionError') {
+      // Mongoose tambien reporta VersionError si deja de coincidir el filtro empresarial.
+      try { await buscarContacto(id, res.locals.usuarioActual, 'contactos.editar'); }
+      catch (actual) { return responderError(res, next, actual); }
+      return formulario(res, datos, { datos: 'El contacto cambió durante el guardado. Vuelve a consultarlo antes de editar.' }, 409, id);
+    }
     if (error.code === 11000) return formulario(res, datos, { [error.keyPattern?.telefono ? 'telefono' : 'email']: 'Ya existe un contacto con ese email o teléfono en esta empresa.' }, 422, id);
     if (error.name === 'ValidationError') return formulario(res, datos, { datos: 'Revisa los datos del contacto.' }, 422, id);
     if (!error.status && error.name !== 'DocumentNotFoundError') {

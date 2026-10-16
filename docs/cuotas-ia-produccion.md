@@ -1,5 +1,7 @@
 # Almacén protegido de cuotas de IA
 
+> Nota de cierre 2026-10-15: las instrucciones inferiores conservan evidencia y procedimientos historicos, no la identidad actual de 27019. Ese puerto corresponde ahora a marketingPilotLocalRs, directorio marketing-automation-pilot-mongo-rs, PRIMARY verificado. No ejecutar sobre el los scripts de aprovisionamiento/recuperacion de cuotas IA ni asumir que contiene su almacen. Gemini sigue pendiente de validacion real. Ver [cierre tecnico](cierre-tecnico-2026-10-15.md).
+
 ## Nuevo almacén local independiente para el piloto Gemini
 
 La instancia previa `marketing-automation-cuota-mongo`/27019 se conserva sin cambios y no se usa para recuperar acceso. El perfil nuevo de MongoDB Community 8.2.6 en `127.0.0.1:27020` ya tuvo un intento inicial y su directorio `C:\Users\jocam\Documents\marketing-automation-cuota-mongo-gemini\data` existe. **No ejecutes de nuevo el script de preparación inicial.** Continúa únicamente con el procedimiento de recuperación del perfil Gemini descrito abajo, conservando procesos, archivos y credenciales actuales.
