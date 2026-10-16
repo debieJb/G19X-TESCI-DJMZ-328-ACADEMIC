@@ -1,6 +1,6 @@
 const ErrorAutomatizacion = require('./ErrorAutomatizacion');
 
-const mensajeNoDisponible = 'Conecta Facebook y LinkedIn para publicar';
+const mensajeNoDisponible = 'Canal fuera del alcance del MVP actual. Esta campaña no puede ejecutarse.';
 const redes = ['facebook', 'linkedin'];
 
 // Una solicitud comparte texto; cada destino conserva su resultado independiente.

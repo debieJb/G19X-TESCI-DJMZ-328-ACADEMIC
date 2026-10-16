@@ -69,7 +69,7 @@ const confirmar = async (req, res) => {
   try {
     await cargar(req, res);
     if (req.body?.confirmacion !== 'ENVIAR') throw Object.assign(new Error(), { status: 422 });
-    res.status(503).render('error', { titulo: 'Envío deshabilitado', mensaje: 'La confirmación no puede ejecutarse: Gmail OAuth empresarial, el motor de envíos y el contrato seguro con n8n todavía no están integrados. No se envió ni programó ningún mensaje.' });
+    res.status(503).render('error', { titulo: 'Envío deshabilitado', mensaje: 'Este endpoint de preparación no envía ni programa mensajes. El envío por Gmail API requiere el flujo de piloto independiente con sus validaciones y autorización explícita. No se envió ni programó ningún mensaje.' });
   } catch (error) { fallo(res, error); }
 };
 const imagen = async (req, res) => {

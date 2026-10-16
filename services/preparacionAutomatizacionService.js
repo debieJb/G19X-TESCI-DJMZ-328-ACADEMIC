@@ -22,6 +22,6 @@ const evaluar = async campana => {
     correoPrevisto: esperado || '', correoAutorizado: conexion?.email || '', estadoGmail: conexion?.estado || 'desconectada',
     identidadCoincide: typeof esperado === 'string' && !!esperado && conexion?.email?.toLowerCase() === esperado.toLowerCase(),
     permisoEnvio: conexion?.estado === 'conectada' && conexion.scopes?.includes(google.GMAIL_SEND) === true,
-    envioDisponible: false, motivo: 'El envío empresarial mediante Gmail OAuth y n8n todavía no está integrado. Guardar esta preparación no envía ni programa mensajes.' };
+    envioDisponible: false, motivo: 'El envío real por Gmail requiere validación y autorización de un piloto independiente. Guardar esta preparación no envía ni programa mensajes.' };
 };
 module.exports = { opciones, evaluar, consentimiento };

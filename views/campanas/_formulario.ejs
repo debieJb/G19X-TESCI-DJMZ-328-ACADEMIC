@@ -9,7 +9,7 @@
           </select><span class="error-campo" id="empresa-error"><%= errores.empresa || '' %></span>
         </div>
       <% } %>
-      <p>Nombre y objetivo son obligatorios. La fecha de inicio es obligatoria para una campaña programada. La fecha de fin es opcional. El envío utiliza Gmail y n8n. Los cambios de estado son manuales.</p>
+      <p>Nombre y objetivo son obligatorios. La fecha de inicio es obligatoria para registrar una campaña programada y la fecha de fin es opcional. Las campañas se preparan para correo electrónico mediante Gmail. Guardar no envía ni programa mensajes; los cambios de estado son manuales.</p>
       <% for (const [campo, etiqueta] of [['nombre', 'Nombre'], ['objetivo', 'Objetivo']]) { %>
         <div class="campo campo-amplio">
           <label for="<%= campo %>"><%= etiqueta %> (obligatorio)</label>
@@ -39,7 +39,7 @@
         <% } %>
         <span class="error-campo" id="estado-error"><%= errores.estado || '' %></span>
       </div>
-      <p>Canal: <%= datos.canal === 'email' ? 'Correo electrónico (Gmail)' : 'Canal descontinuado' %></p>
+      <p>Canal: <%= datos.canal === 'email' ? 'Correo electrónico (Gmail)' : 'Canal fuera del MVP actual' %></p>
       <input id="canal" type="hidden" value="<%= datos.canal === 'email' ? 'email' : 'descontinuado' %>">
       <span class="error-campo" id="canal-error"><%= errores.canal || '' %></span>
       <% for (const [campo, etiqueta] of [['fechaInicio', 'Fecha de inicio'], ['fechaFin', 'Fecha de fin']]) { %>

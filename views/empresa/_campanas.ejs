@@ -3,7 +3,7 @@
 <a class="boton secundario" href="/empresa/ia">Crear campaña con IA</a>
 <% if (!campanas.length) { %><p>No hay campañas registradas</p><% } else { %>
 <div class="tabla-admin"><table><caption>Campañas</caption><thead><tr><th>Nombre</th><th>Canal</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
-<% for (const campana of campanas) { %><tr><td><%= campana.nombre %></td><td><%= campana.canal === 'email' ? 'Correo electrónico (Gmail)' : 'Canal descontinuado' %></td><td><%= campana.estado %></td><td>
+<% for (const campana of campanas) { %><tr><td><%= campana.nombre %></td><td><%= campana.canal === 'email' ? 'Correo electrónico (Gmail)' : 'Canal fuera del MVP actual' %></td><td><%= campana.estado %></td><td>
 <a href="/campanas/<%= campana._id %>">Consultar</a> · <a href="/campanas/<%= campana._id %>/editar">Editar</a>
 <% if (campana.estado === 'borrador') { %><a href="/campanas/<%= campana._id %>/automatizacion">Configurar automatización</a><% } %>
 <% if (campana.estado === 'activa' && campana.canal === 'email' && campana.versionFlujo !== 2 && !campana.asistenciaIA && !campana.automatizacion) { %><form action="/campanas/<%= campana._id %>/ejecutar" method="post"><%- include('../partials/_csrfCampana') %><label><input type="checkbox" name="confirmacion" value="ENVIAR" required>Confirmo el envío real</label><button type="submit">Ejecutar campaña</button></form><% } %>

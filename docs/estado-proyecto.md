@@ -1,3 +1,29 @@
+# Estado vigente del proyecto y antecedentes
+
+Referencia vigente: [alcance del MVP](alcance-mvp-actual.md). Esta actualizacion describe el codigo y las pruebas existentes, sin modificar ni revalidar configuracion privada o datos. No declara listo el MVP ni apto para publicacion: auditoria de seguridad y validaciones reales pendientes.
+
+## Estado vigente de alcance e implementacion
+
+- MVP exclusivamente de campanas email. Facebook, WhatsApp y LinkedIn quedan fuera por decision de alcance, no por error ni deuda de aceptacion. Aprobacion formal de modificar requisitos multicanal originales de PluriOne: no confirmada.
+- IA, metricas, seguridad, contactos, empresas y Gmail permanecen vigentes. No se encontraron PRD/SDD oficiales identificables; los nuevos borradores tecnicos no sustituyen documentos desconocidos.
+- Gmail API directo ya tiene motor por destinatario, idempotencia, cuotas, autorizacion temporal de un intento y estados inciertos. No necesita n8n y no hay envios reales ni recepcion validados.
+- OAuth empresarial esta implementado y probado con Google simulado; autorizacion/renovacion/revocacion reales no acreditadas. No se inspeccionaron credenciales en esta actualizacion.
+- Autoservicio y CRUD de consentimiento estan implementados. Proveedor transaccional real, autenticidad de evidencia y retencion pendientes. El correo de registro es independiente del Gmail empresarial.
+- Gemini carece de validacion real. Contadores administrativos y estados de envio existen; aperturas, clics y rebotes no acreditados. Metricas siguen siendo requisito vigente.
+- Sesiones persistentes implementadas y probadas en fixtures; HTTPS/proxy real y auditoria pendientes. La evidencia anterior de 27019 PRIMARY acredita solo infraestructura inicial, no indices, OAuth ni permiso de envio.
+
+## Validacion y siguientes verificaciones
+
+El cierre anterior registro 593 pruebas habituales aprobadas; las 80 integraciones previas son evidencia separada. No se suman otra vez ni prueban proveedores reales. Esta revision solo cambia documentacion, mensajes y expectativas de texto; su resultado se informa en [revision de alcance](revision-alcance-mvp.md).
+
+Pendientes: auditoria de seguridad; documentos oficiales y aprobacion formal; criterios de IA/metricas/programacion; despliegue dedicado e indices; HTTPS/sesiones; proveedores autorizados y pruebas reales independientes. Redes excluidas no forman parte de esta lista.
+
+---
+
+## Registro historico conservado literalmente: cierre del 14 de octubre
+
+Las afirmaciones y pasos siguientes pertenecen a su fase original. No son instrucciones vigentes para conectar servicios, publicar o repetir rotaciones. Los pendientes de motor, consentimiento y sesiones fueron parcialmente implementados despues; sus validaciones reales siguen separadas.
+
 # Estado del proyecto al cierre de sesión
 
 Fecha: 14 de octubre de 2026.

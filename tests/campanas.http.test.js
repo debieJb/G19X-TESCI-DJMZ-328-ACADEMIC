@@ -109,7 +109,7 @@ test('automatización: rechaza canales distintos de email sin llamar al webhook'
   for (const canal of ['whatsapp', 'facebook', 'linkedin', 'redes_sociales', 'sms', 'otro', undefined, null, '', 'desconocido', 'constructor', '__proto__']) {
     documento.canal = canal;
     const respuesta = await post(`/campanas/${id}/ejecutar`, { canal: 'email' }).expect(422);
-    assert.match(respuesta.text, /Canal descontinuado/);
+    assert.match(respuesta.text, /Canal fuera del MVP actual/);
     assert.match(respuesta.text, /role="alert"/);
   }
   assert.equal(ejecutar.mock.callCount(), 0);
@@ -124,7 +124,7 @@ test('automatización: detalle indica canales no disponibles y no ofrece ejecuta
     for (const canal of ['whatsapp', 'facebook', 'linkedin', 'redes_sociales', 'sms', 'otro', undefined, null, '', 'desconocido']) {
       documento.canal = canal;
       const respuesta = await request(app).get(`/campanas/${id}`).expect(200);
-      assert.match(respuesta.text, /Canal descontinuado/);
+      assert.match(respuesta.text, /Canal fuera del MVP actual/);
       assert.ok(!respuesta.text.includes('Ejecutar automatización'));
       assert.ok(!respuesta.text.includes(`action="/campanas/${id}/ejecutar"`));
     }
@@ -325,7 +325,7 @@ test('redes históricas: creación bloqueada; edición conserva canal y publicac
     assert.equal(documento.canal, 'redes_sociales');
     assert.equal(documento.publicacion, publicacion);
     const detalle = await request(app).get(`/campanas/${id}`).expect(200);
-    assert.match(detalle.text, /Canal descontinuado/);
+    assert.match(detalle.text, /Canal fuera del MVP actual/);
     assert.ok(!detalle.text.includes('<dt>Publicación</dt>'));
     assert.ok(!detalle.text.includes('<script>'));
     const formulario = await request(app).get(`/campanas/${id}/editar`).expect(200);
@@ -423,7 +423,7 @@ test('email: ejecutar sin contenido guardado devuelve 422 y no llama al webhook'
   for (const canal of ['whatsapp', 'facebook', 'linkedin', 'redes_sociales', 'sms', 'otro']) {
     documento.canal = canal;
     const respuesta = await post(`/campanas/${id}/ejecutar`, {}).expect(422);
-    assert.match(respuesta.text, /Canal descontinuado/);
+    assert.match(respuesta.text, /Canal fuera del MVP actual/);
   }
   assert.equal(webhook.mock.callCount(), 0);
   assert.equal(guardar.mock.callCount(), 0);

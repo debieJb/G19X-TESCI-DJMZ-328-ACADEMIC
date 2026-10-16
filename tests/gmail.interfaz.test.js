@@ -34,7 +34,7 @@ for (const rol of ['superadmin', 'admin_empresa', 'operador']) {
       assert.doesNotMatch(respuesta.text, /whatsapp|facebook|linkedin|\bsms\b|redes_sociales|redes sociales|otros canales|value="otro"/i, ruta);
       assert.ok(!respuesta.text.includes('<select id="canal"'), ruta);
       assert.ok(!respuesta.text.includes(`action="/campanas/${historicaId}/ejecutar"`), ruta);
-      if (ruta.includes(String(historicaId)) || ruta === '/campanas' || ruta === '/panel') assert.match(respuesta.text, /Canal descontinuado/);
+      if (ruta.includes(String(historicaId)) || ruta === '/campanas' || ruta === '/panel') assert.match(respuesta.text, /Canal fuera del MVP actual/);
     }
   });
 }

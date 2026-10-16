@@ -23,7 +23,7 @@
       <div class="tabla-admin"><table><caption>Campañas de <%= empresa.nombre %></caption>
         <thead><tr><th scope="col">Nombre</th><th scope="col">Canal</th><th scope="col">Estado</th><th scope="col">Creado por</th></tr></thead>
         <tbody><% for (const campana of campanas) { %><tr>
-          <td><a href="/campanas/<%= campana._id %>"><%= campana.nombre %></a></td><td><%= campana.canal === 'email' ? 'Correo electrónico (Gmail)' : 'Canal descontinuado' %></td><td><%= campana.estado %></td>
+          <td><a href="/campanas/<%= campana._id %>"><%= campana.nombre %></a></td><td><%= campana.canal === 'email' ? 'Correo electrónico (Gmail)' : 'Canal fuera del MVP actual' %></td><td><%= campana.estado %></td>
           <td><%= campana.creadoPor && campana.creadoPor.nombre ? campana.creadoPor.nombre : 'Sin autor disponible' %></td>
         </tr><% } %></tbody>
       </table></div><% } %>

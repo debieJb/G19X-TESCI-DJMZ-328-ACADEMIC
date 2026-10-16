@@ -151,7 +151,7 @@ test('automatización: IDs ajenos, usuario pendiente y empresa inactiva se recha
 test('automatización: la ruta antigua no permite enviar campañas nuevas aunque estén activas', async () => {
   doc.estado = 'activa';
   const r = await cliente.post(`/campanas/${C}/ejecutar`).send({ confirmacion: 'ENVIAR' }).expect(503);
-  assert.match(r.text, /todavía no está integrado/); assert.equal(fetch.mock.callCount(), 0);
+  assert.match(r.text, /endpoint histórico permanece bloqueado/); assert.equal(fetch.mock.callCount(), 0);
 });
 
 test('automatización: historial exige confirmación explícita antes de cualquier llamada externa', async () => {

@@ -1,3 +1,15 @@
+# Antecedente historico: contrato de redes fuera del MVP
+
+Facebook, WhatsApp y LinkedIn quedan fuera de la version actual por decision de alcance. No son errores ni pendientes para aprobar el MVP email. Los requisitos multicanal originales de PluriOne son antecedentes separados y su modificacion formal no tiene aprobacion confirmada.
+
+Se conserva este contrato para trazabilidad y compatibilidad, sin comprometer nuevos adaptadores dentro del MVP. El codigo mantiene sus errores y resultados historicos y no hace peticiones. Los mensajes actuales indican que el canal esta fuera del alcance, sin pedir conectar cuentas. [Alcance vigente](alcance-mvp-actual.md).
+
+---
+
+## Contrato original conservado literalmente
+
+Las menciones siguientes a futuros adaptadores o al mensaje de conectar cuentas son historicas, no instrucciones ni promesas vigentes. Cualquier futura incorporacion requeriria otra decision explicita de alcance y sus autorizaciones.
+
 # Contrato de publicación en redes sociales
 
 `redesSocialesService.prepararPublicacion(campana)` toma los datos guardados y

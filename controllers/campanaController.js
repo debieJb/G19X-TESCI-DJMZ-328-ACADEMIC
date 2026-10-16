@@ -275,7 +275,7 @@ const ejecutarAutomatizacion = async (req, res, next) => {
   });
   try {
     campana = await buscarCampana(req.params.id, res.locals.usuarioActual, 'campanas.ejecutar');
-    if (campana.estado === 'activa' && (campana.versionFlujo === 2 || campana.asistenciaIA || campana.automatizacion)) return mostrarError(503, 'El envío empresarial mediante Gmail OAuth y n8n todavía no está integrado. Configura la automatización; no se envió ninguna solicitud.');
+    if (campana.estado === 'activa' && (campana.versionFlujo === 2 || campana.asistenciaIA || campana.automatizacion)) return mostrarError(503, 'Este endpoint histórico permanece bloqueado. El envío por Gmail API requiere el flujo de piloto independiente con sus validaciones y autorización explícita. No se envió ninguna solicitud.');
     resumenDestinatarios = await destinatariosService.resumenCampana(campana);
     if (campana.estado !== 'activa') return mostrarError(422, 'Solo puedes ejecutar campañas activas.');
     const mensajeCanal = automatizacionService.mensajeCanalNoDisponible(campana.canal);
@@ -295,9 +295,9 @@ const ejecutarAutomatizacion = async (req, res, next) => {
         EMPRESA_INACTIVA: [422, 'La empresa está inactiva. No puede ejecutar campañas.'],
         DESHABILITADA: [422, 'La automatización está deshabilitada para esta empresa.'],
         ACCESO_DENEGADO: [403, 'No tienes permiso para ejecutar esta campaña.'],
-        CONEXION: [502, 'No se pudo confirmar la recepción de la solicitud. Revisa n8n antes de repetir.'],
-        TIMEOUT: [504, 'La automatización no respondió a tiempo. Revisa n8n antes de repetir.'],
-        RESPUESTA: [502, 'La automatización devolvió un error. Revisa n8n antes de repetir.']
+        CONEXION: [502, 'No se pudo confirmar la recepción de la solicitud histórica. Requiere revisión; no repitas la operación automáticamente.'],
+        TIMEOUT: [504, 'La automatización histórica no respondió a tiempo. Requiere revisión; no repitas la operación automáticamente.'],
+        RESPUESTA: [502, 'La automatización histórica devolvió un error. Requiere revisión; no repitas la operación automáticamente.']
       };
       if (errores[error.codigo]) return mostrarError(...errores[error.codigo]);
     }

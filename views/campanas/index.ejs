@@ -25,7 +25,7 @@
               <tr>
                 <td><%= campana.nombre %></td>
                 <td><%= campana.objetivo %></td>
-                <td><%= campana.canal === 'email' ? 'Correo electrónico (Gmail)' : 'Canal descontinuado' %></td>
+                <td><%= campana.canal === 'email' ? 'Correo electrónico (Gmail)' : 'Canal fuera del MVP actual' %></td>
                 <td><span class="insignia estado-<%= campana.estado %>"><%= estados[campana.estado] || 'Sin definir' %></span></td>
                 <td><%= formatearFecha(campana.fechaInicio) %></td>
                 <td><%= formatearFecha(campana.fechaFin) %></td>
@@ -46,7 +46,7 @@
             <h2><%= campana.nombre %></h2>
             <p><%= campana.objetivo %></p>
             <dl>
-              <div><dt>Canal</dt><dd><%= campana.canal === 'email' ? 'Correo electrónico (Gmail)' : 'Canal descontinuado' %></dd></div>
+              <div><dt>Canal</dt><dd><%= campana.canal === 'email' ? 'Correo electrónico (Gmail)' : 'Canal fuera del MVP actual' %></dd></div>
               <div><dt>Inicio</dt><dd><%= formatearFecha(campana.fechaInicio) %></dd></div>
               <div><dt>Fin</dt><dd><%= formatearFecha(campana.fechaFin) %></dd></div>
             </dl>

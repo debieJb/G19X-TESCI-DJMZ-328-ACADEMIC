@@ -1,3 +1,32 @@
+# Flujo vigente de campanas email y antecedentes
+
+Fuente actual: [alcance del MVP](alcance-mvp-actual.md). Solo automatizacion por correo. Facebook, WhatsApp y LinkedIn estan excluidos del MVP, sin convertirlos en requisitos pendientes. La aprobacion formal del cambio sobre requisitos multicanal originales de PluriOne no esta confirmada.
+
+## Flujo actual segun codigo
+
+1. Empresa solicita registro, verifica correo y solo despues configura administrador y password; el proveedor transaccional real sigue deshabilitado hasta configuracion/autorizacion explicita.
+2. Administrador u operador crea borrador manual o asistido. IA solicita privacidad y revision humana; Gemini real no esta validado. Aprobar guarda borrador, no envia.
+3. Preparacion guarda contenido, seleccion y revision. Intenciones de programacion e imagen local no acreditan scheduler ni envio de imagen. El motor del piloto admite solo texto e inmediato.
+4. Administrador gestiona OAuth empresarial; pruebas de Google simuladas, sin cuenta real validada. El remitente se resuelve desde empresa y conexion persistidas.
+5. En la web de piloto validada, con transporte apagado y empresa autorizada por despliegue, el administrador registra consentimiento verificable y autoriza exactamente un contacto explicito durante diez minutos. Se rechazan todos, etiquetas y multiples contactos.
+6. POST /campanas/:id/gmail/confirmar exige sesion, CSRF, confirmacion e idempotencia. Encola sin enviar. Los endpoints historicos no son alternativas de ejecucion.
+7. Un trabajador separado exige ademas la habilitacion del transporte y todas las comprobaciones. Consume atomicamente la autorizacion al reservar y revalida identidad, actor, empresa, contenido y consentimiento antes del POST directo a Gmail API. Esta revision NO habilita esa operacion.
+8. Se persisten estados por destinatario e IDs del proveedor. Aceptacion no es recepcion; timeout o resultado incierto no se reintenta automaticamente. El supervisor recibe ID_ENVIO, no ID de ejecucion/lote.
+
+Gmail no tiene envios reales validados. El piloto de envio no esta autorizado. El motor actual no utiliza n8n: emailService.js conserva el contrato antiguo y lanza ENVIOS_BLOQUEADOS antes de fetch. No se acreditan workflows externos. El CRUD ya incorpora captura/revocacion de consentimiento e historial con autor, fecha y huella de email; al eliminar el contacto se pierde su historial.
+
+## Metricas y evidencia
+
+IA, metricas, seguridad, contactos, empresas y Gmail siguen vigentes. Hay conteos administrativos y estados tecnicos de envio; aperturas, clics y rebotes no acreditados. No se declara MVP listo sin auditoria de seguridad y criterios de aceptacion verificados. [Matriz de implementacion/pruebas/validacion](alcance-mvp-actual.md).
+
+La evidencia de cierre confirma 27019 marketingPilotLocalRs PRIMARY con solo bases de sistema, sin migracion de indices; no se vuelve a consultar aqui. Los resultados numericos e incidencias inferiores son historicos, no nuevas ejecuciones ni impedimentos automaticamente vigentes.
+
+---
+
+## Antecedente conservado literalmente: implementacion inicial del flujo
+
+Los apartados siguientes describen su fase original. Las frases sobre sender no implementado, captura no disponible, n8n obligatorio o bloqueo universal no describen el camino de piloto implementado posteriormente. El incidente de indices y su resultado original se preservan; consultar los reportes posteriores sin borrar ni reinterpretar aquella ejecucion.
+
 # Flujo integrado de campañas · PluriOne
 
 ## Navegación disponible

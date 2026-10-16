@@ -11,7 +11,7 @@ const mensajeCanalNoDisponible = (canal) => {
     return integraciones.get(canal).mensajeNoDisponible || '';
   }
 
-  return 'Canal descontinuado. Esta campaña no puede ejecutarse.';
+  return 'Canal fuera del alcance del MVP actual. Esta campaña no puede ejecutarse.';
 };
 
 const ejecutarCampana = async (campana, usuario) => {
