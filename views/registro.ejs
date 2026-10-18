@@ -1,61 +1,84 @@
+﻿<%
+const pantallas = {
+  solicitud: ['Registro empresarial', 'Crea el espacio de tu empresa.'],
+  aceptada: ['Solicitud recibida', 'Consulta los pasos para continuar sin asumir un envío.'],
+  pendiente: ['Verificación pendiente', 'Esta pantalla no confirma el estado de una cuenta ni la entrega de correo.'],
+  reenvio: ['Solicitar otro enlace', 'Recupera el recorrido de verificación de tu empresa.'],
+  verificacion: ['Confirma tu correo', 'Este enlace es válido y solo puede utilizarse una vez.'],
+  administrador: ['Configura tu administrador', 'Tu correo fue verificado. Completa tu acceso.'],
+  completada: ['Registro completado', 'Tu espacio está listo para iniciar sesión.'],
+  invalido: ['Enlace no disponible', 'No se pudo validar el enlace o la sesión.'],
+  caducado: ['Enlace caducado', 'El plazo para verificar este enlace terminó.'],
+  usado: ['Enlace ya utilizado', 'Este navegador ya confirmó este enlace.'],
+  configuracion_caducada: ['Sesión de configuración caducada', 'Solicita un nuevo enlace para continuar de forma segura.']
+};
+const pantalla = pantallas[paso] || pantallas.invalido;
+const esError = ['invalido', 'caducado', 'usado', 'configuracion_caducada'].includes(paso);
+%>
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Registro empresarial · Marketing Automation</title>
-  <link rel="stylesheet" href="/css/styles.css">
-</head>
-<body>
-  <a class="saltar" href="#contenido">Saltar al contenido</a>
-  <main id="contenido" tabindex="-1" class="panel">
-    <h1>Registro empresarial</h1>
-    <% if (mensaje) { %><p role="status" aria-live="polite"><%= mensaje %></p><% } %>
-    <% if (paso === 'solicitud') { %>
-      <p>Primero confirma el correo de tu empresa. Después podrás configurar tu administrador y contraseña.</p>
-      <form method="post" action="/registro">
-        <input type="hidden" name="_csrf" value="<%= registroCsrf %>">
-        <input type="hidden" name="idempotencia" value="<%= idempotencia %>">
-        <label for="empresa">Nombre de la empresa</label>
-        <input id="empresa" name="nombreEmpresa" autocomplete="organization" maxlength="200" required>
-        <label for="correo">Correo empresarial</label>
-        <input id="correo" name="correo" type="email" autocomplete="email" maxlength="320" required>
-        <button type="submit">Solicitar verificación</button>
-      </form>
-    <% } else if (paso === 'reenvio') { %>
-      <form method="post" action="/registro/reenviar">
-        <input type="hidden" name="_csrf" value="<%= registroCsrf %>">
-        <label for="correo">Correo empresarial</label>
-        <input id="correo" name="correo" type="email" autocomplete="email" maxlength="320" required>
-        <button type="submit">Solicitar otro enlace</button>
-      </form>
-    <% } else if (paso === 'verificacion') { %>
-      <p>Confirma que solicitaste este registro. El enlace puede utilizarse una sola vez.</p>
-      <form method="post" action="/registro/verificar">
-        <input type="hidden" name="_csrf" value="<%= registroCsrf %>">
-        <button type="submit">Verificar mi correo</button>
-      </form>
-    <% } else if (paso === 'administrador') { %>
-      <p>Tu correo fue verificado. Dispones de 20 minutos para completar este paso en este navegador.</p>
-      <form method="post" action="/registro/administrador">
-        <input type="hidden" name="_csrf" value="<%= registroCsrf %>">
-        <label for="empresa">Confirma el nombre de tu empresa</label>
-        <input id="empresa" name="nombreEmpresa" autocomplete="organization" maxlength="200" required>
-        <label for="nombre">Nombre del administrador</label>
-        <input id="nombre" name="nombreAdministrador" autocomplete="name" maxlength="200" required>
-        <p id="password-ayuda">Al menos 16 caracteres y cuatro caracteres diferentes; máximo 72 bytes. No uses una contraseña compartida.</p>
-        <label for="password">Nueva contraseña</label>
-        <input id="password" name="password" type="password" autocomplete="new-password" minlength="16" maxlength="72" aria-describedby="password-ayuda" required>
-        <label for="confirmacion">Confirma la contraseña</label>
-        <input id="confirmacion" name="confirmacionPassword" type="password" autocomplete="new-password" minlength="16" maxlength="72" required>
-        <button type="submit">Crear administrador</button>
-      </form>
-    <% } %>
-    <nav aria-label="Opciones del registro">
-      <a href="/registro">Solicitar registro</a>
-      <a href="/registro/reenviar">Solicitar otro enlace</a>
-      <a href="/login">Iniciar sesión</a>
-    </nav>
+<head><%- include('partials/_headPublico', { tituloPagina: pantalla[0] }) %></head>
+<body class="pagina-publica pagina-registro">
+  <%- include('partials/_encabezadoPublico') %>
+  <main id="contenido" tabindex="-1" class="registro-publico onboarding-publico">
+    <aside class="acceso-contexto" aria-labelledby="titulo-registro-contexto">
+      <p class="sobrelinea">Un espacio para tu empresa</p><h2 id="titulo-registro-contexto">Tu empresa. <span>Un nuevo comienzo.</span></h2>
+      <p>Primero verificas tu correo. Después eliges quién administrará tu espacio y cómo acceder.</p>
+      <ol class="pasos-registro">
+        <li <%- ['solicitud','reenvio','invalido'].includes(paso) ? 'aria-current="step"' : '' %>><span>01</span><div><strong>Registra tu empresa</strong><p>Nombre y correo empresarial.</p></div></li>
+        <li <%- ['aceptada','pendiente','verificacion','caducado','usado'].includes(paso) ? 'aria-current="step"' : '' %>><span>02</span><div><strong>Verifica tu correo</strong><p>Un enlace válido, de un solo uso.</p></div></li>
+        <li <%- ['administrador','completada','configuracion_caducada'].includes(paso) ? 'aria-current="step"' : '' %>><span>03</span><div><strong>Configura tu acceso</strong><p>Administrador y contraseña personal.</p></div></li>
+      </ol>
+    </aside>
+    <section class="panel tarjeta-acceso" aria-labelledby="titulo-registro">
+      <div class="icono-estado <%= esError ? 'icono-estado-alerta' : ['administrador','completada'].includes(paso) ? 'icono-estado-correcto' : '' %>"><%- include('partials/_icono', { nombre: ['administrador','completada'].includes(paso) ? 'check' : ['caducado','configuracion_caducada'].includes(paso) ? 'reloj' : ['invalido','usado'].includes(paso) ? 'enlace' : paso === 'solicitud' ? 'empresa' : 'correo' }) %></div>
+      <span class="insignia-publica"><%= esError ? 'Revisa tu acceso' : 'Registro empresarial' %></span>
+      <h1 id="titulo-registro"><%= pantalla[0] %></h1><p class="intro"><%= pantalla[1] %></p>
+      <% if (mensaje) { %><p class="<%= ['solicitud','reenvio','administrador'].includes(paso) || esError ? 'aviso-error' : 'aviso-publico' %>" role="<%= ['solicitud','reenvio','administrador'].includes(paso) || esError ? 'alert' : 'status' %>"><%= mensaje %></p><% } %>
+      <% if (paso === 'solicitud') { %>
+        <form method="post" action="/registro" data-public-form data-loading-label="Procesando solicitud…">
+          <%- include('partials/_erroresFormulario') %>
+          <input type="hidden" name="_csrf" value="<%= registroCsrf %>"><input type="hidden" name="idempotencia" value="<%= idempotencia %>">
+          <div class="campo"><label for="empresa">Nombre de la empresa</label><input id="empresa" name="nombreEmpresa" autocomplete="organization" maxlength="200" placeholder="Nombre de tu empresa" required></div>
+          <div class="campo"><label for="correo">Correo empresarial</label><input id="correo" name="correo" type="email" autocomplete="email" maxlength="320" placeholder="tu@empresa.com" aria-describedby="correo-ayuda" required><p id="correo-ayuda" class="ayuda-campo">Será el correo de acceso de tu administrador.</p></div>
+          <button type="submit">Solicitar verificación</button>
+        </form>
+        <p class="nota-disponibilidad">El envío real de verificaciones está pendiente de activación. Solicitar el registro no confirma el envío de un correo.</p>
+      <% } else if (['aceptada', 'pendiente'].includes(paso)) { %>
+        <div class="estado-registro"><h2>El siguiente paso es verificar tu correo</h2><p>Si corresponde continuar, el servicio autorizado procesará tu solicitud. Por ahora, el envío transaccional real permanece pendiente de activación y validación.</p><p>No se confirma que un mensaje haya sido enviado o entregado. No podrás configurar el administrador sin un enlace válido.</p></div>
+        <% if (paso === 'aceptada') { %><a class="boton ancho-completo" href="/registro/estado">Ver estado de la verificación</a><% } %>
+      <% } else if (paso === 'reenvio') { %>
+        <p>Si la solicitud es elegible, podrás pedir otro enlace. Los límites y los plazos se comprueban en el servidor.</p>
+        <form method="post" action="/registro/reenviar" data-public-form data-loading-label="Procesando solicitud…">
+          <%- include('partials/_erroresFormulario') %>
+          <input type="hidden" name="_csrf" value="<%= registroCsrf %>">
+          <div class="campo"><label for="correo">Correo empresarial</label><input id="correo" name="correo" type="email" autocomplete="email" maxlength="320" required></div>
+          <button type="submit">Solicitar otro enlace</button>
+        </form><p class="nota-disponibilidad">La respuesta será la misma exista o no una cuenta. Solicitar un enlace no acredita entrega.</p>
+      <% } else if (paso === 'verificacion') { %>
+        <p>Confirma únicamente si solicitaste este registro. Abrir el enlace no lo consume; el siguiente botón sí.</p>
+        <form method="post" action="/registro/verificar" data-public-form data-loading-label="Verificando…"><%- include('partials/_erroresFormulario') %><input type="hidden" name="_csrf" value="<%= registroCsrf %>"><button type="submit">Verificar mi correo</button></form>
+      <% } else if (paso === 'administrador') { %>
+        <p class="aviso-publico" role="status"><strong>Verificación exitosa.</strong> Dispones de 20 minutos desde la confirmación para completar este paso en este navegador.</p>
+        <form method="post" action="/registro/administrador" data-public-form data-loading-label="Creando administrador…">
+          <%- include('partials/_erroresFormulario') %>
+          <input type="hidden" name="_csrf" value="<%= registroCsrf %>">
+          <div class="campo"><label for="empresa">Confirma el nombre de tu empresa</label><input id="empresa" name="nombreEmpresa" autocomplete="organization" maxlength="200" required></div>
+          <div class="campo"><label for="nombre">Nombre del administrador</label><input id="nombre" name="nombreAdministrador" autocomplete="name" maxlength="200" required></div>
+          <p id="password-ayuda" class="ayuda-campo">Al menos 16 caracteres y cuatro caracteres diferentes; máximo 72 bytes. No uses una contraseña compartida.</p>
+          <%- include('partials/_passwordPublico', { id: 'password', nombre: 'password', etiqueta: 'Nueva contraseña', nuevo: true, ayuda: true }) %>
+          <%- include('partials/_passwordPublico', { id: 'confirmacion', nombre: 'confirmacionPassword', etiqueta: 'Confirma la contraseña', nuevo: true }) %>
+          <button type="submit">Crear administrador</button>
+        </form>
+      <% } else if (paso === 'completada') { %>
+        <div class="estado-registro estado-correcto"><h2>Tu administrador está configurado</h2><p>Inicia sesión con el correo verificado y la contraseña que acabas de elegir. El acceso al panel requiere iniciar sesión.</p></div><a class="boton ancho-completo" href="/login">Iniciar sesión</a>
+      <% } else { %>
+        <div class="estado-registro estado-advertencia"><p><%= paso === 'caducado' ? 'Los enlaces de verificación duran 30 minutos. Puedes solicitar otro si el servidor lo permite.' : paso === 'usado' ? 'Si aún no configuraste tu administrador, continúa en este navegador. Si terminaste, inicia sesión.' : paso === 'configuracion_caducada' ? 'Por seguridad, el permiso de configuración dura 20 minutos. No se puede continuar con una sesión caducada.' : 'El enlace puede ser inválido, haber caducado o haberse utilizado en otro navegador. No podemos confirmar una causa sin evidencia.' %></p></div>
+        <% if (paso === 'usado') { %><a class="boton ancho-completo" href="/registro/administrador">Continuar configuración</a><% } else { %><a class="boton ancho-completo" href="/registro/reenviar">Solicitar otro enlace</a><% } %>
+      <% } %>
+      <nav class="opciones-registro" aria-label="Opciones del registro"><a href="/registro">Solicitar registro</a><a href="/registro/reenviar">Solicitar otro enlace</a><a href="/login">Iniciar sesión</a></nav>
+    </section>
   </main>
+  <%- include('partials/_piePublico', { anio: new Date().getFullYear() }) %>
 </body>
 </html>

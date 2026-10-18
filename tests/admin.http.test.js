@@ -16,6 +16,7 @@ const password = 'PASSWORD_PRIVADO_PRUEBA';
 const entrada = { nombre: ' Nueva persona ', email: ' NUEVA@EXAMPLE.TEST ', password, rol: 'operador', empresa: empresaId };
 let app, store, usuarioActual, dashboard, detalle, guardarEmpresa, guardarUsuario, existeEmpresa, obtenerDetalle;
 beforeEach(t => {
+  t.mock.method(require('../services/loginLimitesService'), 'consumir', async () => {});
   t.mock.method(require('../services/empresaService'), 'obtenerPanel', async actual => ({ empresa: actual.empresa, campanas: [], usuarios: [], operadores: [], totalUsuarios: 0, totalCampanas: 0 }));
   store = new session.MemoryStore();
   app = crearApp({ secret: process.env.SESSION_SECRET, store });
@@ -45,7 +46,9 @@ beforeEach(t => {
 afterEach(() => store.clear());
 const autenticar = async () => {
   const agente = request.agent(app);
-  await agente.post('/login').send({ email: 'admin@example.test', password: 'solo-login-prueba' }).expect(303);
+  const pagina = await agente.get('/login');
+  const _csrf = pagina.text.match(/name="_csrf" value="([^"]+)"/)[1];
+  await agente.post('/login').send({ email: 'admin@example.test', password: 'solo-login-prueba', _csrf }).expect(303);
   if (usuarioActual.rol === 'superadmin') {
     const formulario = await agente.get('/admin/empresas/nueva').expect(200);
     const token = formulario.text.match(/name="_csrf" value="([A-Za-z0-9_-]{43})"/)[1];

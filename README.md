@@ -1,5 +1,14 @@
 # Plataforma Inteligente de Marketing Automation
 
+[Renovación del frontend público, acceso y registro](docs/frontend-publico.md):
+pantallas, controles, revisión visual en navegador y resultados de validación local.
+
+Configuración nueva, aún sin envío externo validado:
+[Gmail transaccional de plataforma](docs/gmail-transaccional.md). Incluye autorización
+OAuth independiente, credencial cifrada, trabajador supervisado de una solicitud y
+guía para una prueba real posterior. Login incorpora CSRF y límites persistentes;
+index, acceso y registro comparten una interfaz adaptable. El transporte permanece apagado.
+
 MVP con Node.js 24, Express, EJS y MongoDB/Mongoose para automatización de campañas **exclusivamente por correo electrónico**. Incluye empresas, contactos, consentimiento, seguridad, autoservicio, Gmail OAuth, asistencia con IA y métricas. **No está declarado listo ni apto para publicación: falta completar la auditoría de seguridad y las validaciones reales.**
 
 Facebook, WhatsApp y LinkedIn quedan fuera de esta versión por decisión de alcance. No son errores de implementación ni pendientes para aprobar este MVP. Los requisitos multicanal originales de PluriOne se conservan como antecedentes; **su modificación formal no tiene aprobación confirmada**. Los campos, contratos y pruebas negativas heredados no habilitan esos canales.

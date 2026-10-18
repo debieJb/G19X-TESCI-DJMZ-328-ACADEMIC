@@ -1,44 +1,46 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= titulo %></title>
-  <link rel="stylesheet" href="/css/styles.css">
-</head>
+<head><%- include('partials/_headPublico', { tituloPagina: 'Marketing Automation' }) %></head>
 <body class="pagina-publica">
   <%- include('partials/_encabezadoPublico') %>
-  <main id="contenido" tabindex="-1">
-    <section class="hero hero-publico" aria-labelledby="titulo-inicio">
-      <p class="sobrelinea">Marketing Automation / Conecta tus ideas</p>
-      <h1 id="titulo-inicio">Menos tareas repetitivas.<br><span>Más impulso para tus campañas.</span></h1>
-      <p class="intro">Gestiona empresas, contactos y campañas de correo electrónico desde un solo lugar. Prepara tus mensajes para Gmail; el envío real aún no está habilitado.</p>
-      <div class="acciones"><a class="boton" href="/login">Iniciar sesión</a><a class="enlace-publico" href="#funcionalidades">Explorar funcionalidades <span aria-hidden="true">↓</span></a></div>
-      <p class="hero-nota">Planifica · Organiza · Automatiza</p>
+  <main id="contenido" tabindex="-1" class="inicio-publico">
+    <section class="bienvenida" aria-labelledby="titulo-inicio">
+      <div class="bienvenida-texto">
+        <p class="sobrelinea"><span class="punto-marca" aria-hidden="true"></span> Tu marketing, con dirección</p>
+        <h1 id="titulo-inicio">De una buena idea<br> a una campaña<br> <span>bien preparada.</span></h1>
+        <p class="intro">Conecta tus contactos, tus mensajes y tu equipo en un espacio de trabajo diseñado para tu empresa.</p>
+        <div class="acciones"><a class="boton" href="/registro">Registrar empresa <span aria-hidden="true">↗</span></a><a class="boton secundario" href="/login">Iniciar sesión</a></div>
+        <p class="nota-disponibilidad">Prepara y revisa tus campañas. El envío real por correo y Gemini están pendientes de activación y validación.</p>
+      </div>
+      <div class="producto-ilustrado" role="img" aria-label="Vista ilustrativa del dashboard: campañas en borrador, contactos con consentimiento y revisión humana. No contiene datos ni métricas reales.">
+        <div class="ilustracion-barra"><span class="puntos-ventana" aria-hidden="true"><i></i><i></i><i></i></span><strong>Tu espacio de marketing</strong><span class="insignia-publica">Vista ilustrativa</span></div>
+        <div class="preview-dashboard">
+          <div class="preview-lateral" aria-hidden="true"><span class="marca-icono">P.</span><span class="preview-activo"><%- include('partials/_icono', { nombre: 'panel' }) %></span><%- include('partials/_icono', { nombre: 'campana' }) %><%- include('partials/_icono', { nombre: 'contactos' }) %><%- include('partials/_icono', { nombre: 'correo' }) %></div>
+          <div class="preview-contenido"><p class="preview-ruta">Tu empresa / Campañas</p><div class="preview-titulo"><h2>Ideas que toman forma.</h2><span class="mini-avatar">P</span></div>
+            <div class="ilustracion-campana"><span class="estado-producto">Borrador</span><h3>Tu próxima campaña</h3><p>Un mensaje con propósito.<br>Una audiencia con consentimiento.</p><div class="lineas-mensaje" aria-hidden="true"><i></i><i></i><i></i></div><span class="preview-revision"><%- include('partials/_icono', { nombre: 'escudo' }) %> Revisión humana</span></div>
+            <div class="preview-tareas"><div><span class="icono-funcion"><%- include('partials/_icono', { nombre: 'correo' }) %></span><span><strong>Contenido</strong><small>Define tu mensaje</small></span></div><div><span class="icono-funcion"><%- include('partials/_icono', { nombre: 'contactos' }) %></span><span><strong>Contactos</strong><small>Revisa el consentimiento</small></span></div></div>
+          </div>
+        </div>
+        <p class="ilustracion-pie">Ilustración del producto · sin datos reales ni envíos</p>
+      </div>
     </section>
     <section class="seccion-publica" id="funcionalidades" aria-labelledby="titulo-funcionalidades">
-      <p class="sobrelinea">Un espacio para todo tu marketing</p>
-      <h2 id="titulo-funcionalidades">De la planificación a la ejecución.</h2>
-      <p class="intro">Conecta tus campañas, tus procesos y las personas que los hacen posibles.</p>
-      <div class="rejilla-publica">
-        <article class="panel"><span class="numero" aria-hidden="true">01 / Campañas</span><h3>Gestión de campañas</h3><p>Crea y organiza tus iniciativas. Consulta objetivos, fechas y estados para mantener el seguimiento.</p></article>
-        <article class="panel"><span class="numero" aria-hidden="true">02 / Procesos</span><h3>Automatización de procesos</h3><p>Organiza la preparación y revisión de tus campañas por correo. Guardar una campaña no envía ni programa mensajes.</p></article>
-        <article class="panel"><span class="numero" aria-hidden="true">03 / Email</span><h3>Campañas por correo electrónico</h3><p>Prepara el asunto y el contenido de tus mensajes desde el mismo espacio de trabajo.</p></article>
-        <article class="panel"><span class="numero" aria-hidden="true">04 / Empresas</span><h3>Gestión de empresas</h3><p>Una estructura pensada para organizar usuarios y campañas por empresa.</p></article>
-        <article class="panel"><span class="numero" aria-hidden="true">05 / Equipo</span><h3>Usuarios con diferentes niveles de acceso</h3><p>Tres perfiles definidos para las responsabilidades de cada integrante de tu equipo.</p></article>
-        <article class="panel"><span class="numero" aria-hidden="true">06 / Integraciones</span><h3>Integraciones y automatización con servicios externos</h3><p>Administra la conexión Gmail de tu empresa. La asistencia con IA y el envío real requieren validación y autorización.</p></article>
+      <div class="cabecera-seccion"><div><p class="sobrelinea">Un espacio. Un proceso claro.</p><h2 id="titulo-funcionalidades">Lo que necesitas para preparar<br>tu próxima campaña.</h2></div><p>Cada herramienta tiene un propósito.<br>Cada integración muestra su estado.</p></div>
+      <div class="funciones-publicas">
+        <article class="tarjeta-funcion"><span class="icono-funcion"><%- include('partials/_icono', { nombre: 'campana' }) %></span><span class="estado-funcion">Disponible</span><h3>Gestión de campañas</h3><p>Crea borradores, organiza objetivos y revisa el contenido antes de preparar tus mensajes.</p></article>
+        <article class="tarjeta-funcion"><span class="icono-funcion"><%- include('partials/_icono', { nombre: 'contactos' }) %></span><span class="estado-funcion">Disponible</span><h3>Contactos y consentimiento</h3><p>Organiza contactos de tu empresa, documenta su consentimiento y registra revocaciones.</p></article>
+        <article class="tarjeta-funcion"><span class="icono-funcion"><%- include('partials/_icono', { nombre: 'correo' }) %></span><span class="estado-funcion estado-pendiente">Envío pendiente</span><h3>Automatización por correo</h3><p>Prepara destinatarios y mensajes. Guardar fechas no activa un envío programado. El transporte real permanece deshabilitado.</p></article>
+        <article class="tarjeta-funcion"><span class="icono-funcion"><%- include('partials/_icono', { nombre: 'ia' }) %></span><span class="estado-funcion estado-pendiente">Activación pendiente</span><h3>Asistencia con IA</h3><p>El asistente está implementado con revisión humana. Gemini requiere configuración, autorización y validación real.</p></article>
+        <article class="tarjeta-funcion"><span class="icono-funcion"><%- include('partials/_icono', { nombre: 'empresa' }) %></span><span class="estado-funcion">Disponible</span><h3>Espacio por empresa</h3><p>Trabaja con tus propios contactos y campañas, con controles de aislamiento multiempresa.</p></article>
+        <article class="tarjeta-funcion"><span class="icono-funcion"><%- include('partials/_icono', { nombre: 'equipo' }) %></span><span class="estado-funcion">Disponible</span><h3>Roles y responsabilidades</h3><p>Superadministrador, Administrador de empresa y Operador: permisos según las responsabilidades de cada persona.</p></article>
       </div>
     </section>
-    <section class="seccion-publica" aria-labelledby="titulo-niveles">
-      <p class="sobrelinea">Cada persona, un papel claro</p>
-      <h2 id="titulo-niveles">Niveles de usuario</h2>
-      <p class="intro">Conoce los perfiles previstos para el acceso a la plataforma.</p>
-      <div class="rejilla-publica niveles-publicos">
-        <article class="panel"><span class="numero">Control global</span><h3>Superadministrador</h3><ul><li>Acceso total a la plataforma</li><li>Administración de empresas</li><li>Administración de usuarios</li><li>Administración de campañas</li></ul></article>
-        <article class="panel"><span class="numero">Gestión del equipo</span><h3>Administrador de empresa</h3><ul><li>Administra usuarios de su empresa</li><li>Administra campañas de su empresa</li><li>No puede acceder a otras empresas</li></ul></article>
-        <article class="panel"><span class="numero">Trabajo diario</span><h3>Operador</h3><ul><li>Puede crear campañas</li><li>Consultar campañas</li><li>Editar campañas</li><li>Preparar campañas</li><li>No administra usuarios ni empresas</li></ul></article>
-      </div>
+    <section class="seccion-publica como-funciona" id="como-funciona" aria-labelledby="titulo-como">
+      <p class="sobrelinea">Del registro al espacio de trabajo</p><h2 id="titulo-como">Empieza con una base segura.</h2>
+      <ol class="recorrido-publico"><li><span>01</span><h3>Registra tu empresa</h3><p>Indica su nombre y el correo que utilizarás para acceder.</p></li><li><span>02</span><h3>Verifica y configura</h3><p>Confirma un enlace válido y configura tu administrador y contraseña.</p></li><li><span>03</span><h3>Prepara tu campaña</h3><p>Inicia sesión y organiza contactos, consentimiento y contenido.</p></li></ol>
+      <p class="nota-disponibilidad">El correo transaccional sigue pendiente de activación. Solicitar el registro no confirma que se haya enviado un mensaje.</p>
     </section>
+    <section class="cierre-publico" aria-labelledby="titulo-empezar"><div><p class="sobrelinea">Un mejor punto de partida</p><h2 id="titulo-empezar">Pon tus ideas en movimiento.</h2><p>Empieza por crear el espacio de tu empresa.</p></div><a class="boton" href="/registro">Registrar empresa <span aria-hidden="true">↗</span></a></section>
   </main>
   <%- include('partials/_piePublico') %>
 </body>

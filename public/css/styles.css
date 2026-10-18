@@ -155,6 +155,37 @@ main>nav { margin-top:1.5rem; }
 .pagina-publica .tarjeta-acceso h1 { margin-bottom:1rem; }
 .pagina-publica .campos-acceso { display:grid; gap:1.5rem; margin-top:2rem; }
 .pagina-publica .volver-inicio { display:inline-flex; align-items:center; min-height:44px; margin-top:1.5rem; }
+.pagina-publica .hero-publico { background:radial-gradient(ellipse at top right,rgba(138,106,230,.2),transparent 65%); border:1px solid var(--borde); border-radius:24px; }
+.pagina-publica .barra nav { display:flex; align-items:center; gap:1.25rem; flex-wrap:wrap; }
+.pagina-publica .franja-confianza { display:flex; flex-wrap:wrap; gap:1rem 2rem; padding:1.5rem 0 0; margin:2rem 0 0; border-top:1px solid var(--borde); list-style:none; color:var(--muted); }
+.franja-confianza strong { color:var(--acento); margin-right:.5rem; }
+.pagina-publica .acceso-dividido { max-width:1100px; display:grid; grid-template-columns:1fr 1fr; gap:clamp(2rem,5vw,5rem); align-items:start; }
+.acceso-contexto { padding:2rem 0; }
+.acceso-contexto h2 { font-size:clamp(2rem,4vw,3.2rem); line-height:1.15; letter-spacing:-.035em; margin:1rem 0; }
+.acceso-contexto>p,.lista-confianza { color:var(--muted); line-height:1.8; }
+.lista-confianza { padding-left:1.2rem; margin:2rem 0; }
+.lista-confianza li { margin:.75rem 0; }
+.lista-confianza li::marker { color:var(--acento); }
+.pagina-publica .campos-acceso { padding:0; border:0; background:transparent; }
+.ayuda-acceso { color:var(--muted); font-size:.9rem; line-height:1.7; }
+.pasos-registro { list-style:none; padding:0; margin-top:2rem; display:grid; gap:1.25rem; }
+.pasos-registro li { display:flex; align-items:flex-start; gap:1rem; color:var(--muted); }
+.pasos-registro li>span { border:1px solid var(--borde); border-radius:50%; padding:.5rem; min-width:42px; text-align:center; }
+.pasos-registro li[aria-current]>span { color:var(--texto); background:#57359b; border-color:var(--acento); }
+.pasos-registro strong { color:var(--texto); }
+.pasos-registro p { margin:.25rem 0 0; font-size:.9rem; }
+.registro-publico form { display:grid; gap:.85rem; padding:0; border:0; margin:1.5rem 0; }
+.registro-publico form button { margin-top:.65rem; }
+.opciones-registro { display:flex; flex-wrap:wrap; gap:.25rem 1rem; border-top:1px solid var(--borde); padding-top:1rem; }
+.opciones-registro a { display:inline-flex; align-items:center; min-height:44px; font-size:.9rem; }
+@media(max-width:760px) {
+  .pagina-publica .acceso-dividido { grid-template-columns:1fr; gap:1.25rem; }
+  .acceso-contexto { padding:.5rem 0; }
+  .acceso-contexto h2 { max-width:20ch; }
+  .lista-confianza { margin:1rem 0; }
+  .pasos-registro { gap:.8rem; }
+  .pagina-publica .franja-confianza { flex-direction:column; }
+}
 @media(max-width:900px) {
   .pagina-publica .rejilla-publica { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }

@@ -1,0 +1,10 @@
+<a class="saltar" href="#contenido">Saltar al contenido</a>
+<header class="encabezado encabezado-publico"><div class="barra">
+  <a class="marca" href="/" aria-label="Marketing Automation de PluriOne, inicio"><span class="marca-icono" aria-hidden="true">P.</span><span>Marketing Automation<small>POR PLURIONE</small></span></a>
+  <button class="menu-publico" type="button" data-menu-toggle aria-expanded="false" aria-controls="navegacion-publica" hidden>Menú <span aria-hidden="true">☰</span></button>
+  <nav class="navegacion" id="navegacion-publica" aria-label="Navegación empresarial">
+    <a href="/">Inicio</a><a href="/panel" aria-current="page">Mi panel</a><a href="/contactos">Contactos</a><a href="/campanas">Campañas</a>
+    <% if (usuarioActual.rol === 'admin_empresa') { %><a href="/empresa/gmail">Configurar Gmail</a><% } %>
+    <a class="boton" href="/campanas/nueva">Crear campaña</a>
+  </nav>
+</div></header>

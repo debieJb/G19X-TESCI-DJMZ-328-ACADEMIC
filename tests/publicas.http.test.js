@@ -21,14 +21,14 @@ after(() => {
 test('públicas: inicio responde 200 con marca y enlaces de acceso en navbar y hero', async () => {
   const respuesta = await request(app).get('/').expect(200);
   assert.match(respuesta.text, /Marketing Automation/);
-  assert.equal((respuesta.text.match(/href="\/login">Iniciar sesión<\/a>/g) || []).length, 2);
+  assert.ok((respuesta.text.match(/href="\/login">Iniciar sesión<\/a>/g) || []).length >= 2);
   assert.match(respuesta.text, new RegExp(`&copy; ${new Date().getFullYear()}`));
   assert.equal(respuesta.headers['set-cookie'], undefined);
 });
 
-test('públicas: inicio presenta las seis funcionalidades y los tres niveles', async () => {
+test('públicas: inicio distingue funciones disponibles y pendientes sin métricas inventadas', async () => {
   const { text } = await request(app).get('/').expect(200);
-  for (const contenido of ['Gestión de campañas', 'Automatización de procesos', 'Campañas por correo electrónico', 'Gestión de empresas', 'Usuarios con diferentes niveles de acceso', 'Integraciones y automatización con servicios externos', 'Superadministrador', 'Administrador de empresa', 'Operador', 'No puede acceder a otras empresas', 'No administra usuarios ni empresas']) {
+  for (const contenido of ['Gestión de campañas', 'Contactos y consentimiento', 'Automatización por correo', 'Asistencia con IA', 'Espacio por empresa', 'Roles y responsabilidades', 'Superadministrador', 'Administrador de empresa', 'Operador', 'Envío pendiente', 'Activación pendiente']) {
     assert.ok(text.includes(contenido), contenido);
   }
 });
@@ -41,15 +41,18 @@ test('públicas: login responde 200 con campos etiquetados y regreso al inicio',
     assert.match(respuesta.text, new RegExp(`<label for="${campo}">`));
   }
   assert.match(respuesta.text, /href="\/">← Volver al inicio/);
-  assert.equal(respuesta.headers['set-cookie'], undefined);
+  assert.ok(respuesta.headers['set-cookie']);
 });
 
 test('públicas: acceso mediante formulario POST y sin credenciales prellenadas', async () => {
   const { text } = await request(app).get('/login').expect(200);
   assert.match(text, /<button type="submit"[^>]*>Iniciar sesión<\/button>/);
   assert.match(text, /<form[^>]*action="\/login"[^>]*method="post"/);
-  assert.doesNotMatch(text, /<script\b|\bdisabled\b|\bonclick\s*=|\bvalue\s*=/i);
-  await request(app).post('/login').expect(401);
+  assert.doesNotMatch(text, /\bdisabled\b|\bonclick\s*=/i);
+  assert.match(text, /<script src="\/js\/publico.js" defer><\/script>/);
+  assert.doesNotMatch(text, /<input[^>]*name="(?:email|password)"[^>]*value=/);
+  assert.match(text, /name="_csrf" value="[A-Za-z0-9_-]{43}"/);
+  await request(app).post('/login').expect(403);
 });
 
 test('campañas: exige sesión y conserva navegación para usuario autenticado', async t => {

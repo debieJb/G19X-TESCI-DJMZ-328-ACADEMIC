@@ -17,7 +17,7 @@
       <div><dt>Rol</dt><dd><%= usuarioActual.rol %></dd></div>
       <% if (usuarioActual.empresa) { %><div><dt>Empresa</dt><dd><%= usuarioActual.empresa.nombre %></dd></div><% } %>
     </dl>
-    <form action="/logout" method="post"><button type="submit">Cerrar sesión</button></form>
+    <form action="/logout" method="post"><%- include('partials/_csrfLogout') %><button type="submit">Cerrar sesión</button></form>
   </main>
   <%- include('partials/_piePublico') %>
 </body>

@@ -93,11 +93,12 @@ const crearServicio = ({ conexion, correo = correoPredeterminado, reloj = () => 
   };
   // Consumidor explícito, nunca llamado por HTTP ni dentro de una transacción.
   // El despliegue debe inyectar un proveedor autorizado y ejecutar este consumidor.
-  const despachar = async () => {
+  const despachar = async ({ solicitudId } = {}) => {
+    if (solicitudId !== undefined) exigir(typeof solicitudId === 'string' && /^[a-f0-9]{24}$/.test(solicitudId), 'DATOS_INVALIDOS');
     if (!correo.disponible) return { estado: 'deshabilitado' };
     const m = await preparar(conexion), ahora = reloj(), token = aleatorio(), entrega = hash(aleatorio());
     const doc = await transaccion(async session => {
-      const tomado = await m.SolicitudRegistro.findOneAndUpdate({ estado: 'pendiente_correo',
+      const tomado = await m.SolicitudRegistro.findOneAndUpdate({ ...(solicitudId ? { _id: solicitudId } : {}), estado: 'pendiente_correo',
         correoEstado: { $in: ['pendiente', 'pendiente_configuracion'] } }, {
         $set: { correoEstado: 'procesando', tokenHash: hash(token), expiraEn: new Date(+ahora + DURACION_ENLACE),
           entregaHash: entrega, entregaHasta: new Date(+ahora + 120000) }, $inc: { versionEnvio: 1 }
@@ -129,6 +130,23 @@ const crearServicio = ({ conexion, correo = correoPredeterminado, reloj = () => 
       await evento(m, doc._id, 'verificada', session);
       return { solicitud: String(doc._id) };
     });
+  };
+  // Consultas sin consumo: la vista nunca infiere validez del formato del token.
+  const consultarEnlace = async ({ hashEnlace }) => {
+    exigir(typeof hashEnlace === 'string' && /^[a-f0-9]{64}$/.test(hashEnlace), 'ENLACE_INVALIDO');
+    const m = await preparar(conexion);
+    const doc = await m.SolicitudRegistro.findOne({ tokenHash: hashEnlace }).select('estado expiraEn').lean();
+    if (!doc || doc.estado !== 'pendiente_correo') return 'invalido';
+    return doc.expiraEn instanceof Date && +doc.expiraEn > +reloj() ? 'vigente' : 'caducado';
+  };
+  const consultarConfiguracion = async ({ solicitud, sesion }) => {
+    if (typeof solicitud !== 'string' || !/^[a-f0-9]{24}$/.test(solicitud) || typeof sesion !== 'string' || !sesion) return 'invalida';
+    const m = await preparar(conexion);
+    const doc = await m.SolicitudRegistro.findOne({ _id: solicitud, configuracionSesionHash: hash(sesion) })
+      .select('estado configuracionExpiraEn').lean();
+    if (!doc) return 'invalida';
+    if (!(doc.configuracionExpiraEn instanceof Date) || +doc.configuracionExpiraEn <= +reloj()) return 'caducada';
+    return doc.estado === 'correo_verificado' ? 'vigente' : doc.estado === 'completada' ? 'completada' : 'invalida';
   };
   const configurar = async ({ solicitud, sesion, datos }) => {
     exigir(typeof solicitud === 'string' && /^[a-f0-9]{24}$/.test(solicitud)
@@ -174,6 +192,6 @@ const crearServicio = ({ conexion, correo = correoPredeterminado, reloj = () => 
     }
     exigir(limite && limite.cantidad <= maximo, 'LIMITE_SOLICITUDES');
   };
-  return { solicitar, reenviar, despachar, verificar, configurar, limitar };
+  return { solicitar, reenviar, despachar, verificar, consultarEnlace, consultarConfiguracion, configurar, limitar };
 };
 module.exports = { crearServicio, preparar, validarSolicitud, tokenHash, hash, DURACION_ENLACE, DURACION_CONFIGURACION };

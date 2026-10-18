@@ -1,5 +1,11 @@
 # Autoservicio empresarial: primera fase
 
+> Actualización: existe un adaptador Gmail transaccional independiente y un trabajador
+> supervisado explícito, ambos deshabilitados hasta autorización. Ver
+> [configuración y prueba real pendiente](gmail-transaccional.md). Las menciones
+> inferiores a ausencia de adaptador describen la fase original; el proveedor
+> predeterminado de las rutas sigue apagado y nunca envía desde HTTP.
+
 Implementación pública en `/registro`. El envío real permanece deshabilitado por
 defecto: no existe un proveedor configurado, un adaptador real ni un proceso de
 correo activado. No se leen secretos desde este módulo, no se usa Gmail empresarial

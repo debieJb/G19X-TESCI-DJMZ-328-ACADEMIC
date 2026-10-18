@@ -2,6 +2,7 @@ const router = require('express').Router();
 const crearCsrf = require('../middlewares/csrf');
 const controller = require('../controllers/registroPublicoController');
 router.use((req, res, next) => {
+  if (!req.session) return res.redirect(303, '/registro');
   res.set('Cache-Control', 'no-store');
   res.set('Referrer-Policy', 'no-referrer');
   res.set('X-Content-Type-Options', 'nosniff');
@@ -14,6 +15,7 @@ router.use(crearCsrf({ campo: 'registroCsrf', rechazar: (req, res) => res.status
 }) }));
 router.get('/', controller.mostrar);
 router.post('/', controller.solicitud);
+router.get('/estado', controller.pendiente);
 router.get('/reenviar', controller.mostrarReenvio);
 router.post('/reenviar', controller.reenviar);
 router.get('/verificar', controller.enlace);

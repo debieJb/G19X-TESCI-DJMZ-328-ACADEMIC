@@ -1,18 +1,23 @@
 const { spawn } = require('node:child_process');
 const path = require('node:path');
 // Una sola unidad, sin reinicios. Una terminacion forzada exige conciliar el estado persistido.
-const crearSupervisor = () => {
+const crearSupervisor = ({ transaccional = false } = {}) => {
   let activo = false;
   return { ejecutar: async ({ comprobar = true, envioId, timeoutMs = 45000, signal } = {}) => {
     if (activo) throw Error('TRABAJADOR_YA_ACTIVO');
     if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 120000) throw Error('PLAZO_INVALIDO');
     if (comprobar) require('./infraestructuraPilotoService').asegurarEnvioApagado();
-    else if (!require('../config/enviosGmail').obtenerPolitica().habilitado || !/^[a-f0-9]{24}$/.test(envioId || '')) throw Error('EJECUCION_BLOQUEADA');
+    else if (!/^[a-f0-9]{24}$/.test(envioId || '') || (transaccional
+      ? process.env.TRANSACTIONAL_EMAIL_ENABLED !== 'true'
+      : !require('../config/enviosGmail').obtenerPolitica().habilitado)) throw Error('EJECUCION_BLOQUEADA');
+    if (transaccional) require('./infraestructuraPilotoService').asegurarEnvioApagado();
     if (signal?.aborted) return { estado: 'cancelado_antes_del_arranque', pid: null };
     activo = true;
     try {
       return await new Promise(resolve => {
-        const hijo = spawn(process.execPath, [path.join(__dirname, '../scripts/procesarEnvioGmail.js'), comprobar ? '--comprobar' : envioId],
+        const script = transaccional ? 'despacharVerificacion.js' : 'procesarEnvioGmail.js';
+        const args = comprobar ? ['--comprobar'] : transaccional ? ['--solicitud', envioId, '--autorizar-envio'] : [envioId];
+        const hijo = spawn(process.execPath, [path.join(__dirname, '../scripts', script), ...args],
           { windowsHide: true, stdio: ['ignore', 'pipe', 'ignore'] });
         let salida = '', motivo;
         const parar = razon => { motivo ||= razon; hijo.kill(); };
@@ -25,7 +30,7 @@ const crearSupervisor = () => {
         hijo.once('close', codigo => {
           limpiar();
           let estado = motivo || (codigo === 0 ? 'finalizado_revisar_persistencia' : 'fallo_resultado_por_conciliar');
-          if (comprobar && codigo === 0 && salida.trim() === '{"estado":"comprobacion_sin_envios"}') estado = 'comprobacion_sin_envios';
+          if (comprobar && codigo === 0 && salida.trim() === (transaccional ? '{"estado":"sin_envios"}' : '{"estado":"comprobacion_sin_envios"}')) estado = 'comprobacion_sin_envios';
           resolve({ estado, pid: hijo.pid || null, codigo, reinicios: 0 });
         });
       });

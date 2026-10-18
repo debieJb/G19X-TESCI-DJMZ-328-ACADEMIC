@@ -1,7 +1,7 @@
 <% if (!usuarios.length) { %>
   <p class="muted">No hay usuarios registrados</p>
 <% } else { %>
-  <div class="tabla-admin"><table>
+  <div class="tabla-admin" role="region" aria-label="<%= leyenda %>" tabindex="0"><table>
     <caption><%= leyenda %></caption>
     <thead><tr><th scope="col">Nombre</th><th scope="col">Email</th><th scope="col">Rol</th></tr></thead>
     <tbody><% for (const usuario of usuarios) { %>

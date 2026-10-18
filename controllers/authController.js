@@ -15,7 +15,14 @@ const iniciarSesion = async (req, res, next) => {
   });
   try {
     const { email, password } = req.body || {};
-    if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password || Buffer.byteLength(password, 'utf8') > 72) return rechazar();
+    if (typeof email !== 'string' || !email.trim() || email.length > 320 || typeof password !== 'string' || !password || Buffer.byteLength(password, 'utf8') > 72) return rechazar();
+    try { await require('../services/loginLimitesService').consumir({ ip: req.ip || 'sin-ip', email: email.trim().toLowerCase() }); }
+    catch (e) {
+      const limitado = e.codigo === 'LIMITE_LOGIN';
+      if (limitado) res.set('Retry-After', '900');
+      return res.status(limitado ? 429 : 503).render('login', { titulo: 'Iniciar sesión', anio: new Date().getFullYear(),
+        error: limitado ? 'Demasiados intentos. Espera 15 minutos antes de volver a intentar.' : 'El acceso no está disponible temporalmente. Inténtalo más tarde.' });
+    }
     const usuario = await Usuario.findOne({ email: email.trim().toLowerCase() }).select('+password');
     if (!usuario || !(await usuario.compararPassword(password))) return rechazar();
     // Los usuarios históricos sin estado conservan compatibilidad. Los estados

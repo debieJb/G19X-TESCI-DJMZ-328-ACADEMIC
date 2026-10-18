@@ -1,13 +1,13 @@
 const { randomBytes, createCipheriv, createDecipheriv } = require('node:crypto');
 const ErrorGmail = require('./ErrorGmail');
 
-const obtenerClave = () => {
-  const valor = process.env.GMAIL_TOKEN_ENCRYPTION_KEY;
+const validarClave = valor => {
   if (typeof valor !== 'string' || !/^[A-Za-z0-9+/]{43}=$/.test(valor)) throw new ErrorGmail('CONFIGURACION');
   const clave = Buffer.from(valor, 'base64');
   if (clave.length !== 32 || clave.toString('base64') !== valor) throw new ErrorGmail('CONFIGURACION');
   return clave;
 };
+const obtenerClave = () => validarClave(process.env.GMAIL_TOKEN_ENCRYPTION_KEY);
 const contexto = (empresa, proposito) => {
   if (typeof empresa !== 'string' || !/^[a-f\d]{24}$/i.test(empresa)
     || typeof proposito !== 'string' || !/^[a-zA-Z0-9:_-]{1,160}$/.test(proposito)) throw new ErrorGmail('CIFRADO');
@@ -37,4 +37,28 @@ const descifrar = (valor, empresa, proposito) => {
     return Buffer.concat([cipher.update(datos), cipher.final()]).toString('utf8');
   } catch { throw new ErrorGmail('CIFRADO'); }
 };
-module.exports = { obtenerClave, cifrar, descifrar };
+// El remitente de plataforma usa una clave y AAD propios, sin IDs empresariales.
+const crearCifradoPlataforma = valor => {
+  const clave = validarClave(valor), aad = Buffer.from('marketing:transactional-gmail:v1');
+  return {
+    cifrar(texto) {
+      if (typeof texto !== 'string' || !texto || texto.length > 16384) throw new ErrorGmail('CIFRADO');
+      const iv = randomBytes(12), cipher = createCipheriv('aes-256-gcm', clave, iv);
+      cipher.setAAD(aad);
+      const datos = Buffer.concat([cipher.update(texto, 'utf8'), cipher.final()]);
+      return ['v1', iv.toString('base64url'), cipher.getAuthTag().toString('base64url'), datos.toString('base64url')].join('.');
+    },
+    descifrar(texto) {
+      try {
+        if (typeof texto !== 'string' || texto.length > 24000) throw Error();
+        const p = texto.split('.');
+        if (p.length !== 4 || p[0] !== 'v1' || !p.slice(1).every(v => /^[A-Za-z0-9_-]+$/.test(v))) throw Error();
+        const [iv, tag, datos] = p.slice(1).map(v => Buffer.from(v, 'base64url'));
+        if (iv.length !== 12 || tag.length !== 16) throw Error();
+        const cipher = createDecipheriv('aes-256-gcm', clave, iv); cipher.setAAD(aad); cipher.setAuthTag(tag);
+        return Buffer.concat([cipher.update(datos), cipher.final()]).toString('utf8');
+      } catch { throw new ErrorGmail('CIFRADO'); }
+    }
+  };
+};
+module.exports = { obtenerClave, cifrar, descifrar, crearCifradoPlataforma };

@@ -59,6 +59,7 @@ test('autoservicio real: reserva sin usuario; verificación y configuración cre
   assert.ok(await usuario.compararPassword(datos.password)); assert.ok(usuario.password !== datos.password);
   assert.ok(String(usuario.empresa) === String(empresa._id)); assert.equal(empresa.estadoActivacion, 'verificada');
   assert.equal((await f.m.SolicitudRegistro.findOne({})).estado, 'completada');
+  assert.equal(await f.servicio.consultarConfiguracion({ ...grant, sesion }), 'completada');
   assert.deepEqual((await f.m.AuditoriaRegistro.find({}).sort({ fecha: 1 }).lean()).map(e => e.evento), ['solicitada', 'correo_emitido', 'verificada', 'completada']);
 });
 test('autoservicio real: solicitud idempotente secuencial y concurrente no duplica ni reenvía', async t => {
@@ -69,6 +70,43 @@ test('autoservicio real: solicitud idempotente secuencial y concurrente no dupli
   assert.equal(await f.m.AuditoriaRegistro.countDocuments({ evento: 'solicitada' }), 1);
   assert.equal(f.mensajes.length, 0);
   await assert.rejects(f.servicio.solicitar({ ...f.entrada, datos: { ...f.entrada.datos, nombreEmpresa: 'Otro' } }), { codigo: 'IDEMPOTENCIA_CONFLICTO' });
+});
+
+test('autoservicio real: trabajador dirigido solo reclama la solicitud autorizada', async t => {
+  const f = await fixture(t);
+  await f.servicio.solicitar(f.entrada);
+  await f.servicio.solicitar({ datos: { nombreEmpresa: 'Segunda empresa', correo: 'segunda@example.test' },
+    claveIdempotencia: randomBytes(24).toString('base64url'), ambito: randomUUID() });
+  const elegida = await f.m.SolicitudRegistro.findOne({ correo: 'segunda@example.test' });
+  assert.deepEqual(await f.servicio.despachar({ solicitudId: new mongoose.Types.ObjectId().toString() }), { estado: 'sin_trabajo' });
+  assert.equal(f.mensajes.length, 0);
+  assert.deepEqual(await f.servicio.despachar({ solicitudId: String(elegida._id) }), { estado: 'enviada' });
+  assert.equal(f.mensajes.length, 1); assert.equal(f.mensajes[0].destino, 'segunda@example.test');
+  assert.equal((await f.m.SolicitudRegistro.findOne({ correo: f.entrada.datos.correo })).correoEstado, 'pendiente');
+  assert.deepEqual(await f.servicio.despachar({ solicitudId: String(elegida._id) }), { estado: 'sin_trabajo' });
+  assert.equal(f.mensajes.length, 1);
+});
+
+test('autoservicio real: consulta de enlace valida vigencia y caducidad sin consumir ni escribir auditoría', async t => {
+  const f = await fixture(t), token = await f.iniciar(), hashEnlace = autoservicio.tokenHash(token);
+  const antes = await f.m.AuditoriaRegistro.countDocuments();
+  assert.equal(await f.servicio.consultarEnlace({ hashEnlace }), 'vigente');
+  assert.equal(await f.servicio.consultarEnlace({ hashEnlace: autoservicio.tokenHash(randomBytes(32).toString('base64url')) }), 'invalido');
+  assert.equal(await f.m.AuditoriaRegistro.countDocuments(), antes);
+  f.avanzar(autoservicio.DURACION_ENLACE);
+  assert.equal(await f.servicio.consultarEnlace({ hashEnlace }), 'caducado');
+  await assert.rejects(f.servicio.verificar({ hashEnlace, sesion: randomUUID() }), { codigo: 'ENLACE_INVALIDO' });
+  assert.equal(await f.m.Empresa.countDocuments(), 0);
+});
+
+test('autoservicio real: vista de administrador exige permiso vigente ligado a la sesión', async t => {
+  const f = await fixture(t), grant = await f.verificar();
+  assert.equal(await f.servicio.consultarConfiguracion(grant), 'vigente');
+  assert.equal(await f.servicio.consultarConfiguracion({ ...grant, sesion: randomUUID() }), 'invalida');
+  assert.equal(await f.servicio.consultarConfiguracion({ solicitud: 'no-valida', sesion: randomUUID() }), 'invalida');
+  f.avanzar(autoservicio.DURACION_CONFIGURACION);
+  assert.equal(await f.servicio.consultarConfiguracion(grant), 'caducada');
+  assert.equal(await f.m.Empresa.countDocuments(), 0); assert.equal(await f.m.Usuario.countDocuments(), 0);
 });
 test('autoservicio real: token caducado y reutilizado no verifican', async t => {
   const f = await fixture(t), token = await f.iniciar();
@@ -199,19 +237,27 @@ test('autoservicio real HTTP: solicitud, enlace, contraseña e inicio de sesión
   t.mock.method(Usuario, 'findOne', filtro => f.m.Usuario.findOne(filtro));
   const { app, store } = crearAppRegistro(); t.after(() => store.clear());
   const agente = request.agent(app), pagina = await agente.get('/registro').expect(200);
+  const login = async status => {
+    const pagina = await agente.get('/login').expect(200);
+    return agente.post('/login').type('form').send({ email: 'administracion@example.test', password: datos.password,
+      _csrf: campo(pagina.text, '_csrf') }).expect(status);
+  };
+  const Limite = require('../models/LimiteRegistro');
+  t.mock.method(Limite.collection, 'listIndexes', () => f.m.LimiteRegistro.collection.listIndexes());
+  t.mock.method(Limite, 'findOneAndUpdate', (...args) => f.m.LimiteRegistro.findOneAndUpdate(...args));
   await agente.post('/registro').type('form').send({ _csrf: campo(pagina.text, '_csrf'), idempotencia: campo(pagina.text, 'idempotencia'),
     nombreEmpresa: 'Empresa HTTP', correo: 'administracion@example.test' }).expect(202);
   assert.equal(await f.m.Usuario.countDocuments(), 0);
-  await agente.post('/login').type('form').send({ email: 'administracion@example.test', password: datos.password }).expect(401);
+  await login(401);
   // Solo el consumidor con transporte simulado emite el enlace de esta prueba.
   await f.servicio.despachar();
   await agente.get('/registro/verificar').query({ token: f.token() }).expect(303);
   const confirmacion = await agente.get('/registro/verificar').expect(200);
   await agente.post('/registro/verificar').type('form').send({ _csrf: campo(confirmacion.text, '_csrf') }).expect(303);
-  await agente.post('/login').type('form').send({ email: 'administracion@example.test', password: datos.password }).expect(401);
+  await login(401);
   const formulario = await agente.get('/registro/administrador').expect(200);
   await agente.post('/registro/administrador').type('form').send({ ...datos, _csrf: campo(formulario.text, '_csrf') }).expect(200);
   await agente.get('/sesion-prueba').expect(200).then(r => assert.equal(r.body.autenticada, false));
-  await agente.post('/login').type('form').send({ email: 'administracion@example.test', password: datos.password }).expect(303);
+  await login(303);
   await agente.get('/sesion-prueba').expect(200).then(r => assert.equal(r.body.autenticada, true));
 });

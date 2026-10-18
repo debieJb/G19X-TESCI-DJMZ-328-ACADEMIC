@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title><%= titulo %> | Marketing Automation</title><link rel="stylesheet" href="/css/styles.css"></head>
-<body class="pagina-admin"><%- include('../partials/_encabezado', { seccion: '' }) %>
+<html lang="es"><head><%- include('../partials/_headPublico', { tituloPagina: titulo }) %></head>
+<body class="pagina-admin pagina-empresa"><%- include('../partials/_encabezadoEmpresa') %>
 <main id="contenido" tabindex="-1">
-<h1><%= empresa.nombre %></h1><p><%= usuarioActual.nombre %> · <%= usuarioActual.email %> · <%= usuarioActual.rol %></p>
-<form class="salida-admin" action="/logout" method="post"><button type="submit">Cerrar sesión</button></form>
+<div class="cabecera-empresa"><div><p class="sobrelinea">Tu espacio de trabajo</p><h1><%= empresa.nombre %></h1><p><%= usuarioActual.nombre %> · <%= usuarioActual.email %> · <%= usuarioActual.rol %></p></div>
+<form class="salida-admin" action="/logout" method="post"><%- include('../partials/_csrfLogout') %><button type="submit">Cerrar sesión</button></form>
+</div>
 <%- include('_campanas') %>
 <section class="seccion-admin panel"><h2>Contactos</h2><p>Administra la base de contactos de tu empresa.</p><div class="acciones"><a class="boton" href="/contactos">Ver contactos</a><a class="boton secundario" href="/contactos/nuevo">Nuevo contacto</a></div></section>
 </main><%- include('../partials/_piePublico') %></body></html>

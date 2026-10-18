@@ -18,6 +18,13 @@ test('autoservicio: enlace exige 256 bits aleatorios en formato canónico y devu
   assert.ok(autoservicio.tokenHash(token) !== token);
   for (const dato of [undefined, {}, 'breve', token + '\n']) assert.throws(() => autoservicio.tokenHash(dato), { codigo: 'ENLACE_INVALIDO' });
 });
+
+test('autoservicio: trabajador dirigido rechaza IDs inválidos antes de acceder a MongoDB', async () => {
+  const servicio = autoservicio.crearServicio({ conexion: null });
+  for (const solicitudId of ['', {}, 'otra-base', 'f'.repeat(25)]) {
+    await assert.rejects(servicio.despachar({ solicitudId }), { codigo: 'DATOS_INVALIDOS' });
+  }
+});
 test('autoservicio: esquema rechaza secretos recuperables y no provisiona índices automáticamente', () => {
   for (const campo of ['password', 'token', 'enlace']) assert.throws(() => new Solicitud({ [campo]: 'dato' }), /strict/i);
   assert.equal(Solicitud.schema.options.autoIndex, false);

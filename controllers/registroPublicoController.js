@@ -4,7 +4,7 @@ const autoservicio = require('../services/autoservicioEmpresarialService');
 const servicio = () => autoservicio.crearServicio({ conexion: mongoose.connection });
 const guardarSesion = req => new Promise((resolve, reject) => req.session.save(e => e ? reject(e) : resolve()));
 const regenerar = req => new Promise((resolve, reject) => req.session.regenerate(e => e ? reject(e) : resolve()));
-const mensajeGenerico = 'Si la solicitud puede continuar, recibirás un enlace cuando el servicio de correo esté disponible. Revisa también correo no deseado.';
+const mensajeGenerico = 'Solicitud recibida. Si el registro puede continuar, se procesará la verificación cuando el servicio de correo esté disponible. Esta respuesta no confirma el envío ni la entrega de un mensaje.';
 const pagina = (res, paso, status = 200, mensaje = '') => res.status(status).render('registro', { paso, mensaje });
 const error = (res, e, paso) => {
   if (e.codigo === 'LIMITE_SOLICITUDES') {
@@ -12,7 +12,8 @@ const error = (res, e, paso) => {
     return pagina(res, paso, 429, 'Demasiadas solicitudes. Espera antes de intentarlo de nuevo.');
   }
   if (['DATOS_INVALIDOS', 'PASSWORD_INSEGURA'].includes(e.codigo)) return pagina(res, paso, 422,
-    'Revisa los datos. Usa una contraseña de al menos 16 caracteres, hasta 72 bytes, y confírmala.');
+    paso === 'administrador' ? 'Revisa los datos y confirma la contraseña: al menos 16 caracteres, cuatro diferentes y hasta 72 bytes.'
+      : 'Revisa el nombre de la empresa y escribe un correo electrónico válido.');
   if (['ENLACE_INVALIDO', 'IDEMPOTENCIA_CONFLICTO'].includes(e.codigo)) return pagina(res, 'invalido', 422,
     'El enlace o la sesión no es válido, ya se utilizó o ha caducado. Solicita otro enlace.');
   // Nunca registrar e.message, cuerpo, correo, contraseñas ni queries.
@@ -37,6 +38,7 @@ const solicitud = async (req, res) => {
     } catch (e) { if (e.codigo !== 'IDEMPOTENCIA_CONFLICTO') throw e; }
     // No hay envío síncrono; misma respuesta para correo existente, nuevo o repetido.
     await new Promise(resolve => setTimeout(resolve, Math.max(0, 250 - (Date.now() - inicio))));
+    req.session.registroRecibido = true;
     return pagina(res, 'aceptada', 202, mensajeGenerico);
   } catch (e) { return error(res, e, 'solicitud'); }
 };
@@ -50,6 +52,7 @@ const reenviar = async (req, res) => {
     await servicio().limitar({ accion: 'correo', identificador: destino, maximo: 5, ventanaMs: 3600000 });
     await servicio().reenviar(destino);
     await new Promise(resolve => setTimeout(resolve, Math.max(0, 250 - (Date.now() - inicio))));
+    req.session.registroRecibido = true;
     return pagina(res, 'aceptada', 202, mensajeGenerico);
   } catch (e) { return error(res, e, 'reenvio'); }
 };
@@ -57,11 +60,17 @@ const enlace = async (req, res) => {
   try {
     if (Object.hasOwn(req.query, 'token')) {
       // No consumir en GET: escáneres de correo no deben activar la solicitud.
+      delete req.session.registroEnlaceHash;
       req.session.registroEnlaceHash = autoservicio.tokenHash(req.query.token);
       await guardarSesion(req);
       return res.redirect(303, '/registro/verificar');
     }
+    if (req.session.registroEnlaceUsadoHash && req.session.registroEnlaceHash === req.session.registroEnlaceUsadoHash) return pagina(res, 'usado', 422);
     if (!req.session.registroEnlaceHash) throw { codigo: 'ENLACE_INVALIDO' };
+    await limitar(req, 'verificacion', 30);
+    const estado = await servicio().consultarEnlace({ hashEnlace: req.session.registroEnlaceHash });
+    if (estado === 'caducado') return pagina(res, 'caducado', 422);
+    if (estado !== 'vigente') throw { codigo: 'ENLACE_INVALIDO' };
     return pagina(res, 'verificacion');
   } catch (e) { return error(res, e, 'invalido'); }
 };
@@ -69,16 +78,30 @@ const verificar = async (req, res) => {
   try {
     await limitar(req, 'verificacion', 30);
     const hashEnlace = req.session.registroEnlaceHash;
+    if (req.session.registroEnlaceUsadoHash && (!hashEnlace || hashEnlace === req.session.registroEnlaceUsadoHash)) return pagina(res, 'usado', 422);
+    const estado = await servicio().consultarEnlace({ hashEnlace });
+    if (estado === 'caducado') return pagina(res, 'caducado', 422);
+    if (estado !== 'vigente') throw { codigo: 'ENLACE_INVALIDO' };
     // La sesión nueva evita fijación y acota la configuración a quien consumió el enlace.
     await regenerar(req);
     const resultado = await servicio().verificar({ hashEnlace, sesion: req.sessionID });
     req.session.registroSolicitud = resultado.solicitud;
+    req.session.registroEnlaceUsadoHash = hashEnlace;
     await guardarSesion(req);
     return res.redirect(303, '/registro/administrador');
   } catch (e) { return error(res, e, 'invalido'); }
 };
-const mostrarAdministrador = (req, res) => req.session.registroSolicitud
-  ? pagina(res, 'administrador') : pagina(res, 'invalido', 422, 'Verifica primero tu correo mediante el enlace recibido.');
+const mostrarAdministrador = async (req, res) => {
+  try {
+    if (!req.session.registroSolicitud) return pagina(res, 'invalido', 422, 'Verifica primero tu correo mediante el enlace recibido.');
+    const estado = await servicio().consultarConfiguracion({ solicitud: req.session.registroSolicitud, sesion: req.sessionID });
+    if (estado === 'caducada') return pagina(res, 'configuracion_caducada', 422);
+    if (estado === 'completada') return pagina(res, 'completada');
+    if (estado !== 'vigente') return pagina(res, 'invalido', 422, 'La sesión de configuración no es válida. Solicita un nuevo enlace.');
+    return pagina(res, 'administrador');
+  } catch (e) { return error(res, e, 'invalido'); }
+};
+const pendiente = (req, res) => req.session.registroRecibido ? pagina(res, 'pendiente') : res.redirect(303, '/registro');
 const configurar = async (req, res) => {
   try {
     await limitar(req, 'configuracion', 10);
@@ -88,4 +111,4 @@ const configurar = async (req, res) => {
     return pagina(res, 'completada', 200, 'Registro completado. Ya puedes iniciar sesión con el correo verificado.');
   } catch (e) { return error(res, e, 'administrador'); }
 };
-module.exports = { mostrar, solicitud, mostrarReenvio, reenviar, enlace, verificar, mostrarAdministrador, configurar };
+module.exports = { mostrar, solicitud, mostrarReenvio, reenviar, enlace, verificar, mostrarAdministrador, configurar, pendiente };
