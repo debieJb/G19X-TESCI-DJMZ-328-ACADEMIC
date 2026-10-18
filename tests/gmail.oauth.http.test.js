@@ -18,7 +18,7 @@ beforeEach(t => {
 });
 const csrf = async () => {
   const res = await cliente.get('/empresa/gmail').expect(200);
-  return res.text.match(/name="_csrf" value="([^"]+)"/)[1];
+  return res.text.match(/<form action="\/empresa\/gmail\/[^\"]+"[^>]*>[\s\S]*?name="_csrf" value="([^"]+)"/)[1];
 };
 const iniciar = async () => {
   const res = await cliente.post('/empresa/gmail/conectar').send({ _csrf: await csrf(), empresa: String(B), rol: 'superadmin' }).expect(303);

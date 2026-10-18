@@ -43,6 +43,23 @@ test('automatización: solo muestra contactos propios con consentimiento y enví
   assert.equal(fetch.mock.callCount(), 0);
 });
 
+test('automatización: piloto guiado requiere infraestructura validada, empresa autorizada y administrador', async t => {
+  t.mock.method(require('../config/enviosGmail'), 'obtenerPolitica', () => ({ empresas: [A] }));
+  let r = await cliente.get(url()).expect(200);
+  assert.doesNotMatch(r.text, /data-piloto-gmail/);
+  app.locals.pilotoInfraValidada = true;
+  r = await cliente.get(url()).expect(200);
+  assert.match(r.text, /data-piloto-gmail/);
+  assert.match(r.text, /gmail\/piloto\/autorizar/);
+  assert.match(r.text, /gmail\/confirmar/);
+  assert.match(r.text, /gmail\/piloto\/revocar/);
+  assert.match(r.text, /pilotoGmail.js/);
+  t.mock.method(require('../config/enviosGmail'), 'obtenerPolitica', () => ({ empresas: [B] }));
+  r = await cliente.get(url()).expect(200);
+  assert.doesNotMatch(r.text, /data-piloto-gmail/);
+  assert.equal(fetch.mock.callCount(), 0);
+});
+
 test('automatización: guarda preparación inmediata sin activar, programar ni duplicar contactos', async () => {
   await cliente.post(url()).send(datos()).expect(303).expect('Location', url() + '?guardado=1');
   assert.equal(doc.estado, 'borrador'); assert.equal(doc.automatizacion.estado, 'preparada');

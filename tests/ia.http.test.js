@@ -36,7 +36,7 @@ beforeEach(t => {
     partialFilterExpression: { 'asistenciaIA.aprobacionHash': { $type: 'string' } } }] }));
   guardar = t.mock.method(Campana, 'create', async valores => { await new Campana(valores).validate(); return {}; });
 });
-const token = async () => (await cliente.get('/empresa/ia').expect(200)).text.match(/name="_csrf" value="([A-Za-z0-9_-]{43})"/)[1];
+const token = async () => (await cliente.get('/empresa/ia').expect(200)).text.match(/<form method="post" action="\/empresa\/ia\/generar"[^>]*>[\s\S]*?name="_csrf" value="([A-Za-z0-9_-]{43})"/)[1];
 const crearPropuesta = async (cambios = {}) => {
   const csrf = await token();
   const respuesta = await cliente.post('/empresa/ia/generar').type('form').send({ _csrf: csrf, ...datos(), ...cambios }).expect(200);

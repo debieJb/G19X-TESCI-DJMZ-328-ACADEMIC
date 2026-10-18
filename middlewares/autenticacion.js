@@ -4,12 +4,14 @@ require('../models/Empresa');
 const destruirSesion = req => new Promise((resolve, reject) => {
   req.session.destroy(error => error ? reject(error) : resolve());
 });
-const limpiarCookie = res => res.clearCookie('marketing.sid', { httpOnly: true, secure: false, sameSite: 'lax', path: '/' });
+const limpiarCookie = res => res.clearCookie(res.app?.locals.nombreCookieSesion || 'marketing.sid', {
+  httpOnly: true, secure: !!res.app?.locals.cookieSesionSegura, sameSite: 'lax', path: '/'
+});
 
 const cargarUsuario = async (req, res, next) => {
   res.locals.usuarioActual = null;
   try {
-    if (req.session.usuarioId) {
+    if (req.session?.usuarioId) {
       const id = req.session.usuarioId;
       const usuario = typeof id === 'string' && /^[a-f\d]{24}$/i.test(id)
         ? await Usuario.findById(id).select('nombre email rol empresa estadoAcceso').populate('empresa', 'nombre').lean()

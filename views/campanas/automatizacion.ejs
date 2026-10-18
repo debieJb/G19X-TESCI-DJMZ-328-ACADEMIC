@@ -1,6 +1,8 @@
-<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title><%= titulo %></title><link rel="stylesheet" href="/css/styles.css"></head>
-<body class="pagina-admin"><%- include('../partials/_encabezado', { seccion: 'campanas' }) %><main id="contenido" tabindex="-1">
+<!DOCTYPE html><html lang="es"><head><%- include('../partials/_headInterno') %></head>
+<body class="pagina-admin pagina-interna"><%- include('../partials/_encabezado', { seccion: 'campanas' }) %><main id="contenido" tabindex="-1">
 <h1>Configurar automatización: <%= campana.nombre %></h1>
+<ol class="flujo-automatizacion" aria-label="Recorrido de automatizacion"><li><strong>Conecta</strong><span>Gmail de tu empresa y permiso de envio.</span></li><li><strong>Prepara</strong><span>Texto inmediato y un contacto autorizado.</span></li><li><strong>Revisa y autoriza</strong><span>Un intento explicito, con contenido revisado.</span></li><li><strong>Consulta</strong><span>Cola, errores y resultado real del proveedor.</span></li></ol>
+
 <% if (guardado) { %><p class="panel" role="status">Preparación guardada. La campaña sigue en borrador; no se creó ninguna tarea de envío.</p><% } %>
 <p class="aviso-error" role="status"><%= estado.motivo %></p>
 <section class="panel"><h2>Revisar contenido</h2><p>Canal: <%= estado.canalValido ? 'Email' : 'No compatible' %></p><h3><%= campana.asunto || 'Asunto pendiente' %></h3><pre><%= campana.cuerpoTexto || 'Mensaje pendiente' %></pre>
@@ -27,6 +29,8 @@
 <div class="campo"><label for="modo">Modalidad deseada</label><select id="modo" name="modo"><option value="inmediato" <%= campana.automatizacion?.modo !== 'programado' ? 'selected' : '' %>>Envío inmediato (solo preparación)</option><option value="programado" <%= campana.automatizacion?.modo === 'programado' ? 'selected' : '' %>>Envío programado (solo preparación)</option></select></div>
 <div class="campo"><label for="fechaProgramada">Fecha futura en UTC (si eliges programado)</label><input id="fechaProgramada" name="fechaProgramada" type="datetime-local" value="<%= campana.automatizacion?.fechaProgramada ? campana.automatizacion.fechaProgramada.toISOString().slice(0,16) : '' %>"></div>
 <button type="submit">Guardar preparación sin enviar</button></form>
-<section class="panel"><h2>Confirmación de envío real</h2><p>Guardar una propuesta o preparación nunca autoriza un envío. Cuando exista el motor real se requerirá una confirmación independiente.</p>
+<% if (pilotoDisponible) { %><%- include('../partials/_pilotoGmail', { campana }) %><% } else { %>
+<section class="panel"><h2>Confirmación de envío real</h2><p>Guardar una propuesta o preparación nunca autoriza un envío. El motor Gmail utiliza un flujo independiente de piloto autorizado; este formulario histórico permanece bloqueado.</p>
 <form method="post" action="/campanas/<%= campana._id %>/automatizacion/confirmar"><%- include('../partials/_csrfCampana') %><label><input type="checkbox" name="confirmacion" value="ENVIAR" required disabled>Confirmo los destinatarios, contenido y envío real</label><button type="submit" disabled>Envío real no disponible</button></form></section>
-<a href="/campanas/<%= campana._id %>">Ver borrador</a> · <a href="/campanas">Campañas</a></main></body></html>
+<% } %>
+<a href="/campanas/<%= campana._id %>">Ver borrador</a> · <a href="/campanas">Campañas</a></main><%- include('../partials/_piePublico') %></body></html>

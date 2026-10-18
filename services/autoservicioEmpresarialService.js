@@ -29,8 +29,11 @@ const tokenHash = token => {
 };
 const preparar = async conexion => {
   await registro.validarTopologia(conexion);
-  const m = Object.fromEntries(nombres.map(nombre => [nombre, conexion.models[nombre]
-    || conexion.model(nombre, require(`../models/${nombre}`).schema.clone().set('autoIndex', false).set('autoCreate', false))]));
+  const m = Object.fromEntries(nombres.map(nombre => {
+    const original = conexion.models[nombre] || require(`../models/${nombre}`);
+    return [nombre, conexion.models[nombre] || conexion.model(nombre,
+      original.schema.clone().set('autoIndex', false).set('autoCreate', false))];
+  }));
   // Fallar cerrado: jamás provisionar colecciones/índices en una petición pública.
   for (const nombre of nombres) {
     const indices = await m[nombre].collection.listIndexes().toArray();
@@ -44,7 +47,10 @@ const preparar = async conexion => {
   return m;
 };
 const evento = (m, solicitud, nombre, session) => new m.AuditoriaRegistro({ solicitud, evento: nombre }).save({ session });
-const crearServicio = ({ conexion, correo = correoPredeterminado, reloj = () => new Date() }) => {
+const crearServicio = ({ conexion, correo = correoPredeterminado, reloj = () => new Date(),
+  limitesEnvio = { minuto: 10, dia: 100 }, diagnostico = () => {} }) => {
+  exigir(Number.isInteger(limitesEnvio.minuto) && limitesEnvio.minuto >= 1 && limitesEnvio.minuto <= 100
+    && Number.isInteger(limitesEnvio.dia) && limitesEnvio.dia >= 1 && limitesEnvio.dia <= 1000, 'LIMITES_ENVIO_INVALIDOS');
   const transaccion = fn => conexion.transaction(fn, registro.opcionesTransaccion);
   const solicitar = async ({ datos, claveIdempotencia, ambito }) => {
     const limpio = validarSolicitud(datos);
@@ -91,31 +97,63 @@ const crearServicio = ({ conexion, correo = correoPredeterminado, reloj = () => 
       await evento(m, doc._id, 'reenvio', session);
     });
   };
-  // Consumidor explícito, nunca llamado por HTTP ni dentro de una transacción.
-  // El despliegue debe inyectar un proveedor autorizado y ejecutar este consumidor.
-  const despachar = async ({ solicitudId } = {}) => {
+  // La solicitud ES la tarea persistente de la cola: se crea junto a su auditoria
+  // en una transaccion. No requiere una segunda cola ni una empresa aun inexistente.
+  const recuperarIncierta = async () => {
+    const m = await preparar(conexion), ahora = reloj();
+    return transaccion(async session => {
+      const doc = await m.SolicitudRegistro.findOneAndUpdate({ estado: 'pendiente_correo', correoEstado: 'procesando',
+        entregaHasta: { $lte: ahora } }, { $set: { correoEstado: 'incierta', correoError: 'TRABAJADOR_INTERRUMPIDO' },
+        $unset: { entregaHash: 1, entregaHasta: 1 } }, { new: true, session });
+      if (doc) await evento(m, doc._id, 'correo_incierto', session);
+      return { estado: doc ? 'incierta' : 'sin_trabajo' };
+    });
+  };
+  // Consumidor residente o dirigido: reclamar y reservar cuotas atomicamente;
+  // llamar al proveedor solo despues del commit y nunca reintentar incertidumbres.
+  const despachar = async ({ solicitudId, primerIntento = false, destinatarioEsperado } = {}) => {
     if (solicitudId !== undefined) exigir(typeof solicitudId === 'string' && /^[a-f0-9]{24}$/.test(solicitudId), 'DATOS_INVALIDOS');
+    if (primerIntento) exigir(solicitudId && email(destinatarioEsperado) === destinatarioEsperado, 'BUZON_CONTROLADO_REQUERIDO');
     if (!correo.disponible) return { estado: 'deshabilitado' };
     const m = await preparar(conexion), ahora = reloj(), token = aleatorio(), entrega = hash(aleatorio());
-    const doc = await transaccion(async session => {
-      const tomado = await m.SolicitudRegistro.findOneAndUpdate({ ...(solicitudId ? { _id: solicitudId } : {}), estado: 'pendiente_correo',
+    let doc;
+    try { doc = await transaccion(async session => {
+      const tomado = await m.SolicitudRegistro.findOneAndUpdate({ ...(solicitudId ? { _id: solicitudId } : {}),
+        ...(primerIntento ? { versionEnvio: 0, correo: destinatarioEsperado } : {}), estado: 'pendiente_correo',
         correoEstado: { $in: ['pendiente', 'pendiente_configuracion'] } }, {
         $set: { correoEstado: 'procesando', tokenHash: hash(token), expiraEn: new Date(+ahora + DURACION_ENLACE),
-          entregaHash: entrega, entregaHasta: new Date(+ahora + 120000) }, $inc: { versionEnvio: 1 }
+          entregaHash: entrega, entregaHasta: new Date(+ahora + 120000) },
+        $unset: { correoError: 1, proveedorMensajeId: 1 }, $inc: { versionEnvio: 1 }
       }, { new: true, session, sort: { createdAt: 1 } });
+      if (tomado) for (const [periodo, maximo] of [[60000, limitesEnvio.minuto], [DIA, limitesEnvio.dia]]) {
+        const ventana = Math.floor(+ahora / periodo), _id = hash(`gmail-transaccional:${periodo}:${ventana}`);
+        const limite = await m.LimiteRegistro.findOneAndUpdate({ _id }, { $inc: { cantidad: 1 },
+          $setOnInsert: { expiraEn: new Date((ventana + 1) * periodo) } }, { upsert: true, new: true, session });
+        exigir(limite.cantidad <= maximo, 'CUOTA_ENVIO_AGOTADA');
+      }
       return tomado;
-    });
+    }); } catch (e) {
+      if (e.codigo === 'CUOTA_ENVIO_AGOTADA' || e.code === 11000) return { estado: 'limitada' };
+      throw e;
+    }
     if (!doc) return { estado: 'sin_trabajo' };
-    let estado = 'enviada';
-    try { await correo.enviarVerificacion({ correo: doc.correo, token }); }
-    catch (e) { estado = e?.definitivo === true ? 'fallida' : 'incierta'; }
+    let estado = 'enviada', codigo, aceptacion;
+    try { aceptacion = await correo.enviarVerificacion({ correo: doc.correo, token }); }
+    catch (e) {
+      estado = e?.definitivo === true ? 'fallida' : 'incierta';
+      codigo = e?.requiereAutorizacion === true ? 'REAUTORIZAR_TRANSACCIONAL'
+        : ['REAUTORIZAR_TRANSACCIONAL', 'GMAIL_TRANSACCIONAL_RECHAZADO', 'ENTREGA_CANCELADA'].includes(e?.codigo)
+        ? e.codigo : estado === 'incierta' ? 'ENTREGA_INCIERTA' : 'PROVEEDOR_RECHAZADO';
+    }
     await transaccion(async session => {
       const resultado = await m.SolicitudRegistro.updateOne({ _id: doc._id, entregaHash: entrega, correoEstado: 'procesando' },
-        { $set: { correoEstado: estado }, $unset: { entregaHash: 1, entregaHasta: 1,
+        { $set: { correoEstado: estado, ...(codigo ? { correoError: codigo } : {}),
+          ...(/^[a-zA-Z0-9_-]{1,128}$/.test(aceptacion?.mensajeId || '') ? { proveedorMensajeId: aceptacion.mensajeId } : {}) }, $unset: { entregaHash: 1, entregaHasta: 1,
           ...(estado === 'fallida' ? { tokenHash: 1, expiraEn: 1 } : {}) } }, { session });
       if (resultado.matchedCount) await evento(m, doc._id,
         estado === 'enviada' ? 'correo_emitido' : estado === 'fallida' ? 'correo_fallido' : 'correo_incierto', session);
     });
+    if (codigo) diagnostico(codigo);
     return { estado };
   };
   const verificar = async ({ hashEnlace, sesion }) => {
@@ -192,6 +230,6 @@ const crearServicio = ({ conexion, correo = correoPredeterminado, reloj = () => 
     }
     exigir(limite && limite.cantidad <= maximo, 'LIMITE_SOLICITUDES');
   };
-  return { solicitar, reenviar, despachar, verificar, consultarEnlace, consultarConfiguracion, configurar, limitar };
+  return { solicitar, reenviar, despachar, recuperarIncierta, verificar, consultarEnlace, consultarConfiguracion, configurar, limitar };
 };
 module.exports = { crearServicio, preparar, validarSolicitud, tokenHash, hash, DURACION_ENLACE, DURACION_CONFIGURACION };

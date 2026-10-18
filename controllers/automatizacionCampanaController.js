@@ -20,6 +20,9 @@ const mostrar = async (req, res) => {
     const { empresa, campana } = await cargar(req, res);
     const contactos = await preparacion.opciones(empresa), estado = await preparacion.evaluar(campana);
     res.render('campanas/automatizacion', { titulo: 'Configurar automatización', campana, contactos, estado,
+      pilotoDisponible: req.app.locals.pilotoInfraValidada === true
+        && require('../config/enviosGmail').obtenerPolitica().empresas.includes(empresa)
+        && res.locals.usuarioActual.rol === 'admin_empresa',
       guardado: req.query.guardado === '1' });
   } catch (error) { fallo(res, error); }
 };

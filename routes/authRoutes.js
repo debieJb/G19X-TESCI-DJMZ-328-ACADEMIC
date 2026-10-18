@@ -6,6 +6,7 @@ const csrf = require('../middlewares/csrf')({ campo: 'authCsrf', rechazar: (req,
 router.use('/login', (req, res, next) => {
   if (!req.session) return res.redirect(303, '/login');
   res.set('Cache-Control', 'no-store'); res.set('Referrer-Policy', 'no-referrer');
+  if (req.method === 'GET' && res.locals.usuarioActual) return res.redirect('/panel');
   res.set('X-Content-Type-Options', 'nosniff');
   res.set('Content-Security-Policy', "default-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'");
   csrf(req, res, next);

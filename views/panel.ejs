@@ -1,14 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= titulo %> | Marketing Automation</title>
-  <link rel="stylesheet" href="/css/styles.css">
-</head>
-<body class="pagina-publica">
-  <a class="saltar" href="#contenido">Saltar al contenido</a>
-  <header class="encabezado"><div class="barra"><a class="marca" href="/">Marketing Automation</a></div></header>
+<head><%- include('partials/_headInterno') %></head>
+<body class="pagina-publica pagina-interna">
+  <%- include('partials/_navegacionInterna', { seccion: 'panel' }) %>
   <main id="contenido" tabindex="-1">
     <h1>Bienvenido, <%= usuarioActual.nombre %></h1>
     <dl class="detalle">

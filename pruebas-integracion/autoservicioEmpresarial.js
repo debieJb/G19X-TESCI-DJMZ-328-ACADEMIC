@@ -15,6 +15,9 @@ after(async () => { await rs.compararOriginal(); assert.equal(mongoose.connectio
 const fixture = async t => {
   const nombre = 'ma_tx_test_' + randomUUID().replaceAll('-', ''), marca = randomUUID();
   const conexion = await mongoose.createConnection(rs.URI, { dbName: nombre, autoCreate: false, autoIndex: false }).asPromise();
+  try {
+    assert.ok(!(await conexion.db.admin().listDatabases()).databases.some(d => d.name === nombre));
+  } catch (e) { await conexion.close(); throw e; }
   t.after(async () => {
     try {
       const c = await rs.conectar(); try { await rs.verificar(c); } finally { await c.close(); }
@@ -43,7 +46,7 @@ const fixture = async t => {
     const valor = await iniciar(); const resultado = await servicio.verificar({ hashEnlace: autoservicio.tokenHash(valor), sesion });
     return { ...resultado, sesion };
   };
-  return { m, conexion, servicio, entrada, mensajes, transporte, token, iniciar, verificar, configurarDatos,
+  return { m, conexion, servicio, entrada, mensajes, transporte, correo, token, iniciar, verificar, configurarDatos,
     avanzar: ms => { ahora = new Date(+ahora + ms); } };
 };
 test('autoservicio real: reserva sin usuario; verificación y configuración crean empresa activa y contraseña bcrypt', async t => {
@@ -232,7 +235,7 @@ test('autoservicio real: registro repetido de cuenta existente no crea ni modifi
 test('autoservicio real HTTP: solicitud, enlace, contraseña e inicio de sesión con MongoDB temporal', async t => {
   const f = await fixture(t), crear = autoservicio.crearServicio;
   const datos = f.configurarDatos();
-  t.mock.method(autoservicio, 'crearServicio', () => crear({ conexion: f.conexion }));
+  t.mock.method(autoservicio, 'crearServicio', opciones => crear({ ...opciones, conexion: f.conexion }));
   const Usuario = require('../models/Usuario');
   t.mock.method(Usuario, 'findOne', filtro => f.m.Usuario.findOne(filtro));
   const { app, store } = crearAppRegistro(); t.after(() => store.clear());
@@ -245,12 +248,15 @@ test('autoservicio real HTTP: solicitud, enlace, contraseña e inicio de sesión
   const Limite = require('../models/LimiteRegistro');
   t.mock.method(Limite.collection, 'listIndexes', () => f.m.LimiteRegistro.collection.listIndexes());
   t.mock.method(Limite, 'findOneAndUpdate', (...args) => f.m.LimiteRegistro.findOneAndUpdate(...args));
+  const cancelar = new AbortController();t.after(() => cancelar.abort());
+  const automatico = require('../services/trabajadorVerificacionService').ejecutar({ conexion: f.conexion, correo: f.correo,
+    signal: cancelar.signal, intervaloMs: 10, informar: codigo => { if (codigo === 'CORREO_ACEPTADO_PROVEEDOR') cancelar.abort(); } });
   await agente.post('/registro').type('form').send({ _csrf: campo(pagina.text, '_csrf'), idempotencia: campo(pagina.text, 'idempotencia'),
     nombreEmpresa: 'Empresa HTTP', correo: 'administracion@example.test' }).expect(202);
   assert.equal(await f.m.Usuario.countDocuments(), 0);
   await login(401);
-  // Solo el consumidor con transporte simulado emite el enlace de esta prueba.
-  await f.servicio.despachar();
+  // Consumidor residente con Gmail simulado: sin ID ni despacho administrativo.
+  await automatico;
   await agente.get('/registro/verificar').query({ token: f.token() }).expect(303);
   const confirmacion = await agente.get('/registro/verificar').expect(200);
   await agente.post('/registro/verificar').type('form').send({ _csrf: campo(confirmacion.text, '_csrf') }).expect(303);

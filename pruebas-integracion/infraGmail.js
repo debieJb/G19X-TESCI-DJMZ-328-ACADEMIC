@@ -14,6 +14,8 @@ after(async () => { await rs.compararOriginal(); infra.asegurarEnvioApagado(); }
 const fixture = async t => {
   const nombre = 'ma_tx_test_' + randomUUID().replaceAll('-', ''), marca = randomUUID();
   const conexion = await mongoose.createConnection(rs.URI, { dbName: nombre, autoCreate: false, autoIndex: false }).asPromise();
+  try { assert.ok(!(await conexion.db.admin().listDatabases()).databases.some(d => d.name === nombre)); }
+  catch (e) { await conexion.close();throw e; }
   t.after(async () => {
     try {
       const c = await rs.conectar(); try { await rs.verificar(c); } finally { await c.close(); }
@@ -34,6 +36,42 @@ const almacen = async t => {
 };
 const llamar = (store, metodo, ...args) => new Promise((resolve, reject) => store[metodo](...args, (e, r) => e ? reject(e) : resolve(r)));
 const datos = () => ({ cookie: { maxAge: 3600000, expires: new Date(Date.now() + 3600000) }, prueba: 'sintetica' });
+
+for (const rol of ['superadmin', 'admin_empresa', 'operador']) test(`navegacion Mongo ${rol}: sesion cifrada, Inicio, aislamiento, logout y caducidad`, async t => {
+  const f = await almacen(t), modelos = infra.modelos(f.conexion);
+  const a = new mongoose.Types.ObjectId(), b = new mongoose.Types.ObjectId(), uid = new mongoose.Types.ObjectId();
+  await modelos.Empresa.collection.insertMany([{ _id: a, nombre: 'Empresa fixture A' }, { _id: b, nombre: 'Empresa fixture B' }]);
+  await modelos.Usuario.collection.insertOne({ _id: uid, nombre: 'Persona fixture', email: 'persona@example.test', rol,
+    ...(rol !== 'superadmin' ? { empresa: a } : {}), estadoAcceso: 'activo' });
+  const ca = new mongoose.Types.ObjectId(), cb = new mongoose.Types.ObjectId();
+  await modelos.Campana.collection.insertMany([{ _id: ca, empresa: a, nombre: 'Campana fixture A', canal: 'email', estado: 'borrador' },
+    { _id: cb, empresa: b, nombre: 'Campana fixture B', canal: 'email', estado: 'borrador' }]);
+  for (const metodo of ['findById', 'findOne', 'find']) t.mock.method(require('../models/Usuario'), metodo, (...args) => modelos.Usuario[metodo](...args));
+  for (const metodo of ['findById', 'findOne', 'find']) t.mock.method(require('../models/Campana'), metodo, (...args) => modelos.Campana[metodo](...args));
+  t.mock.method(require('../services/adminService'), 'obtenerDashboard', async () => ({ totales: { empresas: 2, usuarios: 1, campanas: 2 },
+    empresas: [], usuariosSinEmpresa: [], usuariosEmpresaInexistente: [], campanasSinEmpresa: [] }));
+  const sid = randomUUID(), secret = randomBytes(32).toString('hex'), csrf = randomBytes(32).toString('base64url');
+  const firma = require('node:crypto').createHmac('sha256', secret).update(sid).digest('base64').replace(/=+$/, '');
+  const cookie = `marketing.piloto.sid=${encodeURIComponent(`s:${sid}.${firma}`)}`;
+  const cargar = () => llamar(f.store, 'set', sid, { ...datos(), usuarioId: String(uid), adminCsrf: csrf, campanaCsrf: csrf, contactoCsrf: csrf });
+  await cargar();
+  const app = require('../appFactory').crearApp({ secret, store: f.nuevo(), entorno: 'test', nombreCookie: 'marketing.piloto.sid' });
+  const get = ruta => request(app).get(ruta).set('Cookie', cookie);
+  await get('/panel').expect(200);
+  const inicio = await get('/').expect(200);assert.match(inicio.text, /Ir a mi panel/);assert.doesNotMatch(inicio.text, /href="\/login"/);
+  const lista = await get('/campanas').expect(200);assert.match(lista.text, /Campana fixture A/);
+  if (rol !== 'superadmin') { assert.doesNotMatch(lista.text, /Campana fixture B/);await get(`/campanas/${cb}`).expect(404); }
+  if (rol !== 'superadmin') await get('/admin/usuarios/nuevo').expect(403);
+  if (rol !== 'admin_empresa') await get('/empresa/usuarios/nuevo').expect(403);
+  const salida = await request(app).post('/logout').set('Cookie', cookie).type('form').send({ _csrf: csrf }).expect(303);
+  assert.match(salida.headers['set-cookie'][0], /^marketing\.piloto\.sid=;/);
+  assert.equal(await llamar(f.nuevo(), 'get', sid), null);await get('/panel').expect(302).expect('Location', '/login');
+  const sid2 = randomUUID(), firma2 = require('node:crypto').createHmac('sha256', secret).update(sid2).digest('base64').replace(/=+$/, '');
+  await llamar(f.store, 'set', sid2, { ...datos(), usuarioId: String(uid) });f.avanzar(2 * 3600000);
+  const app2 = require('../appFactory').crearApp({ secret, store: f.nuevo(), entorno: 'test', nombreCookie: 'marketing.piloto.sid' });
+  await request(app2).get('/panel').set('Cookie', `marketing.piloto.sid=${encodeURIComponent(`s:${sid2}.${firma2}`)}`).expect(302).expect('Location', '/login');
+  assert.equal((await infra.revisarIndices(f.conexion)).completos, true);
+});
 test('infra real: detecta faltantes, provisiona e identifica indices y TTL sin DDL posterior', async t => {
   const f = await fixture(t);
   assert.equal((await infra.revisarIndices(f.conexion)).completos, false);

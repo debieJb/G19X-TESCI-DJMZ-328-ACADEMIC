@@ -13,7 +13,10 @@ const principal = async (args = process.argv.slice(2)) => {
   try {
     await infra.validarDestinoPiloto(conexion, manifiesto);
     if (!(await infra.revisarIndices(conexion)).completos) throw Error('INDICES_REQUERIDOS');
-    return await require('../services/autoservicioEmpresarialService').crearServicio({ conexion, correo }).despachar({ solicitudId: args[1] });
+    const destinatarioEsperado = process.env.PILOT_TEST_RECIPIENT?.trim().toLowerCase();
+    if (!destinatarioEsperado) throw Error('BUZON_CONTROLADO_REQUERIDO');
+    return await require('../services/autoservicioEmpresarialService').crearServicio({ conexion, correo })
+      .despachar({ solicitudId: args[1], primerIntento: true, destinatarioEsperado });
   } finally { await conexion.close(); }
 };
 if (require.main === module) principal().then(r => console.log(JSON.stringify(r))).catch(() => {

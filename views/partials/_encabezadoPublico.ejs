@@ -3,6 +3,11 @@
   <div class="barra">
     <a class="marca" href="/" aria-label="Marketing Automation de PluriOne, inicio"><span class="marca-icono" aria-hidden="true">P.</span><span>Marketing Automation<small>POR PLURIONE</small></span></a>
     <button class="menu-publico" type="button" data-menu-toggle aria-expanded="false" aria-controls="navegacion-publica" hidden>Menú <span aria-hidden="true">☰</span></button>
-    <nav id="navegacion-publica" aria-label="Navegación pública"><a href="/#funcionalidades">Producto</a><a href="/#como-funciona">Cómo funciona</a><a href="/registro">Registrar empresa</a><a class="boton" href="/login">Iniciar sesión</a></nav>
+    <nav id="navegacion-publica" aria-label="Navegación pública"><a href="/#funcionalidades">Producto</a><a href="/#como-funciona">Cómo funciona</a>
+      <% if (typeof usuarioActual !== 'undefined' && usuarioActual) { %>
+        <a class="boton" href="/panel">Ir a mi panel</a>
+        <form class="salida-admin" action="/logout" method="post"><%- include('_csrfLogout') %><button class="secundario" type="submit">Cerrar sesión</button></form>
+      <% } else { %><a href="/registro">Registrar empresa</a><a class="boton" href="/login">Iniciar sesión</a><% } %>
+    </nav>
   </div>
 </header>

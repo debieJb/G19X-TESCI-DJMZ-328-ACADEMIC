@@ -8,6 +8,8 @@ const crearSesion = require('./config/session');
 const { cargarUsuario } = require('./middlewares/autenticacion');
 const crearApp = (opcionesSesion) => {
 const app = express();
+app.locals.nombreCookieSesion = opcionesSesion?.nombreCookie || 'marketing.sid';
+app.locals.cookieSesionSegura = (opcionesSesion?.entorno ?? process.env.NODE_ENV) === 'production';
 crearSesion.configurarProxy(app, opcionesSesion);
 
 app.set('view engine', 'ejs');

@@ -19,7 +19,10 @@ const schema = new mongoose.Schema({
   proximoEnvioEn: { type: Date, required: true },
   entregaHash: hash,
   entregaHasta: Date,
-  versionEnvio: { type: Number, default: 0 }
+  versionEnvio: { type: Number, default: 0 },
+  correoError: { type: String, enum: ['TRABAJADOR_INTERRUMPIDO', 'REAUTORIZAR_TRANSACCIONAL',
+    'GMAIL_TRANSACCIONAL_RECHAZADO', 'ENTREGA_CANCELADA', 'ENTREGA_INCIERTA', 'PROVEEDOR_RECHAZADO'] },
+  proveedorMensajeId: { type: String, match: /^[a-zA-Z0-9_-]{1,128}$/ }
 }, { timestamps: true, strict: 'throw', autoIndex: false, autoCreate: false });
 schema.index({ correo: 1 }, { unique: true });
 schema.index({ idempotenciaHash: 1 }, { unique: true });

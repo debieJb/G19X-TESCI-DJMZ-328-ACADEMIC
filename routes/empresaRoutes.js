@@ -8,6 +8,9 @@ router.use(requerirAutenticacion, accesoEmpresa, (req, res, next) => {
   if (usuario.rol !== 'admin_empresa' || !puede(usuario, 'usuarios.administrar', usuario.empresa)) return next(Object.assign(new Error('Acceso denegado'), { status: 403 }));
   next();
 });
+router.use(require('../middlewares/csrf')({ campo: 'campanaCsrf', permitirCabecera: true,
+  rechazar: (req, res) => res.status(403).render('error', { titulo: 'Formulario inválido',
+    mensaje: 'Recarga el formulario de usuario antes de continuar.' }) }));
 router.get('/usuarios/nuevo', controller.mostrarUsuarioNuevo);
 router.post('/usuarios', controller.crearOperador);
 module.exports = router;

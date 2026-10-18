@@ -104,7 +104,7 @@ test('transporte plataforma: POST único MIME, remitente fijo y sin reintentos',
     assert.match(raw, /From: plataforma@example.test/); assert.match(raw, /To: destino@example.test/);
     return new Response(JSON.stringify({ id: 'id-fixture' }));
   });
-  assert.deepEqual(await t.enviar(mensaje, { signal: new AbortController().signal }), { aceptado: true });
+  assert.deepEqual(await t.enviar(mensaje, { signal: new AbortController().signal }), { aceptado: true, mensajeId: 'id-fixture' });
   assert.equal(llamadas, 1);
   await assert.rejects(t.enviar({ ...mensaje, remitente: 'otra@example.test' }), { codigo: 'REMITENTE_INVALIDO' });
   assert.equal(llamadas, 1);
@@ -113,7 +113,9 @@ for (const status of [401, 403, 429, 500, 302]) {
   test(`transporte plataforma: HTTP ${status} clasifica sin reintento`, async () => {
     let llamadas = 0;
     const t = transporte(async () => { llamadas++; return new Response('', { status }); });
-    await assert.rejects(t.enviar(mensaje), e => e.codigo === 'GMAIL_TRANSACCIONAL_RECHAZADO' && e.definitivo === [401, 403, 429].includes(status));
+    await assert.rejects(t.enviar(mensaje), e => e.codigo === 'GMAIL_TRANSACCIONAL_RECHAZADO'
+      && e.definitivo === [401, 403, 429].includes(status)
+      && e.requiereAutorizacion === [401, 403].includes(status));
     assert.equal(llamadas, 1);
   });
 }

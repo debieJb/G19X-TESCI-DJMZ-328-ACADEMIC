@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const gmail = require('../services/gmailTransaccionalService');
 const principal = async (args = process.argv.slice(2)) => {
   if (args.length !== 1 || args[0] !== '--autorizar') throw Error('CONFIRMACION_REQUERIDA');
-  const config = gmail.configuracion();
+  const config = gmail.configuracionOAuth();
   if (fs.existsSync(config.archivo)) throw Error('CREDENCIAL_EXISTENTE_NO_SE_SOBRESCRIBE');
   const oauth = gmail.iniciarOAuth(config);
   await new Promise((resolve, reject) => {
@@ -21,9 +21,9 @@ const principal = async (args = process.argv.slice(2)) => {
         fs.writeFileSync(config.archivo, cifrada, { flag: 'wx', mode: 0o600 });
         res.end('Cuenta autorizada. Puedes cerrar esta ventana. No se ha enviado correo.');
         clearTimeout(timer); server.close(() => resolve());
-      } catch {
+      } catch (e) {
         res.writeHead(400).end('No se pudo autorizar la cuenta. Cierra esta ventana.');
-        clearTimeout(timer); server.close(() => reject(Error('OAUTH_FALLIDO')));
+        clearTimeout(timer); server.close(() => reject(e));
       }
     });
     const timer = setTimeout(() => { server.closeAllConnections(); server.close(() => reject(Error('OAUTH_CADUCADO'))); }, 5 * 60000);
@@ -36,5 +36,8 @@ const principal = async (args = process.argv.slice(2)) => {
   });
   console.log('Credencial transaccional cifrada guardada. Envio no activado.');
 };
-if (require.main === module) principal().catch(() => { console.error('Autorizacion detenida; revisa configuracion y permisos locales.'); process.exitCode = 1; });
+if (require.main === module) principal().catch(e => {
+  console.error(`AUTORIZACION_TRANSACCIONAL_RECHAZADA codigo=${require('./comprobarGmailTransaccional').codigoSeguro(e)}`);
+  process.exitCode = 1;
+});
 module.exports = { principal };

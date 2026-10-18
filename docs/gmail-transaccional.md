@@ -73,6 +73,125 @@ campos vacíos y las opciones públicas siguientes. `.env` permanece privado e i
 | `TRANSACTIONAL_GMAIL_CREDENTIALS_FILE` | Ruta absoluta a un archivo nuevo fuera del repositorio, en un directorio privado existente. |
 | `TRANSACTIONAL_PUBLIC_ORIGIN` | Origen HTTPS público de la web de registro; sin ruta, credenciales, query o fragmento. |
 
+Para autorizar OAuth, el origen público puede quedar sin definir: el autorizador
+usa `configuracionOAuth`, que conserva las comprobaciones de identidad, cliente,
+callback y cifrado. El transporte sigue exigiendo el origen HTTPS mediante
+`configuracion`; no se admiten dominios ficticios para simular disponibilidad.
+
+## Entrada privada en Windows (procedimiento preferido)
+
+Se añadió `scripts/gmailTransaccionalPrivado.ps1` para evitar introducir secretos
+en comandos, chat o archivos de texto plano. Ejecutarlo desde una consola local
+normal del propietario de la cuenta, sin compartir ni grabar la pantalla.
+No introducir contraseñas de Gmail, access tokens ni refresh tokens.
+
+```powershell
+.\scripts\gmailTransaccionalPrivado.ps1 -Accion Configurar
+```
+
+Introduce en los prompts ocultos: client ID del cliente exclusivo transaccional,
+client secret y correo exacto del remitente. El origen HTTPS es opcional para esta
+autorización: pulsa Enter si aún no está definido; no inventar uno. El callback es
+fijo y no se solicita. La clave AES independiente de 32 bytes se genera en memoria,
+no se muestra y no reemplaza claves existentes.
+
+El asistente crea una carpeta privada nueva:
+`%LOCALAPPDATA%\PluriOne\marketing-automation\gmail-transaccional`.
+Restringe su ACL al usuario actual y SYSTEM, rechaza rutas redirigidas y verifica
+que el destino no esté dentro de ningún repositorio Git. La configuración completa
+se guarda con DPAPI del usuario actual en `config.dpapi`. No modifica `.env` ni las
+variables/conexiones empresariales. No sobrescribe archivos existentes. Si una
+configuración inválida dejó una carpeta vacía, permite repetir la entrada sin
+eliminar archivos ni reemplazar credenciales.
+
+Después, desde la misma cuenta de Windows y equipo:
+
+```powershell
+.\scripts\gmailTransaccionalPrivado.ps1 -Accion Autorizar
+```
+
+El asistente descifra la configuración solo en memoria, comprueba separación
+respecto de las credenciales empresariales privadas de `.env`, fuerza apagadas las
+banderas de transporte en el proceso hijo y ejecuta el autorizador existente.
+Abre el navegador local sin imprimir la URL de consentimiento. Elige la cuenta
+remitente prevista y concede permisos. No copies la URL del callback ni sus códigos.
+El archivo `credencial.cipher` contiene únicamente el sobre AES-GCM con la identidad
+y el refresh token, nunca JSON en claro. Su ACL se vuelve a revisar al finalizar.
+
+El éxito se comunica como `CREDENCIAL_CIFRADA_VERIFICADA`. El verificador local
+`scripts/comprobarGmailTransaccional.js` valida formato, autenticidad del cifrado,
+cliente e identidad en memoria, sin renovar tokens ni consultar Gmail/MongoDB.
+Solo devuelve indicadores booleanos, no contenido de la credencial. Puedes repetir
+esa comprobación sin reautorizar ni realizar llamadas externas:
+
+```powershell
+.\scripts\gmailTransaccionalPrivado.ps1 -Accion Comprobar
+```
+
+### Corrección del bloqueo al repetir Autorizar
+
+El mensaje antiguo `COMPROBACION_TRANSACCIONAL_RECHAZADA` ocultaba la razón. En la
+reproducción real del 18 de octubre se encontró una credencial cifrada **ya existente
+y válida localmente**. El asistente ejecutaba siempre `--configuracion`, que rechaza
+archivos existentes para protegerlos de sobrescritura. No era un fallo de DPAPI,
+tipos JSON ni de los permisos de Google: el flujo no distinguía esa situación.
+
+Ahora `-Accion Autorizar`, si ya existe el archivo, ejecuta la validación completa
+`--credencial`: comprueba ACL, ruta, sobre AES-GCM y vínculo cliente/remitente.
+Si pasa, muestra `CREDENCIAL_EXISTENTE_VALIDADA` y no abre otro OAuth ni modifica
+credenciales. Si falla, se detiene con un código seguro y conserva el archivo.
+El autorizador directo mantiene `wx` y la prohibición de sobrescritura.
+La validación local no prueba renovación actual del refresh token frente a Google.
+
+`-Accion Validar` permite comprobar configuración y, si existe, credencial sin
+iniciar OAuth. Los errores incluyen un código cerrado y una etapa; nunca imprimen
+mensajes arbitrarios, valores, cuerpos de Google ni excepciones originales.
+
+| Código | Acción segura |
+| --- | --- |
+| `TX_CREDENCIAL_YA_EXISTE` | No eliminarla: usar Comprobar o el Autorizar corregido. |
+| `TX_CREDENCIAL_INVALIDA`, `TX_SOBRE_CIFRADO_INVALIDO` | Conservar archivos y revisar cliente/clave/identidad privadamente; no resetear. |
+| `TX_DPAPI_NO_DESCIFRABLE` | Usar la misma cuenta y equipo Windows; no regenerar la clave. |
+| `TX_DPAPI_NO_LEIBLE`, `TX_ACL_O_RUTA_INVALIDA`, `TX_ACCESO_DENEGADO` | Revisar existencia y permisos locales sin volcar archivos. |
+| `TX_CLIENT_ID_INVALIDO`, `TX_CLIENT_SECRET_INVALIDO`, `TX_REMITENTE_INVALIDO` | Revisar exclusivamente el campo indicado en el entorno privado. |
+| `TX_CLIENTE_EMPRESARIAL_COMPARTIDO`, `TX_CLAVE_EMPRESARIAL_COMPARTIDA` | Mantener la separación; no reutilizar datos empresariales para sortearlo. |
+| `TX_CALLBACK_INVALIDO` | Mantener la URI loopback exacta de este documento. |
+| `TX_CLAVE_CIFRADO_INVALIDA`, `TX_RUTA_CREDENCIAL_INVALIDA`, `TX_CREDENCIAL_DENTRO_REPOSITORIO` | Revisar formato/ruta en privado; no cambiar la clave de una credencial existente. |
+| `TX_GIT_NO_DISPONIBLE`, `TX_DIRECTORIO_GIT_NO_PERMITIDO` | Corregir disponibilidad de Git o ubicación; no saltar la comprobación. |
+| `TX_ORIGEN_HTTPS_INVALIDO` | Configurar el origen HTTPS real; no inventar un dominio ni habilitar HTTP. |
+| `TX_CALLBACK_OCUPADO`, `TX_OAUTH_CADUCADO` | No duplicar procesos; comprobar estado y repetir solo cuando el anterior haya terminado. |
+
+En esta revisión la credencial existente pasó, pero `origenEnviosConfigurado` era
+`false`. Cuando el responsable disponga del origen HTTPS real, introducirlo en el
+prompt oculto de:
+
+```powershell
+.\scripts\gmailTransaccionalPrivado.ps1 -Accion ConfigurarOrigen
+```
+
+Esta acción modifica únicamente ese campo de configuración DPAPI, tras validar el
+HTTPS, y conserva cliente, secreto, clave AES y token. No realiza solicitudes a
+Google, no habilita transporte y no comprueba que el dominio sea accesible. El
+HTTPS, sesiones y trabajador deben validarse antes de una prueba real autorizada.
+
+Regresión local sobre la credencial existente: Autorizar terminó con código 0,
+red y creación de un servidor OAuth bloqueadas, y hashes de `config.dpapi`,
+`credencial.cipher` y `.env` idénticos antes/después. No hubo renovación, otro
+consentimiento ni envío. Las pruebas también cubren códigos específicos, datos
+OAuth con tipos inválidos, cifrado alterado y ausencia de valores privados en stderr.
+
+Los tres comandos contienen exclusivamente acciones públicas; los datos privados
+no se pasan por argumentos ni quedan en el historial. Las variables del proceso
+se restauran al terminar. Los errores se presentan sin excepciones, URL ni cuerpos
+del proveedor. No usar `Get-Content`, volcados de entorno o trazas para depurarlos.
+Mantener tanto la configuración DPAPI como el archivo cifrado fuera de copias
+versionadas; el código del asistente puede versionarse, sus datos privados no.
+
+La autorización solicita a Google un código/token y verifica identidad; no acredita
+envío, recepción, estabilidad de refresh futuro ni una integración productiva completa.
+El transporte permanece `false`; la configuración DPAPI no se carga automáticamente
+en Express o trabajadores. Habilitar un envío exige una tarea expresamente autorizada.
+
 El archivo cifrado no reemplaza permisos del sistema: restringir ACL de Windows al
 operador/cuenta de servicio que lo necesita, proteger también sus directorios y la
 clave independiente. `mode:0600` no garantiza ACL en Windows. No usar carpetas públicas

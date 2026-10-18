@@ -17,7 +17,7 @@ const crearCorreoTransaccional = ({ transporte, autorizado = false, simulado = f
     // El adaptador recibe datos solo en memoria; no registrar petición ni respuesta.
     const abort = new AbortController(); let timer;
     try {
-      await Promise.race([
+      return await Promise.race([
         transporte.enviar({ remitente, destino: correo, asunto: 'Verifica el correo de tu empresa',
           texto: `Confirma tu solicitud en ${enlace.href}\nEl enlace caduca en 30 minutos. Si no lo solicitaste, ignóralo.` }, { signal: abort.signal }),
         new Promise((resolve, reject) => { timer = setTimeout(() => { abort.abort(); reject(new Error('ENTREGA_INCIERTA')); }, timeoutMs); })

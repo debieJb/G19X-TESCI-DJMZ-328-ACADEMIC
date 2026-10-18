@@ -55,6 +55,23 @@ test('navegador real: frontend público y recorrido aislado sin proveedores', { 
   t.mock.method(require('../../services/empresaService'), 'obtenerPanel', async () => ({ empresa: { _id: empresaId, nombre: 'Empresa de prueba aislada' },
     campanas: [], usuarios: account ? [{ _id: id, nombre: account.nombre, email: account.email, rol: account.rol }] : [], operadores: [], totalUsuarios: 1, totalCampanas: 0 }));
   const store = new session.MemoryStore(), app = require('../../appFactory').crearApp({ secret: randomBytes(32).toString('hex'), store });
+  // Recorrido del piloto con rutas/controladores reales, persistencia y proveedor dobles.
+  const campanaId = new mongoose.Types.ObjectId(), envioId = new mongoose.Types.ObjectId();
+  let autorizaciones = 0, encolados = 0, revocaciones = 0, claveEncolada;
+  const campana = require('../../models/Campana').hydrate({ _id: campanaId, empresa: empresaId,
+    nombre: 'Piloto sintético', estado: 'borrador', canal: 'email', asunto: 'Asunto de prueba', cuerpoTexto: 'Contenido de prueba',
+    versionFlujo: 2, destinatarios: { tipo: 'contactos', contactos: [] }, automatizacion: { modo: 'inmediato', estado: 'preparada', revision: 1 } });
+  t.mock.method(require('../../models/Campana'), 'findOne', async filtro => String(filtro._id) === String(campanaId) && String(filtro.empresa) === String(empresaId) ? campana : null);
+  t.mock.method(require('../../services/iaService'), 'autorizar', async () => String(empresaId));
+  t.mock.method(require('../../services/preparacionAutomatizacionService'), 'opciones', async () => []);
+  t.mock.method(require('../../services/preparacionAutomatizacionService'), 'evaluar', async () => ({ motivo: 'Fixture sin envío', canalValido: true }));
+  t.mock.method(require('../../config/enviosGmail'), 'obtenerPolitica', () => ({ empresas: [String(empresaId)], habilitado: false }));
+  t.mock.method(require('../../services/motorEnviosGmailService'), 'crearMotor', () => ({
+    autorizarPiloto: async () => { autorizaciones++; await pause(300); return { autorizacion: String(campanaId) }; },
+    encolar: async entrada => { encolados++; if (claveEncolada) assert.equal(entrada.claveIdempotencia, claveEncolada); claveEncolada = entrada.claveIdempotencia; return { ejecucion: String(campanaId), total: 1 }; },
+    revocarPiloto: async () => { revocaciones++; return { revocada: true }; },
+    consultar: async () => ({ ejecucion: String(campanaId), envios: [{ _id: String(envioId), estado: 'pendiente', intentos: 0 }] })
+  }));
   const server = app.listen(0, '127.0.0.1'); await new Promise(r => server.once('listening', r));
   const origin = `http://127.0.0.1:${server.address().port}`, debugPort = await puertoLibre();
   const child = spawn(browser, ['--headless=new', '--disable-gpu', '--disable-extensions', '--disable-background-networking',
@@ -172,10 +189,37 @@ test('navegador real: frontend público y recorrido aislado sin proveedores', { 
     await fill('#confirmacion', password); await click('button[type=submit]'); await heading('Registro completado'); await capture('registro-completado');
     await go('/login'); await fill('#email', 'administrador@example.test'); await fill('#password', password); await click('button[type=submit]');
     await waitFor("location.pathname==='/panel' && document.readyState==='complete'"); check('login y panel empresarial', await evaluate("document.querySelector('h1').textContent.includes('Empresa de prueba aislada')"));
+    await viewport(1440);await go('/');
+    check('Inicio reconoce sesion activa sin login ni registro', await evaluate("!document.querySelector('a[href=\"/login\"],a[href=\"/registro\"]') && !!document.querySelector('a[href=\"/panel\"]') && !!document.querySelector('form[action=\"/logout\"] input[name=_csrf]')"));
+    await capture('inicio-autenticado-1440');await viewport(390);await capture('inicio-autenticado-390');
+    await send('Page.navigate',{url:origin+'/registro'});await waitFor("location.pathname==='/panel' && document.readyState==='complete'");
+    check('registro autenticado conserva panel sin crear solicitud',requests===1);
     await viewport(1440); await capture('panel-empresa-1440');
     await viewport(390);
     check('tabla empresarial móvil legible y desplazable con foco', await evaluate("(()=>{const e=document.querySelector('.tabla-admin');return e.tabIndex===0 && e.getAttribute('role')==='region' && e.scrollWidth>e.clientWidth;})()"));
     await capture('panel-empresa-390');
+    app.locals.pilotoInfraValidada = true;
+    await go(`/campanas/${campanaId}/automatizacion`);
+    check('piloto sin ejecución automática', autorizaciones === 0 && encolados === 0);
+    check('piloto móvil sin desbordamiento', await evaluate('document.documentElement.scrollWidth<=innerWidth+1'));
+    await click('[data-piloto-accion="autorizar"] input[type=checkbox]');
+    check('piloto bloquea doble envío', await evaluate(`(()=>{const f=document.querySelector('[data-piloto-accion="autorizar"]');f.requestSubmit();f.requestSubmit();return f.querySelector('button').disabled;})()`));
+    await waitFor("document.querySelector('[data-piloto-estado]').textContent.includes('Autorización registrada')");
+    check('una autorización HTTP', autorizaciones === 1);
+    await click('[data-piloto-accion="encolar"] input[type=checkbox]');
+    await click('[data-piloto-accion="encolar"] button');
+    await waitFor("document.querySelector('[data-piloto-estado]').textContent.includes('Ejecución encolada')");
+    check('encolado explícito con idempotencia', encolados === 1 && /^[a-f0-9]{48}$/.test(claveEncolada));
+    await go(`/campanas/${campanaId}/automatizacion`);
+    check('idempotencia conservada al recargar', await evaluate('document.querySelector("[name=idempotencia]").value') === claveEncolada);
+    await click('[data-piloto-consultar]');
+    await waitFor("document.querySelector('[data-piloto-resultado]').textContent.includes('pendiente')");
+    check('consulta muestra ID de envío y cero intentos', await evaluate('document.querySelector("[data-piloto-resultado]").textContent').then(s => s.includes(String(envioId)) && s.includes('Intentos: 0')));
+    await capture('piloto-gmail-390');
+    await click('[data-piloto-accion="revocar"] button');
+    await waitFor("document.querySelector('[data-piloto-estado]').textContent.includes('Revocación registrada')");
+    check('revocación explícita', revocaciones === 1);
+    await go('/panel');
     account.rol = 'operador'; await go('/panel');
     check('panel operador mantiene límites de rol y tema claro', await evaluate("document.body.classList.contains('pagina-empresa') && !document.querySelector('a[href=\"/empresa/usuarios/nuevo\"]')"));
     await capture('panel-operador-390');
