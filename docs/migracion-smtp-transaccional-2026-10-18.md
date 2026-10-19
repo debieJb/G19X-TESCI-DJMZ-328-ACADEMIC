@@ -1,5 +1,8 @@
 # Migración controlada del correo de verificación a Gmail SMTP
 
+> **Contexto histórico — edición final 19/10/2026.** El contenido original siguiente se conserva como informe o referencia de su etapa. Las cifras, configuraciones y afirmaciones de proveedores «pendientes» describen aquella jornada, no el estado final del MVP. Gmail y Gemini fueron comprobados con servicios reales; registro/verificación y envío múltiple reales están confirmados por la responsable. El [expediente vigente](entrega/indice-entrega.md) y el [registro de evidencia](entrega/evidencias-validacion.md) distinguen pruebas simuladas, comprobaciones reales y aceptación formal. Los controles técnicos siguen sujetos al código; los procedimientos históricos no autorizan ejecutar servicios ni campañas.
+
+
 ## Auditoría y decisión
 
 El correo de verificación se construye en `correoTransaccionalService` mediante el contrato `transporte.enviar(mensaje, {signal})`. `autoservicioEmpresarialService` conserva solicitud idempotente, token aleatorio de 256 bits, caducidad, reclamación transaccional, límites persistentes, auditoría, verificación y creación del primer administrador. El registro HTTP no envía correo síncronamente: crea una solicitud pendiente.

@@ -1,5 +1,8 @@
 # Segunda revisión: sesiones, navegación y permisos
 
+> **Contexto histórico — edición final 19/10/2026.** El contenido original siguiente se conserva como informe o referencia de su etapa. Las cifras, configuraciones y afirmaciones de proveedores «pendientes» describen aquella jornada, no el estado final del MVP. Gmail y Gemini fueron comprobados con servicios reales; registro/verificación y envío múltiple reales están confirmados por la responsable. El [expediente vigente](entrega/indice-entrega.md) y el [registro de evidencia](entrega/evidencias-validacion.md) distinguen pruebas simuladas, comprobaciones reales y aceptación formal. Los controles técnicos siguen sujetos al código; los procedimientos históricos no autorizan ejecutar servicios ni campañas.
+
+
 Rama `respaldo-avances-18-oct`, HEAD `1df937e`. Se conservaron los cambios de la auditoría anterior. Sin commit/push, credenciales, conexiones reales, campañas, trabajadores o envíos productivos.
 
 ## 1. Causa del comportamiento observado

@@ -1,5 +1,8 @@
 # Preparacion verificable del piloto Gmail
 
+> **Contexto histórico — edición final 19/10/2026.** El contenido original siguiente se conserva como informe o referencia de su etapa. Las cifras, configuraciones y afirmaciones de proveedores «pendientes» describen aquella jornada, no el estado final del MVP. Gmail y Gemini fueron comprobados con servicios reales; registro/verificación y envío múltiple reales están confirmados por la responsable. El [expediente vigente](entrega/indice-entrega.md) y el [registro de evidencia](entrega/evidencias-validacion.md) distinguen pruebas simuladas, comprobaciones reales y aceptación formal. Los controles técnicos siguen sujetos al código; los procedimientos históricos no autorizan ejecutar servicios ni campañas.
+
+
 Actualizacion de cierre: la infraestructura local 127.0.0.1:27019 fue autorizada e inicializada con una unica llamada confirmada. marketingPilotLocalRs tiene un miembro 127.0.0.1:27019 y esta PRIMARY, PID observado 22560. Solo existen admin, config y local; no se aplicaron indices de aplicacion. Esto no autoriza el piloto de correo ni acredita produccion. Ver [cierre tecnico](cierre-tecnico-2026-10-15.md).
 
 El piloto real NO esta autorizado ni listo. Esta fase prepara y prueba infraestructura con datos sinteticos. No modifica flags, cuentas, tokens, MongoDB principal ni datos empresariales existentes. `marketingDevRs` nunca es un destino de piloto.

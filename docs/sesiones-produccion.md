@@ -1,5 +1,8 @@
 # Sesiones: implementacion y limites actuales
 
+> **Contexto histórico — edición final 19/10/2026.** El contenido original siguiente se conserva como informe o referencia de su etapa. Las cifras, configuraciones y afirmaciones de proveedores «pendientes» describen aquella jornada, no el estado final del MVP. Gmail y Gemini fueron comprobados con servicios reales; registro/verificación y envío múltiple reales están confirmados por la responsable. El [expediente vigente](entrega/indice-entrega.md) y el [registro de evidencia](entrega/evidencias-validacion.md) distinguen pruebas simuladas, comprobaciones reales y aceptación formal. Los controles técnicos siguen sujetos al código; los procedimientos históricos no autorizan ejecutar servicios ni campañas.
+
+
 El desarrollo local conserva HTTP. Produccion exige un almacen explicito distinto de MemoryStore y un secreto de al menos 32 bytes suministrado por el despliegue. La longitud no acredita entropia; nunca reutilizar fixtures.
 
 Las cookies de produccion usan Secure, HttpOnly y SameSite=Lax. Sobre HTTP no se emite la cookie segura. OAuth y CSRF se mantienen independientes. El proxy solo admite listas explicitas de IP/CIDR; no confianza global ni por numero de saltos. Verificar saneamiento de cabeceras y bloqueo del acceso directo antes de configurarlo.

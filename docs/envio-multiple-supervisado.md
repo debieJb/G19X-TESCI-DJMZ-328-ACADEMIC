@@ -1,111 +1,91 @@
-# PluriOne: envío múltiple supervisado
+# Envío múltiple supervisado - PluriOne implementado
 
-## Diagnóstico recuperado
+**Proyecto:** Plataforma Inteligente de Marketing Automation<br>
+**Empresa:** PluriOne S.A. de C.V. — Develop Talent & Technology<br>
+**Autora:** Debanie Jocabed Montoya Zúñiga · TESCI<br>
+**Edición documental:** 19 de octubre de 2026 · **Base funcional:** `78c7434`.
 
-La configuración local estaba en `GMAIL_CAMPAIGNS_MODE=manual`, con
-`GMAIL_CAMPAIGNS_MAX_RECIPIENTS=1`. El modo manual fuerza un destinatario incluso
-si se cambia únicamente esa variable. Además, el control histórico del piloto
-de un único envío por empresa ya estaba consumido. Había una campaña pendiente
-con dos contactos. La empresa estaba activa y verificada, con email habilitado,
-Gmail conectado y permiso de envío. Las campañas pendientes estaban activas,
-preparadas, con asunto y texto, sin imagen. El envío anterior permanecía aceptado.
+## Índice
 
-No se borró ni renovó el control del piloto y no se modificó `.env`.
+1. Resultado actual y origen del cambio
+2. Flujo implementado
+3. Límites y protección
+4. Automatización separada
+5. Evidencia y comprobaciones futuras
 
-## Funcionamiento
+## 1. Resultado actual y origen del cambio
 
-El modo nuevo es `supervisado`, separado de `manual` y `automatico`.
-Solo admite envío inmediato de texto, por un administrador de la propia empresa.
-El arranque valida transacciones e índices existentes; no inicia un consumidor,
-no crea índices ni colecciones y no consume trabajos antiguos.
+El envío múltiple supervisado está implementado y probado. La responsable
+confirma además validación con servicios reales. La constancia exportable de esa
+prueba real se registra como pendiente de incorporación, sin presentar la
+función como pendiente de desarrollo o como nunca utilizada.
 
-Crear manualmente o con Gemini conduce a la misma pantalla. Se eligen contactos
-específicos, todos los válidos o etiquetas. Al pulsar «Activar y preparar» se
-fijan hasta 50 contactos válidos como una selección explícita. Nuevos contactos
-o cambios de etiquetas no amplían esa selección. Se excluyen inactivos, contactos
-sin consentimiento documentado y correos duplicados; no se admiten IDs ajenos.
-La revisión muestra cantidad, destinatarios, exclusiones, remitente y contenido.
+El diagnóstico anterior encontró modo manual con un destinatario efectivo y un
+control de piloto ya consumido por empresa. Ese hallazgo explica el cambio de
+diseño; no se utiliza como lectura actual de la configuración privada, que no se
+inspecciona ni modifica en esta edición. El control histórico no se borró para
+habilitar envíos repetidos.
 
-La confirmación valida la versión del contenido y una huella de los destinatarios
-y sus evidencias de consentimiento. Una transacción crea una ejecución única
-por campaña y un trabajo por correo. Cada paso HTTP procesa **como máximo un
-destinatario**, reutilizando reservas, cuotas, control de velocidad y MIME del
-motor existente. Cada mensaje tiene un único `To`, sin `Cc` ni `Bcc`.
+## 2. Flujo implementado
 
-La página procesa hasta 50 pasos, separados por 2.2 segundos, únicamente después
-de confirmar. Detiene el recorrido ante errores, rechazo o incertidumbre. Los
-límites reales del motor siguen siendo autoritativos aunque se manipule el navegador.
-Cerrar o recargar la página no reanuda nada. Los pendientes se pueden continuar
-con un botón explícito; los aceptados nunca se repiten. Si existe incertidumbre,
-se bloquea continuar hasta una conciliación fuera de este flujo. No hay reintento
-automático de cuota o incertidumbre en modo supervisado.
+Crear campaña manual o Gemini → seleccionar destinatarios → activar y preparar
+→ revisar → confirmar envío → consultar resultados.
 
-Los trabajos `supervisado` tienen modo propio: ni el consumidor automático ni el
-piloto manual los procesan. El paso supervisado exige campaña, ejecución y actor
-original; no permite procesar ejecuciones de modos anteriores. La programación
-permanece separada y no se convierte en envío inmediato desde esta pantalla.
+En modo `supervisado`, un administrador empresarial elige contactos específicos
+mediante casillas, todos los válidos o etiquetas. La preparación fija la selección
+como IDs explícitos de su empresa, excluye inactivos y contactos sin evidencia de
+consentimiento y elimina direcciones duplicadas. No añade contactos posteriores
+sin nueva revisión.
 
-## Límites
+Las huellas de contenido y audiencia ligan la confirmación a lo revisado. Una
+transacción crea una ejecución única por campaña y trabajos por correo. Cada
+paso HTTP procesa como máximo un destinatario con reservas y cuotas del motor
+existente; no se realiza un bucle masivo de envío dentro de una solicitud.
+Cada mensaje tiene un único `To`, sin `Cc/Bcc` colectivo.
 
-Por campaña: valor explícito de 1 a 50. Localmente: 30 mensajes/hora y 100/día por
-empresa; 500/día globales; separación mínima de 2 segundos por empresa y 1 global.
-Las reservas duran dos minutos. Los límites locales no garantizan disponibilidad
-de la cuenta Google: también aplican sus cuotas, restricciones de cuenta y API.
-Un rechazo de cuota deja una pausa persistente de al menos 15 minutos y resultados
-individuales; los pendientes permanecen guardados.
+## 3. Límites y protección
 
-Referencias: [cuotas Gmail API](https://developers.google.com/workspace/gmail/api/reference/quota)
-y [gestión de errores](https://developers.google.com/workspace/gmail/api/guides/handle-errors).
+- Máximo configurable de 1 a 50 correos únicos por campaña; el piloto
+  `manual`/`piloto` sigue forzando 1, aunque se cambie solo la variable de máximo.
+- Cuotas locales: 30/hora y 100/día por empresa, 500/día globales; separación de
+  2 s por empresa y 1 s global; reserva de 120 s.
+- La página procesa pasos acotados con espera de 2.2 s y se detiene ante fallos;
+  el servidor conserva autoridad sobre cuotas y velocidad.
+- Una aceptación no se repite; un resultado incierto exige conciliación y no se
+  reintenta automáticamente. En modo supervisado tampoco se reintenta por sí solo
+  un rechazo de cuota. La pausa de cuota del proveedor queda persistida.
+- Recargar no envía ni reanuda; continuar pendientes requiere una acción
+  explícita permitida sobre la ejecución confirmada.
+- El remitente proviene del OAuth de la empresa y se revalida junto con actor,
+  campaña y consentimiento. No se permite suplantarlo desde HTTP.
 
-## Prueba real controlada, pendiente de autorización
+El límite local no garantiza cuota disponible en Google. Aceptado por Gmail no
+significa recibido, leído o convertido.
 
-1. Confirmar autorización del remitente, dos buzones propios y contenido exacto.
-   Revisar que no existan resultados inciertos ni reservas anteriores sin conciliar.
-2. Registrar ambos contactos en la misma empresa con email activo y consentimiento
-   documentado para cada dirección. Verificar Gmail OAuth y permiso de envío.
-3. En el proceso que se usará para la prueba, conservar la empresa autorizada y
-   establecer solo estas opciones no secretas (no modificar credenciales):
+## 4. Automatización separada
 
-   ```powershell
-   $env:GMAIL_CAMPAIGNS_MODE = 'supervisado'
-   $env:GMAIL_CAMPAIGNS_MAX_RECIPIENTS = '2'
-   $env:GMAIL_CAMPAIGNS_ENABLED = 'true'
-   ```
+El modo `supervisado` no inicia un consumidor y sus trabajos tienen un modo
+propio. El trabajador automático solo se prepara bajo su política explícita;
+puede consumir pendientes al arrancar, por lo que no debe habilitarse para
+resolver bloqueos. El modo programado está implementado y probado con simulación;
+no existe evidencia de operación programada productiva. n8n no es transporte del
+motor actual.
 
-   Reiniciar únicamente el servidor web acordado para que valide este modo.
-   No usar `automatico`, no iniciar scripts de trabajadores y no migrar historial.
-   Estas opciones todavía **no se aplicaron** al entorno real.
-4. Crear una campaña nueva de texto. Elegir los dos contactos; pulsar «Activar y
-   preparar». Revisar que aparezcan exactamente dos destinatarios y cero bloqueos.
-5. Con la autorización real ya obtenida, confirmar una sola vez. Mantener abierta
-   la página hasta ver dos resultados individuales. Ante un fallo, detenerse y
-   revisar el historial; ante incertidumbre, no volver a enviar.
-6. Comprobar dos aceptaciones y dos referencias diferentes, y confirmar recepción
-   en ambos buzones por separado. Recargar debe conservar resultados sin envíos.
-   El envío histórico anterior debe seguir intacto y fuera de esta ejecución.
-7. Apagar la bandera en el proceso de prueba al finalizar. No ampliar el límite
-   hasta revisar resultados y obtener autorización para el siguiente alcance.
+## 5. Evidencia y comprobaciones futuras
 
-## Validación simulada
+Se verificaron registros de 851 generales, 65 integraciones y dos ensayos Edge
+con 29 comprobaciones cada uno. El recorrido múltiple integra campañas manuales
+y Gemini, concurrencia, fallos parciales, consentimiento, cuotas e inciertos.
+La generación auténtica Gemini, el envío Gmail aceptado documentado y las
+confirmaciones reales de la responsable se separan en el
+[registro de evidencia](entrega/evidencias-validacion.md).
 
-Los ensayos nuevos cubren selección por contactos/todos/etiquetas, exclusiones,
-huella de destinatarios, consentimiento cambiado, cuotas, límites, MIME individual,
-concurrencia, confirmación repetida, resultados parciales e inciertos y separación
-de modos. El recorrido HTTP completo prueba campañas manuales y de Gemini con
-dos destinatarios. Edge prueba escritorio (1440 px) y móvil (390 px), cancelación,
-confirmación e historial, usando dobles sin proveedores externos.
+Para una prueba real nueva deben autorizarse previamente remitente, contenido y
+buzones propios; empezar con dos contactos documentados, revisar el límite,
+confirmar una vez y verificar resultados y recepción por separado. No repetir
+un ensayo ya aceptado solo para generar documentación. Esta edición no ejecuta
+campañas ni modifica variables privadas.
 
-Las integraciones utilizan bases temporales propias y la referencia de seguridad
-de la sesión de recuperación; la referencia histórica del proyecto no se modifica.
-La única diferencia esperada del MongoDB principal tras el apagón es su PID.
-
-Resultado final sobre el código guardado: **851/851 pruebas generales**, **65/65
-integraciones**, y **58 comprobaciones en Edge** (29 del modo múltiple y 29 del
-piloto original), con escritorio y móvil, 12 capturas y cero errores JavaScript.
-Registros locales ignorados por Git: `multi-suite.log`, `multi-integracion.log`,
-`multi-navegador.log` y `multi-navegador-piloto.log`.
-
-La consulta final del entorno real encontró un envío aceptado, con referencia y
-ejecución conservadas, y cero ejecuciones supervisadas. La configuración sigue
-en modo manual con límite efectivo uno. No se enviaron correos reales, no se
-iniciaron trabajadores y no se ejecutaron commit ni push.
+[Manual de usuario](entrega/manual-usuario.md), [manual técnico](entrega/manual-tecnico.md),
+[QA](entrega/reporte-qa.md), [arquitectura](SDD-borrador-tecnico.md) y
+[diagnóstico y procedimiento anterior](historico/corte-previo-78c7434/envio-multiple-supervisado.md).

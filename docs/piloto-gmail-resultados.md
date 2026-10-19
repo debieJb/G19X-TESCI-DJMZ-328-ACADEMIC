@@ -1,5 +1,8 @@
 # Resultados de preparacion — 2026-10-15
 
+> **Contexto histórico — edición final 19/10/2026.** El contenido original siguiente se conserva como informe o referencia de su etapa. Las cifras, configuraciones y afirmaciones de proveedores «pendientes» describen aquella jornada, no el estado final del MVP. Gmail y Gemini fueron comprobados con servicios reales; registro/verificación y envío múltiple reales están confirmados por la responsable. El [expediente vigente](entrega/indice-entrega.md) y el [registro de evidencia](entrega/evidencias-validacion.md) distinguen pruebas simuladas, comprobaciones reales y aceptación formal. Los controles técnicos siguen sujetos al código; los procedimientos históricos no autorizan ejecutar servicios ni campañas.
+
+
 > Actualizacion posterior a las fases descritas: MongoDB de piloto 27019 fue creado e inicializado con autorizacion expresa. marketingPilotLocalRs, miembro 127.0.0.1:27019 y PRIMARY se confirmaron por consultas reales. Solo hay admin/config/local. No hubo migraciones, usuarios ni datos empresariales. Las afirmaciones inferiores sobre instancia inexistente describen el momento de aquellas fases; el estado vigente esta en [cierre tecnico](cierre-tecnico-2026-10-15.md). El piloto de envio sigue sin autorizar.
 
 > El bloque siguiente conserva la evidencia de la fase de infraestructura. La fase actual de autorizacion de un correo y sus resultados finales se documenta al final; los 117 casos de la fase anterior no se suman otra vez.

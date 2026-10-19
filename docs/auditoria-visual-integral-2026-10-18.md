@@ -1,5 +1,8 @@
 # Auditoría integral de interfaz y roles — PluriOne
 
+> **Contexto histórico — edición final 19/10/2026.** El contenido original siguiente se conserva como informe o referencia de su etapa. Las cifras, configuraciones y afirmaciones de proveedores «pendientes» describen aquella jornada, no el estado final del MVP. Gmail y Gemini fueron comprobados con servicios reales; registro/verificación y envío múltiple reales están confirmados por la responsable. El [expediente vigente](entrega/indice-entrega.md) y el [registro de evidencia](entrega/evidencias-validacion.md) distinguen pruebas simuladas, comprobaciones reales y aceptación formal. Los controles técnicos siguen sujetos al código; los procedimientos históricos no autorizan ejecutar servicios ni campañas.
+
+
 ## Referencia conservada
 
 Se conserva la identidad clara disponible en el respaldo `1df937e` y en la renovación pública `5cca19d`: fondo `#f7f9fc`, tarjetas blancas, texto `#142744`, azul `#142c54`, violeta `#6240b6` / `#6740b6`, tipografía del sistema, bordes suaves y degradados azul-violeta. No se incorporaron fuentes, imágenes, librerías ni servicios de terceros.

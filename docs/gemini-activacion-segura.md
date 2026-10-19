@@ -1,5 +1,8 @@
 # Activación segura de Gemini: revisión pública del 14 de octubre de 2026
 
+> **Contexto histórico — edición final 19/10/2026.** El contenido original siguiente se conserva como informe o referencia de su etapa. Las cifras, configuraciones y afirmaciones de proveedores «pendientes» describen aquella jornada, no el estado final del MVP. Gmail y Gemini fueron comprobados con servicios reales; registro/verificación y envío múltiple reales están confirmados por la responsable. El [expediente vigente](entrega/indice-entrega.md) y el [registro de evidencia](entrega/evidencias-validacion.md) distinguen pruebas simuladas, comprobaciones reales y aceptación formal. Los controles técnicos siguen sujetos al código; los procedimientos históricos no autorizan ejecutar servicios ni campañas.
+
+
 Actualización 2026-10-18: se identificó el bloqueo de cuotas y se comprobó una generación auténtica con la clave y el modelo configurados. Consultar el [diagnóstico vigente y la prueba desde el navegador](gemini-nickki-diagnostico-2026-10-18.md). El texto inferior conserva la evidencia histórica de la revisión anterior.
 
 No se utilizaron credenciales en consultas externas, no se generó contenido real y

@@ -1,5 +1,8 @@
 # Infraestructura recuperada para ensayos externos — 18 de octubre de 2026
 
+> **Contexto histórico — edición final 19/10/2026.** El contenido original siguiente se conserva como informe o referencia de su etapa. Las cifras, configuraciones y afirmaciones de proveedores «pendientes» describen aquella jornada, no el estado final del MVP. Gmail y Gemini fueron comprobados con servicios reales; registro/verificación y envío múltiple reales están confirmados por la responsable. El [expediente vigente](entrega/indice-entrega.md) y el [registro de evidencia](entrega/evidencias-validacion.md) distinguen pruebas simuladas, comprobaciones reales y aceptación formal. Los controles técnicos siguen sujetos al código; los procedimientos históricos no autorizan ejecutar servicios ni campañas.
+
+
 > Fase posterior autorizada: ya se creó la base nueva del piloto y se aplicaron sus
 > índices. Véase [preparación de la base](preparacion-base-piloto-2026-10-18.md).
 > Los inventarios y pendientes siguientes corresponden a antes de esa migración.

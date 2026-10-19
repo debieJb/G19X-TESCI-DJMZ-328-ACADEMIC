@@ -1,5 +1,8 @@
 # Despacho manual de Nickki Velas
 
+> **Contexto histórico — edición final 19/10/2026.** El contenido original siguiente se conserva como informe o referencia de su etapa. Las cifras, configuraciones y afirmaciones de proveedores «pendientes» describen aquella jornada, no el estado final del MVP. Gmail y Gemini fueron comprobados con servicios reales; registro/verificación y envío múltiple reales están confirmados por la responsable. El [expediente vigente](entrega/indice-entrega.md) y el [registro de evidencia](entrega/evidencias-validacion.md) distinguen pruebas simuladas, comprobaciones reales y aceptación formal. Los controles técnicos siguen sujetos al código; los procedimientos históricos no autorizan ejecutar servicios ni campañas.
+
+
 Implementación para el ensayo atendido de la empresa `6ad574f460d35245e124c9ee`.
 El usuario confirmó el primer envío real: `ACEPTADO_API` persistido y mensaje recibido correctamente en Gmail. Durante la mejora de interfaz no se volvió a enviar, no se modificó el registro exitoso y no se activó ningún trabajador.
 

@@ -1,5 +1,8 @@
 # IA: corrección del proceso web y prueba HTTP completa
 
+> **Contexto histórico — edición final 19/10/2026.** El contenido original siguiente se conserva como informe o referencia de su etapa. Las cifras, configuraciones y afirmaciones de proveedores «pendientes» describen aquella jornada, no el estado final del MVP. Gmail y Gemini fueron comprobados con servicios reales; registro/verificación y envío múltiple reales están confirmados por la responsable. El [expediente vigente](entrega/indice-entrega.md) y el [registro de evidencia](entrega/evidencias-validacion.md) distinguen pruebas simuladas, comprobaciones reales y aceptación formal. Los controles técnicos siguen sujetos al código; los procedimientos históricos no autorizan ejecutar servicios ni campañas.
+
+
 ## Causa comprobada en el proceso que atendía 3000
 
 Se inspeccionó en solo lectura el proceso Node que tenía el puerto, verificando primero que correspondía a `server.js` en este repositorio. Se devolvieron únicamente valores cerrados de backend y entorno, PID y antigüedad del código; no se imprimieron secretos ni el entorno completo.
