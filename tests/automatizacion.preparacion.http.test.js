@@ -26,7 +26,7 @@ beforeEach(t => {
   t.mock.method(Empresa, 'findById', id => { assert.equal(String(id), A); return { select: () => ({ lean: async () => empresa }) }; });
   t.mock.method(Campana, 'findOne', async filtro => String(filtro._id) === C && String(filtro.empresa) === A ? doc : null);
   t.mock.method(Conexion, 'findOne', filtro => { assert.equal(String(filtro.empresa), A); return { select: () => ({ lean: async () => conexion }) }; });
-  t.mock.method(Contacto, 'find', filtro => { assert.equal(String(filtro.empresa), A); return { select: () => ({ sort: () => ({ lean: async () => contactos }) }) }; });
+  t.mock.method(Contacto, 'find', filtro => { assert.equal(String(filtro.empresa), A); return { select: () => ({ lean: async () => contactos, sort: () => ({ lean: async () => contactos }) }) }; });
   t.mock.method(google, 'estaConfigurado', () => true);
   guardar = t.mock.method(doc, 'save', async () => { await doc.validate(); return doc; });
   fetch = t.mock.method(global, 'fetch', () => { throw new Error('Ningún envío permitido'); });
@@ -34,6 +34,82 @@ beforeEach(t => {
 });
 const url = () => `/campanas/${C}/automatizacion`;
 const datos = () => ({ contactos: [D, D], modo: 'inmediato', revision: '0', fechaProgramada: '' });
+
+test('navegación: detalle, preparación y edición permiten activar por el formulario existente sin enviar', async () => {
+  doc.destinatarios = { tipo: 'contactos', contactos: [D] };
+  doc.automatizacion = { modo: 'inmediato', estado: 'preparada', revision: 1 };
+  const preparacionAntes = doc.automatizacion.toObject();
+  const seleccionAntes = doc.destinatarios.toObject();
+  const detalle = await cliente.get(`/campanas/${C}`).expect(200);
+  assert.match(detalle.text, new RegExp(`href="/campanas/${C}/enviar">Activar y preparar envío`));
+  assert.match(detalle.text, new RegExp(`href="/campanas/${C}/enviar"`));
+  const preparada = await cliente.get(url()).expect(200);
+  assert.match(preparada.text, new RegExp(`href="/campanas/${C}/editar#estado">Activar campaña`));
+  assert.match(preparada.text, new RegExp(`href="/campanas/${C}">Ver detalle`));
+  const edicion = await cliente.get(`/campanas/${C}/editar`).expect(200);
+  assert.match(edicion.text, /<select id="estado" name="estado" required/);
+  assert.match(edicion.text, /value="activa"[^>]*>Activa/);
+  assert.match(edicion.text, new RegExp(`href="/campanas/${C}/enviar"`));
+  assert.equal(doc.estado, 'borrador');
+  await cliente.post(`/campanas/${C}/editar`).type('form').send({ nombre: doc.nombre, objetivo: doc.objetivo, estado: 'activa' })
+    .expect(303).expect('Location', `/campanas/${C}`);
+  assert.equal(doc.estado, 'activa');
+  assert.deepEqual(doc.automatizacion.toObject(), preparacionAntes);
+  assert.deepEqual(doc.destinatarios.toObject(), seleccionAntes);
+  const detalleActivo = await cliente.get(`/campanas/${C}`).expect(200);
+  assert.doesNotMatch(detalleActivo.text, />Activar campaña</);
+  const preparadaActiva = await cliente.get(url()).expect(200);
+  assert.match(preparadaActiva.text, /Campaña activa/);
+  assert.doesNotMatch(preparadaActiva.text, />Activar campaña</);
+  assert.equal(guardar.mock.callCount(), 1);
+  assert.equal(fetch.mock.callCount(), 0);
+});
+
+test('manual: interfaz muestra despacho explícito y conserva bloqueo por borrador', async t => {
+  app.locals.gmailManualValidado = true;
+  doc.destinatarios = { tipo: 'contactos', contactos: [D] };
+  doc.automatizacion = { modo: 'inmediato', estado: 'preparada', revision: 1 };
+  t.mock.method(require('../config/enviosGmail'), 'obtenerPolitica', () => ({ habilitado: true, automatico: false, empresas: [A], maxDestinatarios: 1 }));
+  const borrador = await cliente.get(url()).expect(200);
+  assert.match(borrador.text, /data-bloqueado="true"/);
+  assert.match(borrador.text, /data-enviar-campana/);
+  assert.doesNotMatch(borrador.text, /data-piloto-accion="encolar"/);
+  doc.estado = 'activa';
+  const activa = await cliente.get(url()).expect(200);
+  assert.match(activa.text, /data-bloqueado="false"/);
+  assert.match(activa.text, /Enviar campaña/);
+  assert.match(activa.text, /Confirmar envío/);
+  assert.doesNotMatch(activa.text, /Autorizar un intento|Enviar un correo real ahora|Revocar autorización|Consultar resultado persistido/);
+  assert.match(activa.text, /Destinatarios autorizados<\/dt><dd>1/);
+  assert.equal(fetch.mock.callCount(), 0);
+});
+
+test('automatización: explica requisitos pendientes sin llamar Gmail', async () => {
+  const r = await cliente.get(url()).expect(200);
+  assert.match(r.text, /Requisitos pendientes para enviar/); assert.match(r.text, /Activa la campaña/);
+  assert.equal(fetch.mock.callCount(), 0);
+});
+
+test('automatización: campaña activa muestra confirmación automática y selección propia', async t => {
+  doc.estado = 'activa'; doc.destinatarios = { tipo: 'contactos', contactos: [D] };
+  doc.automatizacion = { modo: 'inmediato', estado: 'preparada', revision: 1 };
+  app.locals.gmailAutomaticoValidado = true;
+  t.mock.method(require('../config/enviosGmail'), 'obtenerPolitica', () => ({ habilitado: true, automatico: true, empresas: [A], maxDestinatarios: 1 }));
+  const r = await cliente.get(url()).expect(200);
+  assert.match(r.text, /data-envio-bloqueado="false"/); assert.match(r.text, /Enviar ahora/);
+  assert.doesNotMatch(r.text, /Envío real no disponible/);
+  assert.match(r.text, /autorizado@example.test/); assert.doesNotMatch(r.text, /no-autorizado@|ajeno@/);
+  await cliente.post(url()).send(datos()).expect(403);
+  assert.equal(fetch.mock.callCount(), 0);
+});
+
+test('automatización: borrador no confirma aunque la infraestructura esté disponible', async t => {
+  app.locals.gmailAutomaticoValidado = true;
+  t.mock.method(require('../config/enviosGmail'), 'obtenerPolitica', () => ({ habilitado: true, automatico: true, empresas: [A], maxDestinatarios: 1 }));
+  const r = await cliente.get(url()).expect(200);
+  assert.match(r.text, /data-envio-bloqueado="true"/); assert.match(r.text, /Activa la campaña/);
+  assert.equal(fetch.mock.callCount(), 0);
+});
 
 test('automatización: solo muestra contactos propios con consentimiento y envío deshabilitado', async () => {
   const r = await cliente.get(url()).expect(200);
@@ -128,7 +204,7 @@ test('automatización: CSRF ausente o inválido bloquea configuración y confirm
 
 test('automatización: navegación desde detalle y guardado mantienen borrador y selecciones', async () => {
   const detalle = await cliente.get(`/campanas/${C}`).expect(200);
-  assert.match(detalle.text, /Configurar automatización/);
+  assert.match(detalle.text, /Activar y preparar envío/);
   await cliente.get(url()).expect(200);
   await cliente.post(url()).send(datos()).expect(303);
   const guardada = await cliente.get(url() + '?guardado=1').expect(200);

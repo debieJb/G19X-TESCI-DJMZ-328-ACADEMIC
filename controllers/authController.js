@@ -8,6 +8,7 @@ const mostrarLogin = (req, res) => {
 };
 
 const iniciarSesion = async (req, res, next) => {
+  if (res.locals.usuarioActual) return res.redirect(303, '/panel');
   if (!req.session) return res.redirect(303, '/login');
   res.set('Cache-Control', 'no-store');
   const rechazar = () => res.status(401).render('login', {
@@ -28,8 +29,11 @@ const iniciarSesion = async (req, res, next) => {
     // Los usuarios históricos sin estado conservan compatibilidad. Los estados
     // nuevos deben estar explícitamente activos para iniciar sesión.
     if (usuario.estadoAcceso !== undefined && usuario.estadoAcceso !== 'activo') return rechazar();
+    const versionSesion = usuario.versionSesion === undefined ? 0 : usuario.versionSesion;
+    if (!Number.isSafeInteger(versionSesion) || versionSesion < 0) return rechazar();
     await new Promise((resolve, reject) => req.session.regenerate(error => error ? reject(error) : resolve()));
     req.session.usuarioId = usuario._id.toString();
+    req.session.versionSesion = versionSesion;
     await new Promise((resolve, reject) => req.session.save(error => error ? reject(error) : resolve()));
     return res.redirect(303, '/panel');
   } catch (error) { next(error); }

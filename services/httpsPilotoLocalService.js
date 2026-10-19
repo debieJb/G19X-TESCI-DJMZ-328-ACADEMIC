@@ -5,7 +5,8 @@ const ORIGEN = 'https://localhost:3100';
 const exigir = (condition, code) => { if (!condition) throw Error(code); };
 const validarDestino = (env, manifiesto) => {
   exigir(env.PILOT_LOCAL_HTTPS === 'true' && env.NODE_ENV === 'production', 'TLS_LOCAL_NO_EXPLICITO');
-  exigir(manifiesto.base === 'marketing_piloto_mvp' && manifiesto.replicaSet === 'marketingPilotLocalRs'
+  const base = env.PILOT_PREPARATION_PROFILE === 'gmail' ? 'marketing_gmail_preparacion_local' : 'marketing_piloto_mvp';
+  exigir(manifiesto.base === base && manifiesto.replicaSet === 'marketingPilotLocalRs'
     && manifiesto.miembros?.length === 1 && manifiesto.miembros[0] === '127.0.0.1:27019'
     && manifiesto.host === '127.0.0.1' && manifiesto.puerto === 3100 && manifiesto.trustProxy?.length === 0, 'TLS_LOCAL_DESTINO_INVALIDO');
   exigir(env.NODE_TLS_REJECT_UNAUTHORIZED !== '0', 'TLS_NO_PERMITE_OMITIR_VERIFICACION');

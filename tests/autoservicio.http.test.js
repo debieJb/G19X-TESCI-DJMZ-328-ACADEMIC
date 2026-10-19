@@ -21,6 +21,32 @@ const formulario = async () => {
   const res = await agente.get('/registro').expect(200);
   return { _csrf: campo(res.text, '_csrf'), idempotencia: campo(res.text, 'idempotencia'), nombreEmpresa: 'Empresa', correo: 'persona@example.test' };
 };
+
+test('HTTP reenvío: despacha solo ID autorizado después del commit y nunca barre pendientes', async t => {
+  const previo = process.env.TRANSACTIONAL_EMAIL_ENABLED; process.env.TRANSACTIONAL_EMAIL_ENABLED = 'true';
+  t.after(() => { if (previo === undefined) delete process.env.TRANSACTIONAL_EMAIL_ENABLED; else process.env.TRANSACTIONAL_EMAIL_ENABLED = previo; });
+  t.mock.method(require('../services/smtpTransaccionalService'), 'crearCorreo', () => ({ disponible: true }));
+  const id = '507f1f77bcf86cd799439011'; let autorizado = false; const despachos = [];
+  doble.reenviar = async () => autorizado ? id : undefined;
+  doble.despachar = async datos => { despachos.push(datos); return { estado: 'enviada' }; };
+  const pagina = await agente.get('/registro/reenviar');
+  const datos = { correo: 'persona@example.test', _csrf: campo(pagina.text, '_csrf') };
+  await agente.post('/registro/reenviar').type('form').send(datos).expect(202); assert.equal(despachos.length, 0);
+  autorizado = true; await agente.post('/registro/reenviar').type('form').send(datos).expect(202);
+  assert.deepEqual(despachos, [{ solicitudId: id }]);
+  doble.limitar = async () => { throw { codigo: 'LIMITE_SOLICITUDES' }; };
+  await agente.post('/registro/reenviar').type('form').send(datos).expect(429); assert.equal(despachos.length, 1);
+});
+
+for (const estado of ['sustituido', 'usado']) {
+  test(`HTTP enlace: ${estado} se distingue con evidencia sin revelar el token`, async () => {
+    doble.consultarEnlace = async () => estado; const token = randomBytes(32).toString('base64url');
+    await agente.get('/registro/verificar').query({ token }).expect(303);
+    const pagina = await agente.get('/registro/verificar').expect(422);
+    assert.match(pagina.text, estado === 'sustituido' ? /Enlace sustituido/ : /Enlace ya utilizado/);
+    assert.ok(!pagina.text.includes(token));
+  });
+}
 test('HTTP registro: formulario accesible sin contraseña ni efectos de persistencia', async () => {
   const res = await agente.get('/registro').expect(200);
   assert.match(res.text, /lang="es"/); assert.match(res.text, /for="correo"/);

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="es"><head><%- include('../partials/_headInterno') %></head>
-<body class="pagina-admin pagina-interna"><%- include('../partials/_encabezadoAdmin') %>
+<body class="pagina-admin pagina-interna"><%- include('../partials/_encabezadoAdmin', { seccionAdmin: 'empresas' }) %>
 <main id="contenido" tabindex="-1">
 <h1>Automatizaciones de <%= empresa.nombre %></h1>
 <p>Configuración del contrato histórico de webhooks, cuyo envío permanece bloqueado. El motor actual de Gmail API no necesita estas URLs. Deshabilitar conserva el bloqueo del canal.</p>

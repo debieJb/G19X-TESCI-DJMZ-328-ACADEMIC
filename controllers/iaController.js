@@ -104,4 +104,13 @@ const guardar = async (req, res) => {
     res.status(seguro.status).render('error', { titulo: 'No se pudo guardar la propuesta', mensaje: seguro.message });
   }
 };
-module.exports = { mostrar, generar, regenerar, guardar };
+const diagnosticar = async (req, res) => {
+  if (res.locals.usuarioActual.rol !== 'admin_empresa') return res.status(403).json({ error: 'ACCESO_DENEGADO' });
+  try {
+    const empresa = await service.autorizar(res.locals.usuarioActual);
+    return res.json(await require('../services/ia/arranqueIA').comprobar(empresa));
+  } catch {
+    return res.status(503).json({ ...require('../services/ia/arranqueIA').estado(), cuotasVerificadas: false, error: 'CUOTAS_NO_DISPONIBLES' });
+  }
+};
+module.exports = { mostrar, generar, regenerar, guardar, diagnosticar };

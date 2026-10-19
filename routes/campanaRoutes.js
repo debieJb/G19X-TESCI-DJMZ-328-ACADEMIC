@@ -8,11 +8,16 @@ router.use(requerirAutenticacion, accesoEmpresa);
 router.get('/', controller.listarCampanas);
 router.get('/nueva', controller.mostrarFormularioCreacion);
 router.post('/', controller.crearCampana);
+router.get('/:id/enviar', require('../controllers/revisionEnvioCampanaController').mostrar);
+router.get('/:id/historial', require('../controllers/revisionEnvioCampanaController').mostrar);
+router.post('/:id/activar-preparar', require('../controllers/revisionEnvioCampanaController').activarPreparar);
 router.get('/:id/automatizacion', automatizacion.mostrar);
 router.post('/:id/automatizacion', automatizacion.guardar);
 router.post('/:id/automatizacion/imagen', automatizacion.guardarImagen);
 router.post('/:id/automatizacion/confirmar', automatizacion.confirmar);
 // Camino Gmail independiente: CSRF global de campañas + autenticación y empresa.
+router.post('/:id/gmail/piloto/despachar', require('../controllers/enviosGmailController').despachar);
+router.post('/:id/gmail/supervisado/paso', require('../controllers/enviosGmailController').pasoSupervisado);
 router.post('/:id/gmail/confirmar', require('../controllers/enviosGmailController').confirmar);
 router.post('/:id/gmail/piloto/autorizar', require('../controllers/enviosGmailController').autorizar);
 router.post('/:id/gmail/piloto/revocar', require('../controllers/enviosGmailController').revocar);

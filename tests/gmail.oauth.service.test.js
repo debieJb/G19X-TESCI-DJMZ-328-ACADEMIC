@@ -18,6 +18,21 @@ const empezar = async (empresa = A, sesion = 'sesion-pruebas') => {
 };
 const conectar = async (empresa = A) => { await service.completar(usuario(empresa), 'sesion-pruebas', await empezar(empresa)); return fixture.conexiones.get(String(empresa)); };
 
+test('OAuth: cuenta escrita queda vinculada al state y se compara contra identidad firmada', async () => {
+  const url = new URL(await service.iniciar(usuario(), 'sesion-pruebas', 'esperada@example.test'));
+  assert.equal(url.searchParams.get('login_hint'), 'esperada@example.test');
+  await assert.rejects(service.completar(usuario(), 'sesion-pruebas', { state: url.searchParams.get('state'), code: 'codigo-prueba' }), { codigo: 'CUENTA_DISTINTA' });
+  assert.equal(fixture.conexiones.get(String(A)).estado, 'desconectada');
+  assert.equal(fixture.estados.size, 0);
+});
+
+test('OAuth: misma cuenta elegida se conecta y entrada manipulada no inicia OAuth', async () => {
+  await assert.rejects(service.iniciar(usuario(), 'sesion-pruebas', { $ne: null }), { codigo: 'IDENTIDAD' });
+  const url = new URL(await service.iniciar(usuario(), 'sesion-pruebas', 'gmail-a@example.test'));
+  await service.completar(usuario(), 'sesion-pruebas', { state: url.searchParams.get('state'), code: 'codigo-prueba' });
+  assert.equal(fixture.conexiones.get(String(A)).estado, 'conectada');
+});
+
 test('OAuth: URL oficial, permisos mínimos, state opaco, PKCE y nonce; sin client secret', async () => {
   const url = new URL(await service.iniciar(usuario(), 'sesion-pruebas'));
   assert.equal(url.origin, 'https://accounts.google.com');

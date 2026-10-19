@@ -1,1 +1,1 @@
-<%- include('_navegacionInterna', { seccion: 'panel' }) %>
+<%- include('_navegacionInterna', { seccion: typeof seccionAdmin !== 'undefined' ? seccionAdmin : 'panel' }) %>

@@ -17,6 +17,7 @@ router.use(async (req, res, next) => {
   catch (error) { const seguro = error instanceof ErrorIA ? error : new ErrorIA('PROVEEDOR'); res.status(seguro.status).render('error', { titulo: 'Asistente no disponible', mensaje: seguro.message }); }
 });
 router.get('/', controller.mostrar);
+router.get('/diagnostico', controller.diagnosticar);
 router.post('/generar', controller.generar);
 router.post('/regenerar', controller.regenerar);
 router.post('/revisar', controller.regenerar);

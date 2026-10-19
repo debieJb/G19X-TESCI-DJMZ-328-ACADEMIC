@@ -17,11 +17,12 @@ const evaluar = async campana => {
   const empresa = normalizarEmpresaId(campana.empresa);
   const doc = await Empresa.findById(empresa).select('correoAutomatizaciones').lean();
   const conexion = await Conexion.findOne({ empresa }).select('email estado scopes').lean();
-  const esperado = doc?.correoAutomatizaciones;
+  const politica = require('../config/enviosGmail').obtenerPolitica(), automatico = politica.automatico;
+  const esperado = automatico || politica.supervisado ? conexion?.email : doc?.correoAutomatizaciones;
   return { canalValido: campana.canal === 'email', gmailConfigurado: google.estaConfigurado(),
     correoPrevisto: esperado || '', correoAutorizado: conexion?.email || '', estadoGmail: conexion?.estado || 'desconectada',
     identidadCoincide: typeof esperado === 'string' && !!esperado && conexion?.email?.toLowerCase() === esperado.toLowerCase(),
     permisoEnvio: conexion?.estado === 'conectada' && conexion.scopes?.includes(google.GMAIL_SEND) === true,
-    envioDisponible: false, motivo: 'El envío real por Gmail requiere validación y autorización de un piloto independiente. Guardar esta preparación no envía ni programa mensajes.' };
+    envioDisponible: false, motivo: automatico ? 'Guardar prepara el borrador. Solo la confirmación explícita registra trabajos para el trabajador automático. La cuenta Google debe estar conectada.' : 'El envío real por Gmail requiere validación y autorización de un piloto independiente. Guardar esta preparación no envía ni programa mensajes.' };
 };
 module.exports = { opciones, evaluar, consentimiento };

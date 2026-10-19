@@ -56,6 +56,64 @@ const fixture = async t => {
   };
   return { conexion, m, mensajes, transporte, correo, servicio, entrada, ejecutar, nombre, marca, avanzar: ms => { ahora = new Date(+ahora + ms); } };
 };
+test('SMTP Mongo: solicitud, token, primer administrador y credencial de login conservan flujo completo', async t => {
+  const f = await fixture(t); let texto;
+  t.mock.method(require('nodemailer'), 'createTransport', () => ({ close() {}, sendMail: async d => {
+    texto = d.text; return { accepted: [d.to], rejected: [], messageId: '<registro@example.test>' };
+  } }));
+  const smtp = require('../services/smtpTransaccionalService');
+  f.transporte.enviar = smtp.crearTransporte(smtp.configuracion({ EMAIL_USER: 'plataforma@example.test', EMAIL_PASS: 'sintetica', TRANSACTIONAL_PUBLIC_ORIGIN: 'https://localhost:3100' })).enviar;
+  await f.servicio().solicitar(f.entrada()); await f.servicio().despachar();
+  const token = new URL(texto.match(/https:\/\/\S+/)[0]).searchParams.get('token');
+  assert.ok(!JSON.stringify(await f.m.SolicitudRegistro.collection.findOne({})).includes(token));
+  const sesion = randomUUID(), grant = await f.servicio().verificar({ hashEnlace: auto.tokenHash(token), sesion });
+  const password = require('../tests/soporte/registroFixture').passwordSintetica();
+  await f.servicio().configurar({ ...grant, sesion, datos: { nombreEmpresa: 'Empresa SMTP sintética', nombreAdministrador: 'Administrador', password, confirmacionPassword: password } });
+  const usuario = await f.m.Usuario.findOne().select('+password');
+  assert.equal(usuario.estadoAcceso, 'activo'); assert.equal(usuario.rol, 'admin_empresa'); assert.ok(await usuario.compararPassword(password));
+  assert.equal((await f.m.Empresa.findById(usuario.empresa)).estadoActivacion, 'verificada');
+  await assert.rejects(f.servicio().verificar({ hashEnlace: auto.tokenHash(token), sesion }), { codigo: 'ENLACE_INVALIDO' });
+});
+
+test('SMTP Mongo: credenciales rechazadas no reintentan; reenvío explícito permite nuevo intento', async t => {
+  const f = await fixture(t); let llamadas = 0, autorizado = false;
+  t.mock.method(require('nodemailer'), 'createTransport', () => ({ close() {}, sendMail: async d => {
+    llamadas++; if (!autorizado) throw Object.assign(Error('privado'), { code: 'EAUTH', responseCode: 535 });
+    return { accepted: [d.to], rejected: [], messageId: '<reenvio@example.test>' };
+  } }));
+  const smtp = require('../services/smtpTransaccionalService');
+  f.transporte.enviar = smtp.crearTransporte(smtp.configuracion({ EMAIL_USER: 'plataforma@example.test', EMAIL_PASS: 'sintetica', TRANSACTIONAL_PUBLIC_ORIGIN: 'https://localhost:3100' })).enviar;
+  const entrada = f.entrada(); await f.servicio().solicitar(entrada);
+  assert.equal((await f.servicio().despachar()).estado, 'fallida'); assert.equal((await f.servicio().despachar()).estado, 'sin_trabajo');
+  assert.equal((await f.m.SolicitudRegistro.findOne()).correoError, 'REAUTORIZAR_TRANSACCIONAL');
+  f.avanzar(61000); autorizado = true; await f.servicio().reenviar(entrada.datos.correo);
+  assert.equal((await f.servicio().despachar()).estado, 'enviada'); assert.equal(llamadas, 2);
+});
+
+test('SMTP Mongo: consumidores concurrentes no duplican y persisten aceptación saneada', async t => {
+  const f = await fixture(t);
+  let llamadas = 0;
+  t.mock.method(require('nodemailer'), 'createTransport', () => ({ close() {}, sendMail: async d => {
+    llamadas++; return { accepted: [d.to], rejected: [], messageId: '<smtp-prueba@example.test>' };
+  } }));
+  const smtp = require('../services/smtpTransaccionalService');
+  f.transporte.enviar = smtp.crearTransporte(smtp.configuracion({ EMAIL_USER: 'plataforma@example.test', EMAIL_PASS: 'sintetica', TRANSACTIONAL_PUBLIC_ORIGIN: 'https://localhost:3100' })).enviar;
+  await f.servicio().solicitar(f.entrada());
+  await Promise.all([f.servicio().despachar(), f.servicio().despachar()]);
+  assert.equal(llamadas, 1); const doc = await f.m.SolicitudRegistro.findOne();
+  assert.equal(doc.correoEstado, 'enviada'); assert.match(doc.proveedorMensajeId, /^[a-f0-9]{64}$/);
+  await f.servicio().despachar(); assert.equal(llamadas, 1);
+});
+
+test('SMTP Mongo: timeout incierto no se reintenta tras reiniciar servicio', async t => {
+  const f = await fixture(t); let llamadas = 0;
+  t.mock.method(require('nodemailer'), 'createTransport', () => ({ close() {}, sendMail: async () => { llamadas++; throw Object.assign(Error('privado'), { code: 'ETIMEDOUT' }); } }));
+  const smtp = require('../services/smtpTransaccionalService');
+  f.transporte.enviar = smtp.crearTransporte(smtp.configuracion({ EMAIL_USER: 'plataforma@example.test', EMAIL_PASS: 'sintetica', TRANSACTIONAL_PUBLIC_ORIGIN: 'https://localhost:3100' })).enviar;
+  await f.servicio().solicitar(f.entrada()); assert.equal((await f.servicio().despachar()).estado, 'incierta');
+  f.avanzar(180000); await f.servicio().recuperarIncierta(); await f.servicio().despachar(); assert.equal(llamadas, 1);
+});
+
 test('automatico Mongo: tarea persistida atomicamente; residente envia sin ID ni despacho manual', async t => {
   const f = await fixture(t), entrada = f.entrada();await f.servicio().solicitar(entrada);
   assert.equal(await f.m.SolicitudRegistro.countDocuments({ correoEstado: 'pendiente' }), 1);

@@ -27,3 +27,18 @@ secrets.json
 *.db
 *.sqlite
 *.sqlite3
+
+# Archivos privados de herramientas, respaldos y salidas temporales
+.aws/
+.codex/
+.agents/
+backups/
+respaldos/
+*.bak
+*.tmp
+*.dump
+*.bson
+*.zip
+*.7z
+/witch -c respaldo-avances-18-oct
+/usuarios y empresas

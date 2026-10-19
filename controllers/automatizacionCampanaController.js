@@ -2,10 +2,10 @@ const { buscarCampana } = require('../services/accesoCampanasService');
 const { normalizarEmpresaId } = require('../services/accesoEmpresaService');
 const ia = require('../services/iaService');
 const preparacion = require('../services/preparacionAutomatizacionService');
-const cargar = async (req, res) => {
+const cargar = async (req, res, permitirActiva = false) => {
   const empresa = await ia.autorizar(res.locals.usuarioActual);
   const campana = await buscarCampana(req.params.id, res.locals.usuarioActual, 'campanas.editar');
-  if (normalizarEmpresaId(campana.empresa) !== empresa || campana.estado !== 'borrador') throw Object.assign(new Error(), { status: 403 });
+  if (normalizarEmpresaId(campana.empresa) !== empresa || !['borrador', ...(permitirActiva ? ['activa'] : [])].includes(campana.estado)) throw Object.assign(new Error(), { status: 403 });
   return { empresa, campana };
 };
 const fallo = (res, error) => {
@@ -17,10 +17,30 @@ const fallo = (res, error) => {
 };
 const mostrar = async (req, res) => {
   try {
-    const { empresa, campana } = await cargar(req, res);
+    const { empresa, campana } = await cargar(req, res, true);
     const contactos = await preparacion.opciones(empresa), estado = await preparacion.evaluar(campana);
+    const politica = require('../config/enviosGmail').obtenerPolitica();
+    const bloqueosEnvio = [];
+    if (!politica.habilitado) bloqueosEnvio.push('El envío está apagado por la configuración del servidor.');
+    if (!politica.empresas.includes(empresa)) bloqueosEnvio.push('Esta empresa no está autorizada para enviar en este despliegue.');
+    if (!politica.automatico && req.app.locals.gmailManualValidado !== true) bloqueosEnvio.push('El modo automático no está habilitado.');
+    if (req.app.locals.gmailAutomaticoValidado !== true && req.app.locals.gmailManualValidado !== true) bloqueosEnvio.push('El trabajador automático y los índices de MongoDB no están validados para este arranque.');
+    if (campana.estado !== 'activa') bloqueosEnvio.push('Activa la campaña desde Editar después de guardar su preparación.');
+    if (campana.automatizacion?.estado !== 'preparada') bloqueosEnvio.push('Guarda primero los destinatarios y la modalidad de envío.');
+    const seleccion = [...new Set((campana.destinatarios?.contactos || []).map(String))];
+    if (campana.destinatarios?.tipo !== 'contactos' || !seleccion.length || seleccion.length > politica.maxDestinatarios
+      || seleccion.some(id => !contactos.some(c => String(c._id) === id))) bloqueosEnvio.push('Selecciona contactos propios autorizados dentro del límite de envío; para la prueba, exactamente uno.');
+    if (!campana.asunto?.trim() || !campana.cuerpoTexto?.trim()) bloqueosEnvio.push('Completa el asunto y el mensaje antes de confirmar.');
+    if (!estado.permisoEnvio || !estado.identidadCoincide) bloqueosEnvio.push('Conecta el Gmail de la empresa con identidad y permiso de envío válidos.');
+    if (campana.imagenLocal) bloqueosEnvio.push('El motor actual solo envía texto; esta campaña contiene una imagen.');
     res.render('campanas/automatizacion', { titulo: 'Configurar automatización', campana, contactos, estado,
-      pilotoDisponible: req.app.locals.pilotoInfraValidada === true
+      bloqueosEnvio, maxDestinatarios: politica.maxDestinatarios,
+      revisionEnvio: require('../services/motorEnviosGmailService').huella(campana.toObject ? campana.toObject() : campana),
+      envioAutomatico: req.app.locals.gmailAutomaticoValidado === true
+        && politica.habilitado && politica.automatico
+        && require('../config/enviosGmail').obtenerPolitica().empresas.includes(empresa),
+      manualSupervisado: req.app.locals.gmailManualValidado === true,
+      pilotoDisponible: (req.app.locals.pilotoInfraValidada === true || req.app.locals.gmailManualValidado === true)
         && require('../config/enviosGmail').obtenerPolitica().empresas.includes(empresa)
         && res.locals.usuarioActual.rol === 'admin_empresa',
       guardado: req.query.guardado === '1' });
@@ -59,7 +79,7 @@ const guardar = async (req, res) => {
       fecha = new Date(fechaProgramada + ':00.000Z');
       if (!Number.isFinite(fecha.getTime()) || fecha.toISOString().slice(0, 16) !== fechaProgramada || fecha.getTime() < Date.now() + 60000) throw Object.assign(new Error(), { status: 422 });
     }
-    campana.$where = { ...campana.$where, empresa: campana.empresa._id || campana.empresa,
+    campana.$where = { ...campana.$where, empresa: campana.empresa._id || campana.empresa, estado: 'borrador',
       $or: previa ? [{ 'automatizacion.revision': previa }] : [{ 'automatizacion.revision': { $exists: false } }, { 'automatizacion.revision': 0 }] };
     campana.destinatarios = { tipo: 'contactos', contactos: [...new Set(ids)], etiquetas: [] };
     campana.versionFlujo = 2;

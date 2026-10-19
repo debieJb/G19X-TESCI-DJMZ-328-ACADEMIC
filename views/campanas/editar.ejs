@@ -5,6 +5,10 @@
   <%- include('../partials/_encabezado', { seccion: 'campanas' }) %>
   <main id="contenido" tabindex="-1" class="formulario-pagina">
     <h1><%= titulo %></h1>
+    <p><a class="boton" href="<%= cancelar %>/enviar">Revisar y enviar campaña</a></p>
+    <nav aria-label="Navegación de campaña">
+      <a href="<%= cancelar %>">Ver detalle</a>
+    </nav>
     <%- include('_formulario') %>
   </main>
 <%- include('../partials/_piePublico') %></body>

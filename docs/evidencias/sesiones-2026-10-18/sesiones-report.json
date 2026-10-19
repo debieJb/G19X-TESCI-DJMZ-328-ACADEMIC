@@ -1,0 +1,3739 @@
+{
+  "checks": [
+    "anónimo ofrece acceso y registro superadmin-1440",
+    "login regenera identificador superadmin",
+    "panel e identidad por rol superadmin-1440",
+    "pestaña antigua actualiza acceso tras login",
+    "GET login no cambia sesión superadmin-1440",
+    "POST login antiguo conserva sesión superadmin-1440",
+    "Atrás autenticado revalida el módulo superadmin-1440",
+    "un solo logout POST fuera del formulario superadmin-1440",
+    "logout visible y accesible superadmin-1440",
+    "sin desbordamiento superadmin-1440-privada",
+    "cookie eliminada superadmin-1440",
+    "Atrás exige login superadmin-1440",
+    "sin desbordamiento superadmin-1440-atras",
+    "cookie anterior rechazada superadmin-1440",
+    "login regenera identificador superadmin",
+    "sesión caducada rechazada superadmin-1440",
+    "login regenera identificador superadmin",
+    "Atrás con cuenta bloqueada revalida y deniega acceso superadmin-1440",
+    "bloqueo destruye sesión, reactivar no la resucita superadmin-1440",
+    "login regenera identificador superadmin",
+    "revocación externa aplicada superadmin-1440",
+    "login regenera identificador superadmin",
+    "bloqueo y reactivación sin petición intermedia revocan cookie superadmin-1440",
+    "login regenera identificador superadmin",
+    "Gmail restringido superadmin-1440",
+    "anónimo ofrece acceso y registro admin_empresa-1440",
+    "login regenera identificador admin_empresa",
+    "panel e identidad por rol admin_empresa-1440",
+    "GET login no cambia sesión admin_empresa-1440",
+    "POST login antiguo conserva sesión admin_empresa-1440",
+    "Atrás autenticado revalida el módulo admin_empresa-1440",
+    "un solo logout POST fuera del formulario admin_empresa-1440",
+    "logout visible y accesible admin_empresa-1440",
+    "sin desbordamiento admin_empresa-1440-privada",
+    "cookie eliminada admin_empresa-1440",
+    "Atrás exige login admin_empresa-1440",
+    "sin desbordamiento admin_empresa-1440-atras",
+    "cookie anterior rechazada admin_empresa-1440",
+    "login regenera identificador admin_empresa",
+    "sesión caducada rechazada admin_empresa-1440",
+    "login regenera identificador admin_empresa",
+    "Atrás con cuenta bloqueada revalida y deniega acceso admin_empresa-1440",
+    "bloqueo destruye sesión, reactivar no la resucita admin_empresa-1440",
+    "login regenera identificador admin_empresa",
+    "revocación externa aplicada admin_empresa-1440",
+    "login regenera identificador admin_empresa",
+    "bloqueo y reactivación sin petición intermedia revocan cookie admin_empresa-1440",
+    "login regenera identificador admin_empresa",
+    "rol manipulado denegado admin_empresa-1440",
+    "anónimo ofrece acceso y registro operador-1440",
+    "login regenera identificador operador",
+    "panel e identidad por rol operador-1440",
+    "GET login no cambia sesión operador-1440",
+    "POST login antiguo conserva sesión operador-1440",
+    "Atrás autenticado revalida el módulo operador-1440",
+    "un solo logout POST fuera del formulario operador-1440",
+    "logout visible y accesible operador-1440",
+    "sin desbordamiento operador-1440-privada",
+    "cookie eliminada operador-1440",
+    "Atrás exige login operador-1440",
+    "sin desbordamiento operador-1440-atras",
+    "cookie anterior rechazada operador-1440",
+    "login regenera identificador operador",
+    "sesión caducada rechazada operador-1440",
+    "login regenera identificador operador",
+    "Atrás con cuenta bloqueada revalida y deniega acceso operador-1440",
+    "bloqueo destruye sesión, reactivar no la resucita operador-1440",
+    "login regenera identificador operador",
+    "revocación externa aplicada operador-1440",
+    "login regenera identificador operador",
+    "bloqueo y reactivación sin petición intermedia revocan cookie operador-1440",
+    "login regenera identificador operador",
+    "rol manipulado denegado operador-1440",
+    "Gmail restringido operador-1440",
+    "anónimo ofrece acceso y registro superadmin-768",
+    "login regenera identificador superadmin",
+    "panel e identidad por rol superadmin-768",
+    "GET login no cambia sesión superadmin-768",
+    "POST login antiguo conserva sesión superadmin-768",
+    "Atrás autenticado revalida el módulo superadmin-768",
+    "un solo logout POST fuera del formulario superadmin-768",
+    "logout visible y accesible superadmin-768",
+    "sin desbordamiento superadmin-768-privada",
+    "cookie eliminada superadmin-768",
+    "Atrás exige login superadmin-768",
+    "sin desbordamiento superadmin-768-atras",
+    "cookie anterior rechazada superadmin-768",
+    "login regenera identificador superadmin",
+    "sesión caducada rechazada superadmin-768",
+    "login regenera identificador superadmin",
+    "Atrás con cuenta bloqueada revalida y deniega acceso superadmin-768",
+    "bloqueo destruye sesión, reactivar no la resucita superadmin-768",
+    "login regenera identificador superadmin",
+    "bloqueo y reactivación sin petición intermedia revocan cookie superadmin-768",
+    "login regenera identificador superadmin",
+    "Gmail restringido superadmin-768",
+    "anónimo ofrece acceso y registro admin_empresa-768",
+    "login regenera identificador admin_empresa",
+    "panel e identidad por rol admin_empresa-768",
+    "GET login no cambia sesión admin_empresa-768",
+    "POST login antiguo conserva sesión admin_empresa-768",
+    "Atrás autenticado revalida el módulo admin_empresa-768",
+    "un solo logout POST fuera del formulario admin_empresa-768",
+    "logout visible y accesible admin_empresa-768",
+    "sin desbordamiento admin_empresa-768-privada",
+    "cookie eliminada admin_empresa-768",
+    "Atrás exige login admin_empresa-768",
+    "sin desbordamiento admin_empresa-768-atras",
+    "cookie anterior rechazada admin_empresa-768",
+    "login regenera identificador admin_empresa",
+    "sesión caducada rechazada admin_empresa-768",
+    "login regenera identificador admin_empresa",
+    "Atrás con cuenta bloqueada revalida y deniega acceso admin_empresa-768",
+    "bloqueo destruye sesión, reactivar no la resucita admin_empresa-768",
+    "login regenera identificador admin_empresa",
+    "bloqueo y reactivación sin petición intermedia revocan cookie admin_empresa-768",
+    "login regenera identificador admin_empresa",
+    "rol manipulado denegado admin_empresa-768",
+    "anónimo ofrece acceso y registro operador-768",
+    "login regenera identificador operador",
+    "panel e identidad por rol operador-768",
+    "GET login no cambia sesión operador-768",
+    "POST login antiguo conserva sesión operador-768",
+    "Atrás autenticado revalida el módulo operador-768",
+    "un solo logout POST fuera del formulario operador-768",
+    "logout visible y accesible operador-768",
+    "sin desbordamiento operador-768-privada",
+    "cookie eliminada operador-768",
+    "Atrás exige login operador-768",
+    "sin desbordamiento operador-768-atras",
+    "cookie anterior rechazada operador-768",
+    "login regenera identificador operador",
+    "sesión caducada rechazada operador-768",
+    "login regenera identificador operador",
+    "Atrás con cuenta bloqueada revalida y deniega acceso operador-768",
+    "bloqueo destruye sesión, reactivar no la resucita operador-768",
+    "login regenera identificador operador",
+    "bloqueo y reactivación sin petición intermedia revocan cookie operador-768",
+    "login regenera identificador operador",
+    "rol manipulado denegado operador-768",
+    "Gmail restringido operador-768",
+    "anónimo ofrece acceso y registro superadmin-390",
+    "login regenera identificador superadmin",
+    "panel e identidad por rol superadmin-390",
+    "GET login no cambia sesión superadmin-390",
+    "POST login antiguo conserva sesión superadmin-390",
+    "Atrás autenticado revalida el módulo superadmin-390",
+    "un solo logout POST fuera del formulario superadmin-390",
+    "logout visible y accesible superadmin-390",
+    "identidad en menú móvil superadmin-390",
+    "sin desbordamiento superadmin-390-privada",
+    "cookie eliminada superadmin-390",
+    "Atrás exige login superadmin-390",
+    "sin desbordamiento superadmin-390-atras",
+    "cookie anterior rechazada superadmin-390",
+    "login regenera identificador superadmin",
+    "sesión caducada rechazada superadmin-390",
+    "login regenera identificador superadmin",
+    "Atrás con cuenta bloqueada revalida y deniega acceso superadmin-390",
+    "bloqueo destruye sesión, reactivar no la resucita superadmin-390",
+    "login regenera identificador superadmin",
+    "bloqueo y reactivación sin petición intermedia revocan cookie superadmin-390",
+    "login regenera identificador superadmin",
+    "Gmail restringido superadmin-390",
+    "anónimo ofrece acceso y registro admin_empresa-390",
+    "login regenera identificador admin_empresa",
+    "panel e identidad por rol admin_empresa-390",
+    "GET login no cambia sesión admin_empresa-390",
+    "POST login antiguo conserva sesión admin_empresa-390",
+    "Atrás autenticado revalida el módulo admin_empresa-390",
+    "un solo logout POST fuera del formulario admin_empresa-390",
+    "logout visible y accesible admin_empresa-390",
+    "identidad en menú móvil admin_empresa-390",
+    "sin desbordamiento admin_empresa-390-privada",
+    "cookie eliminada admin_empresa-390",
+    "Atrás exige login admin_empresa-390",
+    "sin desbordamiento admin_empresa-390-atras",
+    "cookie anterior rechazada admin_empresa-390",
+    "login regenera identificador admin_empresa",
+    "sesión caducada rechazada admin_empresa-390",
+    "login regenera identificador admin_empresa",
+    "Atrás con cuenta bloqueada revalida y deniega acceso admin_empresa-390",
+    "bloqueo destruye sesión, reactivar no la resucita admin_empresa-390",
+    "login regenera identificador admin_empresa",
+    "bloqueo y reactivación sin petición intermedia revocan cookie admin_empresa-390",
+    "login regenera identificador admin_empresa",
+    "rol manipulado denegado admin_empresa-390",
+    "anónimo ofrece acceso y registro operador-390",
+    "login regenera identificador operador",
+    "panel e identidad por rol operador-390",
+    "GET login no cambia sesión operador-390",
+    "POST login antiguo conserva sesión operador-390",
+    "Atrás autenticado revalida el módulo operador-390",
+    "un solo logout POST fuera del formulario operador-390",
+    "logout visible y accesible operador-390",
+    "identidad en menú móvil operador-390",
+    "sin desbordamiento operador-390-privada",
+    "cookie eliminada operador-390",
+    "Atrás exige login operador-390",
+    "sin desbordamiento operador-390-atras",
+    "cookie anterior rechazada operador-390",
+    "login regenera identificador operador",
+    "sesión caducada rechazada operador-390",
+    "login regenera identificador operador",
+    "Atrás con cuenta bloqueada revalida y deniega acceso operador-390",
+    "bloqueo destruye sesión, reactivar no la resucita operador-390",
+    "login regenera identificador operador",
+    "bloqueo y reactivación sin petición intermedia revocan cookie operador-390",
+    "login regenera identificador operador",
+    "rol manipulado denegado operador-390",
+    "Gmail restringido operador-390",
+    "login regenera identificador admin_empresa",
+    "empresa ajena no accesible admin_empresa /campanas/000000000000000000000016",
+    "empresa ajena no accesible admin_empresa /contactos/000000000000000000000020",
+    "empresa ajena no accesible admin_empresa /empresa/usuarios/00000000000000000000000e",
+    "login regenera identificador admin2",
+    "empresa ajena no accesible admin2 /campanas/000000000000000000000015",
+    "empresa ajena no accesible admin2 /contactos/00000000000000000000001f",
+    "empresa ajena no accesible admin2 /empresa/usuarios/00000000000000000000000c",
+    "no-store en respuestas privadas, errores y redirecciones",
+    "restauraciones privadas desde BFCache permanecen ocultas hasta revalidar",
+    "sin errores JavaScript"
+  ],
+  "screenshots": [
+    "superadmin-1440-privada.png",
+    "superadmin-1440-atras.png",
+    "admin_empresa-1440-privada.png",
+    "admin_empresa-1440-atras.png",
+    "operador-1440-privada.png",
+    "operador-1440-atras.png",
+    "superadmin-768-privada.png",
+    "superadmin-768-atras.png",
+    "admin_empresa-768-privada.png",
+    "admin_empresa-768-atras.png",
+    "operador-768-privada.png",
+    "operador-768-atras.png",
+    "superadmin-390-privada.png",
+    "superadmin-390-atras.png",
+    "admin_empresa-390-privada.png",
+    "admin_empresa-390-atras.png",
+    "operador-390-privada.png",
+    "operador-390-atras.png"
+  ],
+  "history": [
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": true,
+      "autenticada": true,
+      "oculta": true
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": true,
+      "autenticada": true,
+      "oculta": true
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/empresa/gmail",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": true,
+      "autenticada": true,
+      "oculta": true
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": true,
+      "autenticada": true,
+      "oculta": true
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/admin/empresas/nueva",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": true,
+      "autenticada": true,
+      "oculta": true
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": true,
+      "autenticada": true,
+      "oculta": true
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/admin/empresas/nueva",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/empresa/gmail",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": true,
+      "autenticada": true,
+      "oculta": true
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": true,
+      "autenticada": true,
+      "oculta": true
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/empresa/gmail",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": true,
+      "autenticada": true,
+      "oculta": true
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": true,
+      "autenticada": true,
+      "oculta": true
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/admin/empresas/nueva",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": true,
+      "autenticada": true,
+      "oculta": true
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": true,
+      "autenticada": true,
+      "oculta": true
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/admin/empresas/nueva",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/empresa/gmail",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": true,
+      "autenticada": true,
+      "oculta": true
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": true,
+      "autenticada": true,
+      "oculta": true
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/empresa/gmail",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": true,
+      "autenticada": true,
+      "oculta": true
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": true,
+      "autenticada": true,
+      "oculta": true
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/admin/empresas/nueva",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": true,
+      "autenticada": true,
+      "oculta": true
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/nuevo",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas",
+      "persisted": true,
+      "autenticada": true,
+      "oculta": true
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/admin/empresas/nueva",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/empresa/gmail",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas/000000000000000000000016",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/000000000000000000000020",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/empresa/usuarios/00000000000000000000000e",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/login",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    },
+    {
+      "path": "/panel",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/campanas/000000000000000000000015",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/contactos/00000000000000000000001f",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/empresa/usuarios/00000000000000000000000c",
+      "persisted": false,
+      "autenticada": true,
+      "oculta": false
+    },
+    {
+      "path": "/",
+      "persisted": false,
+      "autenticada": false,
+      "oculta": false
+    }
+  ],
+  "bfcacheNotUsed": [
+    [
+      {
+        "type": "PageSupportNeeded",
+        "reason": "CacheControlNoStoreHTTPOnlyCookieModified"
+      }
+    ],
+    [
+      {
+        "type": "PageSupportNeeded",
+        "reason": "CacheControlNoStoreHTTPOnlyCookieModified"
+      }
+    ],
+    [
+      {
+        "type": "PageSupportNeeded",
+        "reason": "CacheControlNoStoreHTTPOnlyCookieModified"
+      }
+    ],
+    [
+      {
+        "type": "PageSupportNeeded",
+        "reason": "CacheControlNoStoreHTTPOnlyCookieModified"
+      }
+    ],
+    [
+      {
+        "type": "PageSupportNeeded",
+        "reason": "CacheControlNoStoreHTTPOnlyCookieModified"
+      }
+    ],
+    [
+      {
+        "type": "PageSupportNeeded",
+        "reason": "CacheControlNoStoreHTTPOnlyCookieModified"
+      }
+    ],
+    [
+      {
+        "type": "PageSupportNeeded",
+        "reason": "CacheControlNoStoreHTTPOnlyCookieModified"
+      }
+    ],
+    [
+      {
+        "type": "PageSupportNeeded",
+        "reason": "CacheControlNoStoreHTTPOnlyCookieModified"
+      }
+    ],
+    [
+      {
+        "type": "PageSupportNeeded",
+        "reason": "CacheControlNoStoreHTTPOnlyCookieModified"
+      }
+    ]
+  ],
+  "responses": [
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/empresa/gmail",
+      "status": 403,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/admin/empresas/nueva",
+      "status": 403,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/admin/empresas/nueva",
+      "status": 403,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/empresa/gmail",
+      "status": 403,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/empresa/gmail",
+      "status": 403,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/admin/empresas/nueva",
+      "status": 403,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/admin/empresas/nueva",
+      "status": 403,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/empresa/gmail",
+      "status": 403,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/empresa/gmail",
+      "status": 403,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/admin/empresas/nueva",
+      "status": 403,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/nuevo",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/admin/empresas/nueva",
+      "status": 403,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/empresa/gmail",
+      "status": 403,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas/000000000000000000000016",
+      "status": 404,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/000000000000000000000020",
+      "status": 404,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/empresa/usuarios/00000000000000000000000e",
+      "status": 404,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/login",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/panel",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/campanas/000000000000000000000015",
+      "status": 404,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/contactos/00000000000000000000001f",
+      "status": 404,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/empresa/usuarios/00000000000000000000000c",
+      "status": 404,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "fromDiskCache": false,
+      "cacheControl": "no-store"
+    }
+  ],
+  "errors": [],
+  "roles": [
+    "superadmin",
+    "admin_empresa",
+    "operador"
+  ],
+  "widths": [
+    1440,
+    768,
+    390
+  ],
+  "mongoReal": false,
+  "proveedoresReales": false
+}

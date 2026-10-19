@@ -2,16 +2,15 @@
 <html lang="es">
 <head><%- include('../partials/_headInterno') %></head>
 <body class="pagina-admin pagina-interna">
-  <%- include('../partials/_encabezadoAdmin') %>
+  <%- include('../partials/_encabezadoAdmin', { seccionAdmin: 'usuarios' }) %>
   <main id="contenido" tabindex="-1">
     <div class="formulario-pagina">
       <p class="sobrelinea">Administración / Usuarios</p><h1>Nuevo usuario</h1>
-      <% if (errores.length) { %><div class="aviso-error" role="alert"><ul><% for (const error of errores) { %><li><%= error %></li><% } %></ul></div><% } %>
+      <p>Los operadores se crean pendientes de activación explícita desde la tabla. Activarlos exige una empresa habilitada y verificada.</p>
+      <%- include('../partials/_validacionServidor') %>
       <% if (!empresas.length) { %><p class="aviso-error">Primero debes <a href="/admin/empresas/nueva">crear una empresa</a>.</p><% } %>
       <form action="/admin/usuarios" method="post" class="formulario"><%- include('../partials/_csrfSuperadmin') %>
-        <div class="campo"><label for="nombre">Nombre</label><input id="nombre" name="nombre" value="<%= datos.nombre %>" required autocomplete="name"></div>
-        <div class="campo"><label for="email">Email</label><input id="email" name="email" type="email" value="<%= datos.email %>" required autocomplete="email"></div>
-        <div class="campo campo-amplio"><label for="password">Contraseña</label><input id="password" name="password" type="password" required autocomplete="new-password" aria-describedby="ayuda-password"><p id="ayuda-password">Máximo 72 bytes. Si hay un error, vuelve a introducir la contraseña.</p></div>
+        <%- include('../partials/_camposUsuario', { passwordOpcional: false }) %>
         <div class="campo"><label for="rol">Rol</label><select id="rol" name="rol" required><option value="">Selecciona un rol</option><% for (const rol of ['admin_empresa', 'operador']) { %><option value="<%= rol %>" <%= datos.rol === rol ? 'selected' : '' %>><%= rol %></option><% } %></select></div>
         <div class="campo"><label for="empresa">Empresa</label><select id="empresa" name="empresa" required><option value="">Selecciona una empresa</option><% for (const empresa of empresas) { %><option value="<%= empresa._id %>" <%= datos.empresa === String(empresa._id) ? 'selected' : '' %>><%= empresa.nombre %> (<%= empresa.estado %>)</option><% } %></select></div>
         <div class="acciones"><button type="submit" <% if (!empresas.length) { %>disabled<% } %>>Crear usuario</button><a href="/panel">Cancelar</a></div>

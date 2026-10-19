@@ -1,5 +1,7 @@
 # Piloto Gmail: un correo autorizado
 
+El procedimiento vigente para el despacho manual de Nickki Velas en el entorno local existente está en [despacho manual supervisado](gmail-manual-nickki-2026-10-18.md). Las restricciones de infraestructura dedicada descritas abajo siguen aplicando al supervisor y al perfil de piloto anterior; ese supervisor no es necesario para el nuevo despacho desde el navegador.
+
 Actualizacion de infraestructura al cierre: ya existe una instancia nueva y exclusiva en 127.0.0.1:27019, directorio C:\Users\jocam\Documents\marketing-automation-pilot-mongo-rs\data, replica set marketingPilotLocalRs con unico miembro 127.0.0.1:27019, PRIMARY confirmado y solo bases de sistema. Se autorizo su creacion e inicializacion, no el envio de un correo. No volver a crear el directorio ni ejecutar replSetInitiate. Migracion, HTTPS, OAuth y piloto real siguen pendientes de autorizacion y validacion.
 
 Estado: implementado y probado con datos sinteticos; envio real bloqueado por defecto. Ninguna autorizacion real se creo en esta tarea. No se modificaron archivos de entorno, cuentas, tokens, datos existentes ni configuracion MongoDB.

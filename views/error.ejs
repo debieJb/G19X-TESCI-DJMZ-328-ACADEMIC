@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
 <head><%- include('partials/_headInterno') %></head>
-<body class=" pagina-interna">
+<body class="<%= usuarioActual ? 'pagina-interna' : 'pagina-publica pagina-interna' %>">
   <%- include('partials/_encabezado', { seccion: '' }) %>
   <main id="contenido" tabindex="-1" class="pagina-error panel">
     <h1><%= titulo %></h1>
     <p class="aviso-error" role="alert"><%= mensaje %></p>
     <nav aria-label="Navegación">
       <% if (usuarioActual) { %>
-        <a href="/campanas">Volver al listado</a><a href="/panel">Mi panel</a>
+        <a href="/panel">Mi panel</a><a href="/campanas">Volver al listado</a>
       <% } else { %>
         <a href="/login">Iniciar sesión</a><a href="/">Volver al inicio</a>
       <% } %>

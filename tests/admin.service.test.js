@@ -25,7 +25,7 @@ test('adminService: conteos por empresa, agrupaciones, ceros y recursos sin empr
   const antiguas = [{ nombre: 'Antigua sin campo' }, { nombre: 'Antigua null', empresa: null }];
   const copia = JSON.stringify({ usuarios, antiguas });
   t.mock.method(Empresa, 'find', () => consulta(empresas, 'nombre estado'));
-  t.mock.method(Usuario, 'find', () => consulta(usuarios, 'nombre email rol empresa'));
+  t.mock.method(Usuario, 'find', () => consulta(usuarios, 'nombre email rol empresa estadoAcceso'));
   t.mock.method(Campana, 'find', filtro => { assert.deepEqual(filtro, { empresa: null }); return consulta(antiguas, 'nombre canal estado'); });
   for (const [modelo, cantidad] of [[Empresa, 2], [Usuario, 4], [Campana, 5]]) t.mock.method(modelo, 'countDocuments', async () => cantidad);
   for (const [modelo, cantidad] of [[Usuario, 1], [Campana, 3]]) t.mock.method(modelo, 'aggregate', async pipeline => {
@@ -73,7 +73,7 @@ test('adminService: detalle usa filtros, proyecciones y populate real tolerante 
   t.mock.method(Usuario.collection, 'find', (filtro, opciones) => {
     if (filtro.empresa) {
       assert.ok(filtro.empresa.equals(id));
-      assert.deepEqual(opciones.projection, { nombre: 1, email: 1, rol: 1 });
+      assert.deepEqual(opciones.projection, { nombre: 1, email: 1, rol: 1, empresa: 1, estadoAcceso: 1 });
       return { toArray: async () => [{ _id: autor, nombre: 'Autor', rol: 'operador' }] };
     }
     assert.deepEqual(opciones.projection, { nombre: 1 });

@@ -7,7 +7,9 @@ const schema = new mongoose.Schema({
   contenidoHash: { type: String, required: true, match: /^[a-f0-9]{64}$/, immutable: true },
   googleSub: { type: String, required: true, immutable: true, select: false },
   remitente: { type: String, required: true, immutable: true, select: false },
-  total: { type: Number, required: true, min: 1, max: 50 }
+  total: { type: Number, required: true, min: 1, max: 50 },
+  modoMotor: { type: String, enum: ['piloto', 'automatico', 'supervisado'], default: function () { return this.isNew ? 'piloto' : undefined; }, immutable: true },
+  programadaPara: { type: Date, immutable: true }
 }, { timestamps: true, autoCreate: false, autoIndex: false, strict: 'throw' });
 schema.index({ empresa: 1, campana: 1 }, { unique: true });
 schema.index({ empresa: 1, claveHash: 1 }, { unique: true });

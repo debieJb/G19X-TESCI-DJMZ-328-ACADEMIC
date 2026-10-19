@@ -7,6 +7,9 @@ const schema = new mongoose.Schema({
   idempotenciaHash: { ...hash, required: true, immutable: true },
   solicitudHash: { ...hash, required: true, immutable: true },
   tokenHash: hash,
+  enlacesAnteriores: { type: [new mongoose.Schema({ hash: { type: String, required: true, match: /^[a-f0-9]{64}$/ },
+    estado: { type: String, enum: ['sustituido', 'usado'], required: true }, fecha: { type: Date, required: true }
+  }, { _id: false })], select: false, default: undefined },
   expiraEn: Date,
   verificadoEn: Date,
   configuracionSesionHash: hash,
@@ -29,7 +32,7 @@ schema.index({ idempotenciaHash: 1 }, { unique: true });
 schema.index({ tokenHash: 1 }, { unique: true, partialFilterExpression: { tokenHash: { $type: 'string' } } });
 schema.index({ correoEstado: 1, createdAt: 1 });
 const limpiar = (doc, objeto) => {
-  for (const campo of ['tokenHash', 'idempotenciaHash', 'solicitudHash', 'configuracionSesionHash', 'entregaHash']) delete objeto[campo];
+  for (const campo of ['tokenHash', 'idempotenciaHash', 'solicitudHash', 'configuracionSesionHash', 'entregaHash', 'enlacesAnteriores']) delete objeto[campo];
   return objeto;
 };
 schema.set('toJSON', { transform: limpiar }); schema.set('toObject', { transform: limpiar });

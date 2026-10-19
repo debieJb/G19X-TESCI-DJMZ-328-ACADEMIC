@@ -1,14 +1,34 @@
 <% if (!usuarios.length) { %>
   <p class="muted">No hay usuarios registrados</p>
 <% } else { %>
-  <div class="tabla-admin" role="region" aria-label="<%= leyenda %>" tabindex="0"><table>
+  <p class="ayuda-tabla">En pantallas pequeñas, desplaza la tabla horizontalmente para consultar el estado y las acciones.</p>
+  <div class="tabla-admin tabla-usuarios" role="region" aria-label="<%= leyenda %>" tabindex="0"><table>
     <caption><%= leyenda %></caption>
-    <thead><tr><th scope="col">Nombre</th><th scope="col">Email</th><th scope="col">Rol</th></tr></thead>
-    <tbody><% for (const usuario of usuarios) { %>
+    <thead><tr><th scope="col">Nombre</th><th scope="col">Email</th><th scope="col">Rol</th><th scope="col">Empresa</th><th scope="col">Acceso</th><th scope="col">Acciones</th></tr></thead>
+    <tbody><% for (const usuario of usuarios) {
+      const empresaId = usuario.empresa?._id || usuario.empresa;
+      const mismaEmpresa = empresaId && String(empresaId) === String(usuarioActual.empresa?._id);
+      const nombreEmpresa = usuario.empresa?.nombre
+        || (typeof empresaContexto !== 'undefined' ? empresaContexto?.nombre : null)
+        || (mismaEmpresa ? usuarioActual.empresa?.nombre : null)
+        || (empresaId ? 'Empresa: ' + empresaId : 'Sin empresa asignada');
+      const administrar = usuario._id && (usuarioActual.rol === 'superadmin' && ['admin_empresa', 'operador'].includes(usuario.rol)
+        || usuarioActual.rol === 'admin_empresa' && usuario.rol === 'operador' && mismaEmpresa);
+    %>
       <tr><td><%= usuario.nombre %></td><td><%= usuario.email %></td><td>
         <% if (usuario.rol === 'superadmin') { %><span class="numero">Superadministrador</span> <span>superadmin</span>
         <% } else { %><%= usuario.rol %><% if (sinEmpresa) { %><br><span class="muted">Usuario sin empresa asignada</span><% } %><% } %>
-      </td></tr>
+      </td><td><%= nombreEmpresa %></td><td><span class="insignia estado-<%= usuario.estadoAcceso || 'activo' %>"><%= ({activo:'Activo',bloqueado:'Bloqueado',pendiente_verificacion:usuario.rol === 'operador' ? 'Pendiente de activación' : 'Pendiente de verificación'})[usuario.estadoAcceso] || 'Activo (histórico)' %></span></td>
+      <td><% if (administrar) { const base = usuarioActual.rol === 'superadmin' ? '/admin/usuarios' : '/empresa/usuarios'; %>
+      <div class="acciones-usuario"><a href="<%= base %>/<%= usuario._id %>">Consultar <span class="solo-lector"><%= usuario.nombre %></span></a><a href="<%= base %>/<%= usuario._id %>/editar">Editar <span class="solo-lector"><%= usuario.nombre %></span></a>
+      <% if (usuario.estadoAcceso !== 'pendiente_verificacion' || usuario.rol === 'operador') { const activar = ['bloqueado', 'pendiente_verificacion'].includes(usuario.estadoAcceso); const etiqueta = usuario.estadoAcceso === 'pendiente_verificacion' ? 'Activar operador' : activar ? 'Reactivar' : 'Bloquear'; %><form method="post" action="<%= base %>/<%= usuario._id %>/estado">
+      <% if (usuarioActual.rol === 'superadmin') { %><%- include('../partials/_csrfSuperadmin') %><% } else { %><%- include('../partials/_csrfCampana') %><% } %>
+      <input type="hidden" name="estadoAcceso" value="<%= activar ? 'activo' : 'bloqueado' %>">
+      <button class="secundario" type="submit" aria-label="<%= etiqueta %>: <%= usuario.nombre %>"><%= etiqueta %></button></form><% } %>
+      <% if (usuario.rol === 'operador' && usuario.estadoAcceso === 'pendiente_verificacion') { %><form method="post" action="<%= base %>/<%= usuario._id %>/estado">
+      <% if (usuarioActual.rol === 'superadmin') { %><%- include('../partials/_csrfSuperadmin') %><% } else { %><%- include('../partials/_csrfCampana') %><% } %>
+      <input type="hidden" name="estadoAcceso" value="bloqueado"><button class="secundario" type="submit" aria-label="Bloquear: <%= usuario.nombre %>">Bloquear</button></form><% } %></div>
+      <% } %></td></tr>
     <% } %></tbody>
   </table></div>
 <% } %>

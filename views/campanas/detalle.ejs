@@ -9,6 +9,7 @@
       <p class="<%= errorAutomatizacion ? 'aviso-error' : 'panel' %>" role="<%= errorAutomatizacion ? 'alert' : 'status' %>"><%= mensaje %></p>
     <% } %>
     <% if (campana.estado === 'finalizada') { %><p>Esta campaña está finalizada y no puede volver a otro estado.</p><% } %>
+    <% if (campana.estado === 'activa') { %><p class="panel">Activa significa que puedes preparar la revisión. El correo solo se envía después de pulsar Confirmar y enviar. Consulta el historial para comprobar el resultado.</p><% } %>
     <dl class="detalle">
       <div class="objetivo"><dt>Objetivo</dt><dd><%= campana.objetivo %></dd></div>
       <div><dt>Canal</dt><dd><%= campana.canal === 'email' ? 'Correo electrónico (Gmail)' : 'Canal fuera del MVP actual' %></dd></div>
@@ -16,7 +17,7 @@
         <div><dt>Asunto</dt><dd><%= campana.asunto || 'Sin definir' %></dd></div>
         <div class="objetivo"><dt>Mensaje</dt><dd><%= campana.cuerpoTexto || 'Sin definir' %></dd></div>
       <% } %>
-      <div><dt>Estado</dt><dd><span class="insignia estado-<%= campana.estado %>"><%= estados[campana.estado] || 'Sin definir' %></span></dd></div>
+      <div><dt>Estado</dt><dd><span class="insignia estado-<%= campana.estado %>" data-estado-envio="<%= campana._id %>"><%= estados[campana.estado] || 'Sin definir' %></span></dd></div>
       <div><dt>Fecha de inicio</dt><dd><%= formatearFecha(campana.fechaInicio) %></dd></div>
       <div><dt>Fecha de fin</dt><dd><%= formatearFecha(campana.fechaFin) %></dd></div>
       <div><dt>Fecha de creación (UTC)</dt><dd><%= formatearFecha(campana.createdAt) %></dd></div>
@@ -30,11 +31,12 @@
       <button type="button" disabled>Env&#237;o temporalmente bloqueado</button>
     <% } %>
     <nav aria-label="Acciones de campaña">
+      <% if (['borrador', 'activa', 'programada'].includes(campana.estado) && ['admin_empresa', 'operador'].includes(usuarioActual.rol)) { %><a class="boton" data-revisar-envio="<%= campana._id %>" href="/campanas/<%= campana._id %>/enviar"><%= campana.estado === 'borrador' ? 'Activar y preparar envío' : 'Enviar campaña' %></a><% } %>
+      <a href="/campanas/<%= campana._id %>/historial#historial">Ver historial</a>
       <a class="boton editar" href="/campanas/<%= campana._id %>/editar">Editar</a>
-      <% if (campana.estado === 'borrador' && ['admin_empresa', 'operador'].includes(usuarioActual.rol)) { %><a class="boton" href="/campanas/<%= campana._id %>/automatizacion">Configurar automatización</a><% } %>
       <% if (puedeCampana('campanas.eliminar', campana)) { %><a class="boton eliminar" href="/campanas/<%= campana._id %>/eliminar">Eliminar</a><% } %>
       <a href="/campanas">Volver al listado</a>
     </nav>
   </main>
-<%- include('../partials/_piePublico') %></body>
+<script src="/js/estadosCampanas.js" defer></script><%- include('../partials/_piePublico') %></body>
 </html>

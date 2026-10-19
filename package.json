@@ -21,7 +21,8 @@
     "express": "^5.2.1",
     "express-session": "^1.19.0",
     "google-auth-library": "^11.3.0",
-    "mongoose": "^9.10.0"
+    "mongoose": "^9.10.0",
+    "nodemailer": "^10.1.7"
   },
   "devDependencies": {
     "nodemon": "^3.1.14",

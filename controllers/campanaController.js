@@ -160,12 +160,12 @@ const crearCampana = async (req, res) => {
     }
     if (Object.keys(errores).length) return mostrarFormulario(res, datos, errores, '', 422);
     const creada = await Campana.create(valores);
-    if (req.borradorIAValidado && creada?._id) return res.redirect(303, `/campanas/${creada._id}/automatizacion`);
+    if ((req.borradorIAValidado || req.body?.continuar === 'revisar') && creada?._id) return res.redirect(303, `/campanas/${creada._id}/enviar`);
     return res.redirect(303, '/campanas');
   } catch (error) {
     if (error.code === 11000 && req.borradorIAValidado && valores.empresa) {
       const previa = await Campana.findOne({ empresa: valores.empresa, 'asistenciaIA.aprobacionHash': req.borradorIAValidado.asistenciaIA.aprobacionHash }).select('_id').lean();
-      if (previa) return res.redirect(303, `/campanas/${previa._id}/automatizacion`);
+      if (previa) return res.redirect(303, `/campanas/${previa._id}/enviar`);
     }
     return responderErrorFormulario(res, error, datos);
   }
@@ -238,7 +238,7 @@ const actualizarCampana = async (req, res) => {
     // Validar el documento completo, incluso cuando solo cambia fechaInicio.
     await campana.validate();
     await campana.save();
-    return res.redirect(303, `/campanas/${req.params.id}`);
+    return res.redirect(303, `/campanas/${req.params.id}${req.body?.continuar === 'revisar' ? '/enviar' : ''}`);
   } catch (error) {
     if (error.name === 'DocumentNotFoundError') error.status = 404;
     if (error.status === 404) return responderErrorRecurso(res, errorRecurso(404, 'La campaña no existe o fue eliminada.'));

@@ -1,5 +1,7 @@
 # Activación segura de Gemini: revisión pública del 14 de octubre de 2026
 
+Actualización 2026-10-18: se identificó el bloqueo de cuotas y se comprobó una generación auténtica con la clave y el modelo configurados. Consultar el [diagnóstico vigente y la prueba desde el navegador](gemini-nickki-diagnostico-2026-10-18.md). El texto inferior conserva la evidencia histórica de la revisión anterior.
+
 No se utilizaron credenciales en consultas externas, no se generó contenido real y
 no se modificaron .env, facturación, bases de datos ni índices. Los cambios previos
 y el bloqueo universal de envíos se conservan.

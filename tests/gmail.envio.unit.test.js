@@ -8,14 +8,25 @@ const { obtenerPolitica } = require('../config/enviosGmail');
 const { crearMotor } = require('../services/motorEnviosGmailService');
 const empresa = '507f1f77bcf86cd799439011';
 beforeEach(t => {
-  const claves = ['GMAIL_CAMPAIGNS_ENABLED', 'GMAIL_CAMPAIGNS_PILOT_COMPANIES'];
+  const claves = ['GMAIL_CAMPAIGNS_ENABLED', 'GMAIL_CAMPAIGNS_PILOT_COMPANIES', 'GMAIL_CAMPAIGNS_MODE', 'GMAIL_CAMPAIGNS_MAX_RECIPIENTS'];
   const antes = claves.map(k => process.env[k]);
   t.after(() => claves.forEach((k, i) => { if (antes[i] === undefined) delete process.env[k]; else process.env[k] = antes[i]; }));
   delete process.env.GMAIL_CAMPAIGNS_ENABLED; delete process.env.GMAIL_CAMPAIGNS_PILOT_COMPANIES;
+  delete process.env.GMAIL_CAMPAIGNS_MODE; delete process.env.GMAIL_CAMPAIGNS_MAX_RECIPIENTS;
 });
 const mensaje = () => ({ remitente: 'empresa@example.test', destinatario: 'persona@example.test', asunto: 'Información: campaña ágil',
   cuerpoTexto: 'Primera línea\nSegunda línea', mensajeId: randomBytes(32).toString('hex') + '@example.test' });
 const activar = () => { process.env.GMAIL_CAMPAIGNS_ENABLED = 'true'; process.env.GMAIL_CAMPAIGNS_PILOT_COMPANIES = empresa; };
+
+test('automático: un destinatario por defecto y límites inválidos bloqueados', () => {
+  activar(); process.env.GMAIL_CAMPAIGNS_MODE = 'automatico';
+  assert.equal(obtenerPolitica().maxDestinatarios, 1);
+  process.env.GMAIL_CAMPAIGNS_MAX_RECIPIENTS = '50'; assert.equal(obtenerPolitica().maxDestinatarios, 50);
+  for (const valor of ['0', '51', '-1', 'NaN', '2.5', ' 2']) {
+    process.env.GMAIL_CAMPAIGNS_MAX_RECIPIENTS = valor;
+    assert.equal(obtenerPolitica().maxDestinatarios, 0);
+  }
+});
 test('MIME: Unicode, cuerpo base64 y base64url exterior sin destinatarios adicionales', () => {
   const datos = mensaje(), raw = mime.construir(datos), texto = Buffer.from(raw, 'base64url').toString('utf8');
   assert.match(raw, /^[A-Za-z0-9_-]+$/); assert.match(texto, /MIME-Version: 1.0/);

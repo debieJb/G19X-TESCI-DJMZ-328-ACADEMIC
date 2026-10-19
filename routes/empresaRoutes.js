@@ -13,4 +13,9 @@ router.use(require('../middlewares/csrf')({ campo: 'campanaCsrf', permitirCabece
     mensaje: 'Recarga el formulario de usuario antes de continuar.' }) }));
 router.get('/usuarios/nuevo', controller.mostrarUsuarioNuevo);
 router.post('/usuarios', controller.crearOperador);
+const gestion = require('../controllers/usuariosGestionController');
+router.get('/usuarios/:id/editar', gestion.editar);
+router.get('/usuarios/:id', gestion.consultar);
+router.post('/usuarios/:id', gestion.guardar);
+router.post('/usuarios/:id/estado', gestion.estado);
 module.exports = router;

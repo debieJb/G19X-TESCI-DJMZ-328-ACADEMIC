@@ -6,11 +6,12 @@ const URI = 'mongodb://127.0.0.1:27019/marketing_piloto_mvp?replicaSet=marketing
 const validar = () => {
   const manifiesto = require('../config/manifiestoPiloto').cargarManifiesto();
   const config = tlsLocal.configuracion(process.env, manifiesto);
-  if (process.env.MONGODB_URI !== URI || process.env.GMAIL_CAMPAIGNS_ENABLED === 'true' || process.env.AI_ENABLED === 'true') throw Error('ENSAYO_LOCAL_NO_AUTORIZADO');
-  return { manifiesto, config };
+  const uri = process.env.PILOT_PREPARATION_PROFILE === 'gmail' ? require('./prepararEntornoGmailLocal').URI : URI;
+  if (process.env.MONGODB_URI !== uri || process.env.GMAIL_CAMPAIGNS_ENABLED === 'true' || process.env.AI_ENABLED === 'true') throw Error('ENSAYO_LOCAL_NO_AUTORIZADO');
+  return { manifiesto, config, uri };
 };
 const principal = async (args = process.argv.slice(2)) => {
-  const { manifiesto, config } = validar();
+  const { manifiesto, config, uri } = validar();
   if (args.length === 1 && args[0] === '--certificado') return { certificadoLocalValido: true };
   if (args.length === 1 && args[0] === '--web') return tlsLocal.comprobarOrigen(config);
   const estado = args.length === 1 && args[0] === '--estado';
@@ -20,7 +21,7 @@ const principal = async (args = process.argv.slice(2)) => {
   if (!estado && !envio && !preparar && !cola) throw Error('ARGUMENTOS_INVALIDOS');
   if (process.env.TRANSACTIONAL_EMAIL_ENABLED !== (envio ? 'true' : 'false')) throw Error('BANDERA_NO_AUTORIZADA');
   await tlsLocal.comprobarOrigen(config);
-  const conexion = await mongoose.createConnection(URI, { autoCreate: false, autoIndex: false, serverSelectionTimeoutMS: 4000 }).asPromise();
+  const conexion = await mongoose.createConnection(uri, { autoCreate: false, autoIndex: false, serverSelectionTimeoutMS: 4000 }).asPromise();
   let solicitud;
   try {
     const infra = require('../services/infraestructuraPilotoService');

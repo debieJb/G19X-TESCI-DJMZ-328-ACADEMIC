@@ -20,7 +20,7 @@
     <% } %>
     <div class="acciones">
       <% if (configurado && conexion.estado !== 'revocacion_pendiente') { %>
-      <form action="/empresa/gmail/conectar" method="post"><input type="hidden" name="_csrf" value="<%= gmailCsrf %>"><button type="submit"><%= conexion.estado === 'desconectada' ? 'Conectar Gmail' : 'Autorizar de nuevo' %></button></form>
+      <form action="/empresa/gmail/conectar" method="post" class="formulario"><input type="hidden" name="_csrf" value="<%= gmailCsrf %>"><label for="emailGmail">Cuenta Google que deseas autorizar</label><input id="emailGmail" name="email" type="email" autocomplete="email" maxlength="254" value="<%= conexion.email || '' %>" required><p>Debe coincidir con la identidad verificada por Google. No se admiten remitentes arbitrarios ni alias sin verificar.</p><button type="submit"><%= conexion.estado === 'desconectada' ? 'Conectar con Google' : 'Reconectar con Google' %></button></form>
       <% } %>
       <% if (configurado && conexion.estado === 'conectada') { %>
       <form action="/empresa/gmail/renovar" method="post"><input type="hidden" name="_csrf" value="<%= gmailCsrf %>"><button type="submit">Comprobar y renovar autorización</button></form>

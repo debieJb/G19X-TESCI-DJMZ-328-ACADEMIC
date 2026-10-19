@@ -2,11 +2,11 @@
 <html lang="es">
 <head><%- include('../partials/_headInterno') %></head>
 <body class="pagina-admin pagina-interna">
-  <%- include('../partials/_encabezadoAdmin') %>
+  <%- include('../partials/_encabezadoAdmin', { seccionAdmin: 'empresas' }) %>
   <main id="contenido" tabindex="-1">
     <div class="formulario-pagina">
       <p class="sobrelinea">Administración / Empresas</p><h1>Nueva empresa</h1>
-      <% if (errores.length) { %><div class="aviso-error" role="alert"><ul><% for (const error of errores) { %><li><%= error %></li><% } %></ul></div><% } %>
+      <%- include('../partials/_validacionServidor') %>
       <form action="/admin/empresas" method="post" class="formulario"><%- include('../partials/_csrfSuperadmin') %>
         <div class="campo"><label for="nombre">Nombre</label><input id="nombre" name="nombre" value="<%= datos.nombre %>" required></div>
         <div class="campo"><label for="estado">Estado</label><select id="estado" name="estado" required><option value="">Selecciona un estado</option><% for (const estado of ['activa', 'inactiva']) { %><option value="<%= estado %>" <%= datos.estado === estado ? 'selected' : '' %>><%= estado %></option><% } %></select></div>

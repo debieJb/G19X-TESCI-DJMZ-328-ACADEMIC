@@ -16,7 +16,7 @@
       sessionStorage.setItem(nombre, clave);
     }
     campo.value = clave; claveDisponible = true;
-    panel.querySelector('[data-piloto-accion="encolar"] button').disabled = false;
+    panel.querySelector('[name="idempotencia"] ~ button').disabled = panel.dataset.bloqueado === 'true';
   } catch { estado.textContent = 'No se puede conservar la clave de idempotencia. El encolado permanece bloqueado.'; }
   const ejecutar = async (url, datos, accion) => {
     if (ocupado) return;
@@ -33,23 +33,24 @@
         return;
       }
       const data = await res.json();
-      if (accion === 'consultar') {
+      if (accion === 'consultar' || accion === 'despachar') {
         const filas = Array.isArray(data.envios) ? data.envios : [];
         resultado.textContent = filas.length ? filas.map(e => `Envío: ${e._id}\nEstado: ${e.estado}\nCódigo: ${e.codigo || '—'}\nIntentos: ${e.intentos || 0}\nGmail ID: ${e.gmailId || '—'}`).join('\n\n') : 'Sin ejecución registrada.';
       }
       estado.textContent = accion === 'autorizar' ? 'Autorización registrada. Aún no se ha enviado correo.'
         : accion === 'encolar' ? 'Ejecución encolada. El trabajador supervisado debe procesarla; aún no acredita envío.'
+          : accion === 'despachar' ? 'Revisa el estado persistido y confirma recepción en el buzón; no repitas el envío.'
           : accion === 'revocar' ? 'Revocación registrada. No retira mensajes ya enviados o en vuelo.'
             : 'Estado consultado. Aceptado significa aceptación API; confirma recepción en el buzón controlado.';
     } catch { estado.textContent = 'Resultado de la petición desconocido. Consulta el estado antes de actuar. No se reintenta automáticamente.'; }
     finally {
       ocupado = false; botones.forEach(b => { b.disabled = false; });
-      if (!claveDisponible) panel.querySelector('[data-piloto-accion="encolar"] button').disabled = true;
+      if (!claveDisponible || panel.dataset.bloqueado === 'true') panel.querySelector('[name="idempotencia"] ~ button').disabled = true;
     }
   };
   formularios.forEach(form => form.addEventListener('submit', event => {
     event.preventDefault();
-    if (!form.reportValidity() || (form.dataset.pilotoAccion === 'encolar' && !claveDisponible)) return;
+    if (!form.reportValidity() || (['encolar', 'despachar'].includes(form.dataset.pilotoAccion) && !claveDisponible)) return;
     ejecutar(form.action, new URLSearchParams(new FormData(form)), form.dataset.pilotoAccion);
   }));
   panel.querySelector('[data-piloto-consultar]').addEventListener('click', () => ejecutar(`/campanas/${panel.dataset.campana}/gmail/ejecucion`, null, 'consultar'));

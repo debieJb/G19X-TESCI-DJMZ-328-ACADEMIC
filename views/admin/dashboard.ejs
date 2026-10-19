@@ -15,7 +15,7 @@
     </section>
     <section class="seccion-admin" aria-labelledby="empresas"><h2 id="empresas">Empresas</h2>
       <% if (!empresas.length) { %><p class="vacio">No hay empresas registradas</p><% } else { %>
-      <div class="tabla-admin"><table><caption>Empresas y recursos asociados</caption>
+      <div class="tabla-admin" role="region" aria-label="Empresas y recursos asociados" tabindex="0"><table><caption>Empresas y recursos asociados</caption>
         <thead><tr><th scope="col">Nombre</th><th scope="col">Estado</th><th scope="col">Usuarios</th><th scope="col">Campañas</th><th scope="col">Detalle</th></tr></thead>
         <tbody><% for (const empresa of empresas) { %>
           <tr><td><%= empresa.nombre %></td><td><%= empresa.estado %></td><td><%= empresa.totalUsuarios %></td><td><%= empresa.totalCampanas %></td><td><a href="/admin/empresas/<%= empresa._id %>">Ver empresa</a></td></tr>
@@ -26,7 +26,7 @@
       <% if (!empresas.length) { %><p class="muted">No hay empresas registradas</p><% } %>
       <% for (const empresa of empresas) { %><article class="panel grupo-admin">
         <h3><a href="/admin/empresas/<%= empresa._id %>"><%= empresa.nombre %></a></h3>
-        <%- include('_usuarios', { usuarios: empresa.usuarios, sinEmpresa: false, leyenda: 'Usuarios de ' + empresa.nombre }) %>
+        <%- include('_usuarios', { usuarios: empresa.usuarios, empresaContexto: empresa, sinEmpresa: false, leyenda: 'Usuarios de ' + empresa.nombre }) %>
       </article><% } %>
     </section>
     <section class="seccion-admin" aria-labelledby="usuarios-sin-empresa"><h2 id="usuarios-sin-empresa">Usuarios sin empresa</h2>
@@ -39,7 +39,7 @@
     </section><% } %>
     <section class="seccion-admin" aria-labelledby="campanas-sin-empresa"><h2 id="campanas-sin-empresa">Campañas sin empresa</h2>
       <% if (!campanasSinEmpresa.length) { %><p class="muted">No hay campañas registradas sin empresa</p><% } else { %>
-      <div class="tabla-admin"><table><caption>Campañas pendientes de asignación</caption>
+      <div class="tabla-admin" role="region" aria-label="Campañas pendientes de asignación" tabindex="0"><table><caption>Campañas pendientes de asignación</caption>
         <thead><tr><th scope="col">Nombre</th><th scope="col">Canal</th><th scope="col">Estado</th></tr></thead>
         <tbody><% for (const campana of campanasSinEmpresa) { %><tr><td><a href="/campanas/<%= campana._id %>"><%= campana.nombre %></a></td><td><%= campana.canal === 'email' ? 'Correo electrónico (Gmail)' : 'Canal fuera del MVP actual' %></td><td><%= campana.estado %></td></tr><% } %></tbody>
       </table></div><% } %>

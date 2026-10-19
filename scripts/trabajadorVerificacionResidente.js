@@ -11,7 +11,7 @@ const principal = async (args = process.argv.slice(2)) => {
   try {
     const manifiesto = require('../config/manifiestoPiloto').cargarManifiesto();
     const opciones = worker.configuracion();
-    const correo = require('../services/gmailTransaccionalService').crearCorreo(); // Lee cifrado; no llama a Google.
+    const correo = require('../services/smtpTransaccionalService').crearCorreo(); // No conecta SMTP hasta despachar.
     if (process.env.PILOT_LOCAL_HTTPS === 'true') {
       const tls = require('../services/httpsPilotoLocalService');
       if (process.env.TRANSACTIONAL_PUBLIC_ORIGIN !== tls.ORIGEN) throw Error('ORIGEN_LOCAL_NO_COINCIDE');
@@ -33,7 +33,7 @@ const principal = async (args = process.argv.slice(2)) => {
 };
 if (require.main === module) principal().then(r => console.log(JSON.stringify(r))).catch(e => {
   const bloqueado = ['REAUTORIZAR_TRANSACCIONAL', 'CONFIGURACION_TRANSACCIONAL', 'CREDENCIAL_TRANSACCIONAL_INVALIDA',
-    'ACTIVACION_TRANSACCIONAL_REQUERIDA', 'INDICES_REQUERIDOS', 'DESTINO_PILOTO_NO_COINCIDE',
+    'CONFIGURACION_SMTP', 'ORIGEN_SMTP_INVALIDO', 'ACTIVACION_TRANSACCIONAL_REQUERIDA', 'INDICES_REQUERIDOS', 'DESTINO_PILOTO_NO_COINCIDE',
     'ORIGEN_LOCAL_NO_COINCIDE', 'LIMITES_TRABAJADOR_INVALIDOS', 'TRANSPORTE_NO_CONFIGURADO'].includes(e.codigo || e.message);
   console.error(bloqueado ? 'TRABAJADOR_BLOQUEADO_CONFIGURACION_O_AUTORIZACION' : 'TRABAJADOR_INTERRUMPIDO_ESTADO_PERSISTIDO');
   process.exitCode = bloqueado ? 78 : 1;

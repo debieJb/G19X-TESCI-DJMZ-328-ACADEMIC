@@ -1,5 +1,31 @@
 # Plataforma Inteligente de Marketing Automation
 
+## Entrega PluriOne
+
+MVP de campañas email con creación manual o Gemini, Gmail OAuth por empresa y
+envío múltiple supervisado. El flujo actual es crear → elegir contactos → revisar
+→ activar y preparar → confirmar → consultar resultados individuales.
+Véase [envío múltiple supervisado](docs/envio-multiple-supervisado.md) para límites,
+configuración, seguridad y prueba controlada.
+
+El responsable del proyecto confirmó pruebas reales de Gmail y Gemini. La
+validación automatizada de esta entrega utiliza proveedores simulados: 851 pruebas
+generales, 65 integraciones y recorridos de navegador en escritorio y móvil.
+La aceptación de Gmail y la recepción en el buzón son comprobaciones diferentes.
+No se incluyen cuentas, credenciales, datos de MongoDB ni registros locales.
+
+Para reproducir: instalar Node.js 24 y MongoDB; ejecutar `npm ci`; copiar
+`.env.example` a un `.env` privado y completar los valores propios. La plantilla
+mantiene proveedores y trabajadores apagados. Ejecutar `npm test` para la suite
+general. La aplicación se inicia con `npm start` una vez configuradas sus
+dependencias, incluido el origen transaccional local. Las integraciones requieren
+un replica set de desarrollo separado y las guardias descritas más abajo.
+
+Los manifiestos de `infra/` describen exclusivamente entornos loopback de
+desarrollo, sin secretos ni bases de datos. No sustituyen la configuración privada
+de MongoDB/OAuth. La publicación del código no habilita trabajadores ni autoriza
+envíos. La documentación de jornadas anteriores conserva su contexto histórico.
+
 [Renovación del frontend público, acceso y registro](docs/frontend-publico.md):
 pantallas, controles, revisión visual en navegador y resultados de validación local.
 
@@ -9,26 +35,31 @@ OAuth independiente, credencial cifrada, trabajador supervisado de una solicitud
 guía para una prueba real posterior. Login incorpora CSRF y límites persistentes;
 index, acceso y registro comparten una interfaz adaptable. El transporte permanece apagado.
 
-MVP con Node.js 24, Express, EJS y MongoDB/Mongoose para automatización de campañas **exclusivamente por correo electrónico**. Incluye empresas, contactos, consentimiento, seguridad, autoservicio, Gmail OAuth, asistencia con IA y métricas. **No está declarado listo ni apto para publicación: falta completar la auditoría de seguridad y las validaciones reales.**
+MVP con Node.js 24, Express, EJS y MongoDB/Mongoose para automatización de campañas **exclusivamente por correo electrónico**. Incluye empresas, contactos, consentimiento, seguridad, autoservicio, Gmail OAuth, asistencia con IA y métricas. La entrega del código no acredita un despliegue productivo ni sustituye la configuración de TLS, sesiones e infraestructura de cada instalación.
 
 Facebook, WhatsApp y LinkedIn quedan fuera de esta versión por decisión de alcance. No son errores de implementación ni pendientes para aprobar este MVP. Los requisitos multicanal originales de PluriOne se conservan como antecedentes; **su modificación formal no tiene aprobación confirmada**. Los campos, contratos y pruebas negativas heredados no habilitan esos canales.
 
-La fuente documental vigente es [Alcance actual del MVP](docs/alcance-mvp-actual.md), con matriz de implementación, pruebas, validación real y pendientes. No se encontraron PRD ni SDD oficiales identificables en el repositorio; [PRD técnico](docs/PRD-borrador-tecnico.md) y [SDD técnico](docs/SDD-borrador-tecnico.md) son borradores sin aprobación, no sustitutos de documentos oficiales desconocidos.
+El [alcance inicial del MVP](docs/alcance-mvp-actual.md) conserva la matriz de la etapa anterior. El flujo de envío más reciente se documenta en [envío múltiple supervisado](docs/envio-multiple-supervisado.md). [PRD técnico](docs/PRD-borrador-tecnico.md) y [SDD técnico](docs/SDD-borrador-tecnico.md) son borradores técnicos.
 
 ## Qué está implementado y qué se ha validado
 
 | Área | Implementación | Validación y límite actual |
 |---|---|---|
 | Campañas email | CRUD, borradores manuales/asistidos y preparación empresarial. | Pruebas de permisos, estados, CSRF y aislamiento. Registrar fechas no acredita un scheduler operativo. |
-| Gmail empresarial | OAuth con state de un uso, PKCE, nonce, identidad verificada, cifrado y renovación controlada. | Pruebas con Google simulado; autorización, renovación y revocación reales pendientes. |
-| Motor Gmail API | MIME/base64url y POST directo a users/me/messages/send, persistencia por destinatario, idempotencia, cuotas, reservas y estados inciertos. | Gmail **no tiene envíos reales ni recepción validados**. Envío deshabilitado por defecto y piloto no autorizado. |
+| Gmail empresarial | OAuth con state de un uso, PKCE, nonce, identidad verificada, cifrado y renovación controlada. | Conexión y envío reales confirmados; cobertura simulada de renovación, revocación y fallos. |
+| Motor Gmail API | MIME/base64url, mensajes individuales, persistencia por destinatario, idempotencia, cuotas, reservas y estados inciertos. | Envío múltiple supervisado probado; ejecución real previa conservada. Envíos apagados en la plantilla de configuración. |
 | Autoservicio | Solicitud, enlace de verificación y solo después configuración del administrador y contraseña; login posterior. | Pruebas unitarias/HTTP y evidencia previa de integración aislada. Proveedor transaccional real pendiente de configurar y autorizar; independiente del Gmail empresarial. |
 | Contactos y consentimiento | CRUD propio, registro/revocación con evidencia, autor, fecha e historial; revocación al cambiar email. | Pruebas de concurrencia y aislamiento; no acredita autenticidad de evidencias externas. El historial se pierde si se elimina el contacto. |
-| IA | Asistente y adaptador Gemini, privacidad, cuotas, aprobación humana y guardado de borrador. | **Gemini carece de validación real**. Pruebas simuladas no acreditan proveedor, cuotas o calidad real. |
+| IA | Asistente y adaptador Gemini, privacidad, cuotas, aprobación humana y guardado de borrador. | Generación real confirmada por el responsable; pruebas simuladas de privacidad, cuotas y flujo. |
 | Métricas | Conteos administrativos de empresas/usuarios/campañas y estados técnicos de envío por destinatario. | **Aperturas, clics y rebotes no están acreditados**. Las métricas siguen vigentes; faltan definición de aceptación e instrumentación/validación correspondiente. |
 | Seguridad y sesiones | Roles, aislamiento, CSRF, bcrypt, cifrado y almacén MongoDB persistente para arranque validado. | Pruebas locales; TLS/proxy real, auditoría, rotación, retención y operación aún pendientes. |
 
-## Envío Gmail: camino actual y bloqueos
+## Envío Gmail: piloto histórico y compatibilidad
+
+Los párrafos de esta sección describen el piloto original de un destinatario.
+El modo actual `supervisado` permite contactos específicos, todos o etiquetas,
+con selección fijada antes de confirmar y sin trabajador automático. No cambiar
+únicamente el límite del piloto antiguo: ese modo permanece unitario.
 
 El motor utiliza **Gmail API directamente**, con la cuenta autorizada de la empresa persistida. No depende de n8n ni delega a un workflow el uso de sus tokens. El remitente debe coincidir con el correo autorizado; no se acepta un From arbitrario del cliente.
 

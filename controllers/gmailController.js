@@ -27,7 +27,9 @@ const mostrar = async (req, res) => {
 };
 const conectar = async (req, res) => {
   try {
-    const url = await service.iniciar(res.locals.usuarioActual, req.sessionID);
+    const email = req.body?.email;
+    if (email !== undefined && (typeof email !== 'string' || !require('../services/elegibilidadEmailService').emailValido(email.trim().toLowerCase()))) throw new ErrorGmail('IDENTIDAD');
+    const url = await service.iniciar(res.locals.usuarioActual, req.sessionID, email?.trim().toLowerCase());
     await guardarSesion(req);
     res.redirect(303, url);
   } catch (error) { await responderError(req, res, error); }
@@ -40,6 +42,8 @@ const callback = async (req, res) => {
     await guardarSesion(req);
     res.redirect(303, '/empresa/gmail');
   } catch (error) {
+    // completar() ya registra su propia etapa; aquí solo diagnosticar errores de sesión posteriores.
+    if (!(error instanceof ErrorGmail)) require('../services/diagnosticoGmailOAuthService').registrar('CALLBACK_SESION', error);
     const seguro = error instanceof ErrorGmail ? error : new ErrorGmail('GOOGLE');
     req.session.gmailError = seguro.codigo;
     try { await guardarSesion(req); res.redirect(303, '/empresa/gmail/resultado'); }

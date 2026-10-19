@@ -1,3 +1,5 @@
+const { passwordValida, mensajePassword } = require('../services/passwordService');
+const { estadoAlta } = require('../services/usuariosGestionService');
 const Empresa = require('../models/Empresa');
 const Usuario = require('../models/Usuario');
 const adminService = require('../services/adminService');
@@ -56,12 +58,15 @@ const crearUsuario = async (req, res, next) => {
   if (!datos.nombre) errores.push('El nombre es obligatorio.');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.email)) errores.push('Introduce un email válido.');
   if (!['admin_empresa', 'operador'].includes(datos.rol)) errores.push('Selecciona admin_empresa u operador.');
-  if (typeof password !== 'string' || !password.trim() || Buffer.byteLength(password, 'utf8') > 72) errores.push('Introduce una contraseña de entre 1 y 72 bytes.');
+  if (!passwordValida(password)) errores.push(mensajePassword);
   if (!idValido(datos.empresa)) errores.push('Selecciona una empresa válida.');
   try {
     if (idValido(datos.empresa) && !(await Empresa.exists({ _id: datos.empresa }))) errores.push('La empresa seleccionada no existe.');
     if (errores.length) return await formularioUsuario(res, datos, errores, 422);
-    await Usuario.create({ nombre: datos.nombre, email: datos.email, rol: datos.rol, empresa: datos.empresa, password });
+    const estadoEmpresa = await estadoAlta(datos.empresa);
+    const estadoAcceso = datos.rol === 'operador' ? 'pendiente_verificacion' : estadoEmpresa;
+    await Usuario.create({ nombre: datos.nombre, email: datos.email, rol: datos.rol, empresa: datos.empresa, password, estadoAcceso });
+    req.session.avisoOperacion = datos.rol === 'operador' ? 'Operador creado pendiente de activación explícita desde la tabla.' : estadoAcceso === 'activo' ? 'Usuario creado correctamente.' : 'Usuario creado pendiente de verificación empresarial.';
     return res.redirect(303, `/admin/empresas/${datos.empresa}`);
   } catch (error) {
     if (error.code === 11000 || error.name === 'ValidationError') {
@@ -116,3 +121,29 @@ const guardarAutomatizaciones = async (req, res, next) => {
 };
 module.exports.mostrarAutomatizaciones = mostrarAutomatizaciones;
 module.exports.guardarAutomatizaciones = guardarAutomatizaciones;
+
+const editarEmpresa = async (req, res, next) => {
+  if (!idValido(req.params.id)) return errorRecurso(res, 400);
+  try {
+    const empresa = await Empresa.findById(req.params.id).select('nombre estado');
+    if (!empresa) return errorRecurso(res, 404);
+    res.render('admin/empresaEditar', { ...baseVista('Editar empresa'), empresa, errores: [] });
+  } catch (e) { next(e); }
+};
+const actualizarEmpresa = async (req, res, next) => {
+  if (!idValido(req.params.id)) return errorRecurso(res, 400);
+  try {
+    const empresa = await Empresa.findById(req.params.id).select('nombre estado');
+    if (!empresa) return errorRecurso(res, 404);
+    const nombre = texto(req.body?.nombre), estado = texto(req.body?.estado);
+    if (!nombre || !['activa', 'inactiva'].includes(estado)) return res.status(422).render('admin/empresaEditar', {
+      ...baseVista('Editar empresa'), empresa, errores: ['Introduce un nombre y un estado válidos.']
+    });
+    empresa.nombre = nombre; empresa.estado = estado;
+    await empresa.save();
+    req.session.avisoOperacion = 'Empresa actualizada correctamente.';
+    res.redirect(303, `/admin/empresas/${empresa._id}`);
+  } catch (e) { next(e); }
+};
+module.exports.editarEmpresa = editarEmpresa;
+module.exports.actualizarEmpresa = actualizarEmpresa;

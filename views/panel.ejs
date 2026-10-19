@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head><%- include('partials/_headInterno') %></head>
-<body class="pagina-publica pagina-interna">
+<body class="pagina-interna">
   <%- include('partials/_navegacionInterna', { seccion: 'panel' }) %>
   <main id="contenido" tabindex="-1">
     <h1>Bienvenido, <%= usuarioActual.nombre %></h1>
@@ -11,7 +11,6 @@
       <div><dt>Rol</dt><dd><%= usuarioActual.rol %></dd></div>
       <% if (usuarioActual.empresa) { %><div><dt>Empresa</dt><dd><%= usuarioActual.empresa.nombre %></dd></div><% } %>
     </dl>
-    <form action="/logout" method="post"><%- include('partials/_csrfLogout') %><button type="submit">Cerrar sesión</button></form>
   </main>
   <%- include('partials/_piePublico') %>
 </body>

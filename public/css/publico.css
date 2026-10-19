@@ -1,10 +1,9 @@
 ﻿/* Sistema de diseño claro PluriOne. Recursos locales y mejora progresiva. */
-:root {
-  color-scheme:light;
-  --fondo:#f7f9fc; --panel:#fff; --borde:#dfe5ef; --texto:#142744;
-  --muted:#56657b; --acento:#6240b6; --sombra:0 12px 36px #1427440a;
-  --azul:#142c54; --violeta:#6740b6; --suave:#f1f4fb; --radio:18px;
-}
+html.sesion-en-transicion body { visibility:hidden; }
+.identidad-publica { display:flex; gap:.65rem; align-items:center; font-size:.8rem; max-width:270px; }
+.datos-identidad { min-width:0; overflow-wrap:anywhere; }
+.datos-identidad small { display:block; color:var(--muted); }
+.avatar-interno { display:grid; place-items:center; flex-shrink:0; background:#eee9f8; color:#51349b; width:40px; height:40px; border-radius:50%; font-weight:750; }
 .pagina-publica .encabezado-publico form.salida-admin { padding:0; margin:0; border:0; background:transparent; box-shadow:none; }
 :is(.pagina-publica,.pagina-empresa) { background:var(--fondo); color:var(--texto); font-family:ui-sans-serif,"Segoe UI",Arial,sans-serif; -webkit-font-smoothing:antialiased; }
 :is(.pagina-publica,.pagina-empresa) [hidden] { display:none !important; }

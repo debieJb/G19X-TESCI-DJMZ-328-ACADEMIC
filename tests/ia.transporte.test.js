@@ -15,6 +15,7 @@ test('Gemini: petición REST fija, clave en cabecera, sin herramientas, redirect
     const req = JSON.parse(options.body); assert.equal(req.tools, undefined);
     assert.deepEqual(JSON.parse(req.contents[0].parts[0].text), contexto());
     assert.equal(req.generationConfig.responseMimeType, 'application/json');
+    assert.equal(req.generationConfig.temperature, undefined);
     return new Response(JSON.stringify(body()));
   });
   assert.deepEqual(await proveedor.crear(config).generar(contexto()), salida);
@@ -38,7 +39,7 @@ test('Gemini: estados de error son seguros y no reintenta llamadas', async t => 
 });
 
 test('Gemini: JSON inválido, bloqueos, truncamiento y functionCall se rechazan', async t => {
-  for (const data of ['no-json', JSON.stringify({ promptFeedback: { blockReason: 'SAFETY' } }),
+  for (const data of ['null', 'no-json', JSON.stringify({ promptFeedback: { blockReason: 'SAFETY' } }),
     JSON.stringify({ candidates: [{ finishReason: 'MAX_TOKENS' }] }),
     JSON.stringify({ candidates: [{ finishReason: 'STOP', content: { parts: [{ functionCall: { name: 'enviar' } }] } }] })]) {
     const fetch = t.mock.method(global, 'fetch', async () => new Response(data));

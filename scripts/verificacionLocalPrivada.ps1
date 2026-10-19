@@ -1,9 +1,10 @@
 param(
-  [Parameter(Mandatory=$true)][ValidateSet('Preparar','Web','Comprobar','Cola','Estado','PrepararUnCorreo','EnviarUnCorreo','Trabajador')][string]$Accion,
+  [Parameter(Mandatory=$true)][ValidateSet('Preparar','Web','Comprobar','Cola','Estado','PrepararUnCorreo','EnviarUnCorreo','Trabajador','PrepararGmail','WebGmail','DiagnosticoGmail')][string]$Accion,
   [switch]$ConfiarCertificadoLocal,
   [ValidatePattern('^[a-f0-9]{24}$')][string]$Solicitud,
   [switch]$AutorizarUnCorreo,
-  [switch]$AutorizarEnviosAutomaticos
+  [switch]$AutorizarEnviosAutomaticos,
+  [switch]$PerfilGmail
 )
 $ErrorActionPreference='Stop'
 $projectRoot=(Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -95,6 +96,13 @@ try{
     try{$bytes=[Text.Encoding]::UTF8.GetBytes($cipher);$stream.Write($bytes,0,$bytes.Length)}finally{$stream.Dispose()}
   }
   $stage='CONFIGURACION_PRIVADA';Assert-Acl $root;$config=Read-Dpapi $configFile;Load-WebEnvironment $config
+  if($PerfilGmail -or $Accion -in @('PrepararGmail','WebGmail','DiagnosticoGmail')){
+    Set-PrivateEnv 'PILOT_PREPARATION_PROFILE' 'gmail'
+    Set-PrivateEnv 'MONGODB_URI' 'mongodb://127.0.0.1:27019/marketing_gmail_preparacion_local?replicaSet=marketingPilotLocalRs'
+    Set-PrivateEnv 'GOOGLE_OAUTH_REDIRECT_URI' 'https://localhost:3100/empresa/gmail/callback'
+    Set-PrivateEnv 'GMAIL_CAMPAIGNS_MODE' 'automatico'
+    Set-PrivateEnv 'GMAIL_CAMPAIGNS_PILOT_COMPANIES' ''
+  }
   Invoke-Check '--certificado'
   $cert=New-Object Security.Cryptography.X509Certificates.X509Certificate2($certFile)
   $trustedPath='Cert:\CurrentUser\Root\'+$cert.Thumbprint
@@ -104,7 +112,12 @@ try{
   }
   if($Accion -eq 'Preparar'){
     Write-Host 'ORIGEN_LOCAL_PREPARADO: certificado localhost, confianza solo del usuario y claves nuevas del piloto protegidas. Sin envios.'
-  }elseif($Accion -eq 'Web'){
+  }elseif($Accion -in @('PrepararGmail','DiagnosticoGmail')){
+    $mode=if($Accion -eq 'PrepararGmail'){'--preparar'}else{'--diagnostico'}
+    & $node '--env-file=.env' (Join-Path $PSScriptRoot 'prepararEntornoGmailLocal.js') $mode
+    if($LASTEXITCODE -ne 0){throw 'DIAGNOSTICO_GMAIL_RECHAZADO'}
+    if($Accion -eq 'DiagnosticoGmail'){Invoke-Check '--web'}
+  }elseif($Accion -in @('Web','WebGmail')){
     $stage='WEB_HTTPS'
     & $node '--env-file=.env' (Join-Path $PSScriptRoot 'iniciarWebPiloto.js')
     if($LASTEXITCODE -ne 0){throw 'ARRANQUE_LOCAL_RECHAZADO'}
@@ -123,13 +136,10 @@ try{
     }else{Invoke-Check '--estado'}
   }else{
     # Solo esta accion, con el switch explicito, puede alcanzar Google en una prueba futura.
-    $stage='CREDENCIAL_TRANSACCIONAL'
-    $gmailRoot=Join-Path $env:LOCALAPPDATA 'PluriOne\marketing-automation\gmail-transaccional'
-    Assert-Acl $gmailRoot;$gmail=Read-Dpapi (Join-Path $gmailRoot 'config.dpapi')
-    foreach($property in $gmail.PSObject.Properties){if($property.Name -like 'TRANSACTIONAL_*'){Set-PrivateEnv $property.Name ([string]$property.Value)}}
+    $stage='CONFIGURACION_SMTP_TRANSACCIONAL'
     Set-PrivateEnv 'TRANSACTIONAL_PUBLIC_ORIGIN' 'https://localhost:3100';Set-PrivateEnv 'TRANSACTIONAL_EMAIL_ENABLED' 'false'
-    & $node '--env-file=.env' (Join-Path $PSScriptRoot 'comprobarGmailTransaccional.js') '--credencial'
-    if($LASTEXITCODE -ne 0){throw 'CREDENCIAL_INVALIDA'}
+    & $node '--env-file=.env' '-e' "try { require('./services/smtpTransaccionalService').configuracion(); console.log('SMTP_CONFIGURADO_SIN_CONECTAR'); } catch { console.error('CONFIGURACION_SMTP_INVALIDA'); process.exitCode=1; }"
+    if($LASTEXITCODE -ne 0){throw 'CONFIGURACION_SMTP_INVALIDA'}
     Invoke-Check '--web'
     Set-PrivateEnv 'TRANSACTIONAL_EMAIL_ENABLED' 'true'
     if($Accion -eq 'Trabajador'){

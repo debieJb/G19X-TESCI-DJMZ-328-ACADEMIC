@@ -15,11 +15,20 @@ crearSesion.configurarProxy(app, opcionesSesion);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(require('./middlewares/cacheDinamica'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
 app.use(crearSesion(opcionesSesion));
 app.use(cargarUsuario);
+app.use((req, res, next) => {
+  res.locals.avisoOperacion = '';
+  if (req.method === 'GET' && res.locals.usuarioActual && req.session.avisoOperacion) {
+    res.locals.avisoOperacion = req.session.avisoOperacion;
+    delete req.session.avisoOperacion;
+  }
+  next();
+});
 app.use('/registro', require('./routes/registroPublicoRoutes'));
 app.use(require('./middlewares/csrfSuperadmin'));
 app.use(require('./middlewares/csrfCampanas'));
@@ -46,7 +55,7 @@ app.use((error, req, res, next) => {
   const mensajes = {
     403: 'No tienes permiso para esta acción o no tienes una empresa válida.',
     400: 'La solicitud no tiene un formato válido.',
-    404: 'La campaña no existe o fue eliminada.',
+    404: 'El recurso no existe o no está disponible para tu empresa.',
     413: 'La solicitud supera el tamaño permitido.',
     503: 'La base de datos no está disponible. Intenta de nuevo más tarde.',
     500: 'Ocurrió un error inesperado. Intenta de nuevo más tarde.'
