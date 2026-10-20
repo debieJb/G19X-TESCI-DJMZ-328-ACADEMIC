@@ -5,6 +5,8 @@ const Usuario = require('../../models/Usuario');
 
 // Sesión real en MemoryStore; la autenticación del login tiene su propia suite.
 const crearContexto = (t, usuario, { csrf = true } = {}) => {
+  // Los recorridos HTTP de esta fixture no consultan ejecuciones en MongoDB real.
+  t.mock.method(require('../../models/EjecucionGmail').collection, 'findOne', async () => null);
   const secret = 'secreto-exclusivo-fixture-multiempresa';
   const store = new session.MemoryStore();
   const app = require('../../app').crearApp({ secret, store });

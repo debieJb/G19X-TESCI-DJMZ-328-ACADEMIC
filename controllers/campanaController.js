@@ -188,8 +188,37 @@ const consultarCampana = (vista, titulo) => async (req, res, next) => {
     const mensaje = vista === 'detalle' && req.query.automatizacion === 'enviada'
       ? 'Solicitud enviada a la automatización. Esto confirma la recepción, no la finalización del flujo.' : '';
     const resumenDestinatarios = vista === 'detalle' ? await destinatariosService.resumenCampana(campana) : null;
+    let resultadosEnvio = null;
+    if (vista === 'detalle' && campana.canal === 'email' && campana.empresa) {
+      try {
+        const empresa = campana.empresa._id || campana.empresa;
+        // Solo lectura después de buscarCampana: última ejecución, con desempate estable.
+        const ejecucion = await require('../models/EjecucionGmail').findOne({ empresa, campana: campana._id })
+          .sort({ createdAt: -1, _id: -1 }).select('_id').lean();
+        resultadosEnvio = { sinEjecucion: !ejecucion, intentados: 0, aceptados: 0, rechazados: 0, cancelados: 0, inciertos: 0 };
+        if (ejecucion) {
+          const envios = await require('../models/EnvioGmail').find({ empresa, ejecucion: ejecucion._id })
+            .sort({ updatedAt: -1, _id: -1 }).select('emailHash estado intentos').lean();
+          // Un correo único por huella: estado del registro más reciente y cualquier intento.
+          const destinatarios = new Map();
+          for (const envio of envios) {
+            const previo = destinatarios.get(envio.emailHash);
+            if (previo) previo.intentado ||= envio.intentos > 0;
+            else destinatarios.set(envio.emailHash, { estado: envio.estado, intentado: envio.intentos > 0 });
+          }
+          for (const destinatario of destinatarios.values()) {
+            if (destinatario.intentado) resultadosEnvio.intentados++;
+            const indicador = { aceptado: 'aceptados', rechazado: 'rechazados', cancelado: 'cancelados', incierto: 'inciertos' }[destinatario.estado];
+            if (indicador) resultadosEnvio[indicador]++;
+          }
+        }
+      } catch {
+        // Una métrica no disponible no cambia la respuesta ni el recorrido de la campaña.
+        resultadosEnvio = null;
+      }
+    }
     return res.render(`campanas/${vista}`, { titulo, campana, canales, estados, formatearFecha, mensaje, errorAutomatizacion: false,
-      resumenDestinatarios,
+      resumenDestinatarios, resultadosEnvio,
       mensajeCanal: automatizacionService.mensajeCanalNoDisponible(campana.canal) });
   } catch (error) {
     if ([400, 403, 404].includes(error.status)) return responderErrorRecurso(res, error);

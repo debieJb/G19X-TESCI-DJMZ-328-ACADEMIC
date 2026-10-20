@@ -24,6 +24,26 @@
       <div><dt>Última actualización (UTC)</dt><dd><%= formatearFecha(campana.updatedAt) %></dd></div>
     </dl>
     <% if (campana.canal === 'email') { %><%- include('_resumenDestinatarios') %><% } %>
+    <% if (campana.canal === 'email') { %>
+      <section class="panel" aria-label="Resultados de envío">
+        <h2>Resultados de envío</h2>
+        <% if (typeof resultadosEnvio === 'undefined' || !resultadosEnvio) { %>
+          <p>Resultados no disponibles en esta consulta.</p>
+        <% } else if (resultadosEnvio.sinEjecucion) { %>
+          <p>Esta campaña todavía no tiene ejecuciones de envío registradas.</p>
+        <% } else { %>
+          <p>Última ejecución registrada. Cada dirección se cuenta una sola vez; los reintentos no aumentan el número de destinatarios. Si hay registros duplicados, se utiliza su estado más reciente.</p>
+          <dl class="detalle">
+            <div><dt>Destinatarios con intento registrado</dt><dd><%= resultadosEnvio.intentados %></dd></div>
+            <div><dt>Aceptados por Gmail</dt><dd><%= resultadosEnvio.aceptados %></dd></div>
+            <div><dt>Rechazados</dt><dd><%= resultadosEnvio.rechazados %></dd></div>
+            <div><dt>Cancelados</dt><dd><%= resultadosEnvio.cancelados %></dd></div>
+            <div><dt>Inciertos</dt><dd><%= resultadosEnvio.inciertos %></dd></div>
+          </dl>
+          <p>La aceptación por Gmail no acredita recepción. Cancelados e inciertos se muestran por separado; un resultado incierto requiere conciliación.</p>
+        <% } %>
+      </section>
+    <% } %>
     <% if (mensajeCanal) { %>
       <p class="panel" role="status"><%= mensajeCanal %></p>
     <% } else if (campana.estado === 'activa' && campana.versionFlujo !== 2 && !campana.asistenciaIA && !campana.automatizacion) { %>
