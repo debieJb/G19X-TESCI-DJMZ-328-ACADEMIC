@@ -1,5 +1,136 @@
 # Plataforma Inteligente de Marketing Automation - PluriOne
 
+## Instalación
+
+Estos pasos describen una instalación local de desarrollo desde la raíz del
+repositorio. Los comandos de sistema usan PowerShell. No sustituyen la
+preparación de infraestructura propia; las limitaciones verificadas se indican
+en los pasos correspondientes.
+
+1. **Preparar los requisitos.** Instalar Node.js **24**, npm y MongoDB. Los
+   scripts locales existentes buscan MongoDB **8.2** en Windows. Comprobar las
+   herramientas con `node --version` y `npm --version`.
+   El servidor valida la topología transaccional durante el arranque del
+   autoservicio empresarial, incluso con los envíos deshabilitados: se requiere
+   un replica set con PRIMARY y sesiones, o una topología sharded compatible.
+   Una instancia standalone no satisface ese requisito. Para desarrollo puede
+   utilizarse un replica set de un miembro.
+
+2. **Instalar las dependencias fijadas en el repositorio.** Desde la carpeta
+   que contiene `package.json` y `package-lock.json`, ejecutar:
+
+   ```powershell
+   npm ci
+   ```
+
+3. **Crear la configuración privada sin sobrescribirla.** Solo si `.env` no
+   existe, copiar la plantilla pública:
+
+   ```powershell
+   if (!(Test-Path -LiteralPath .env)) {
+       Copy-Item -LiteralPath .env.example -Destination .env
+   }
+   ```
+
+   Editar `.env` localmente. No versionarlo ni compartir sus valores.
+
+4. **Completar las variables de la aplicación.** La plantilla no contiene
+   credenciales utilizables; configurar valores propios:
+
+   | Variables | Uso y requisito |
+   |---|---|
+   | `NODE_ENV`, `PORT` | Usar `development` y `3000` para el recorrido local descrito. |
+   | `MONGODB_URI` | URI de la base propia en la topología transaccional preparada; incluir el nombre de base y el replica set correspondiente. La URI standalone de la plantilla debe sustituirse para este arranque. |
+   | `SESSION_SECRET` | Secreto aleatorio privado y estable, necesario para iniciar sesiones; no dejar vacío. |
+   | `SUPERADMIN_NOMBRE`, `SUPERADMIN_EMAIL`, `SUPERADMIN_PASSWORD` | Datos propios utilizados únicamente al ejecutar el alta administrativa; email válido y contraseña de hasta 72 bytes UTF-8. |
+
+   Para preparar la aplicación sin proveedores externos, conservar
+   `GMAIL_CAMPAIGNS_ENABLED=false`, `AI_ENABLED=false`,
+   `TRANSACTIONAL_EMAIL_ENABLED=false` y `TRANSACTIONAL_WORKER_ENABLED=false`.
+   No seleccionar el modo Gmail `automatico` para este recorrido.
+
+5. **Preparar MongoDB con los scripts existentes, según el entorno.**
+   `scripts/iniciarMongoDevRs.ps1` inicia el replica set `marketingDevRs` en
+   el puerto 27018 y llama a `scripts/verificarMongoDevRs.js --inicializar`.
+   En el entorno original ya preparado, con el proceso de 27018 detenido:
+
+   ```powershell
+   .\scripts\iniciarMongoDevRs.ps1
+   ```
+
+   **Este script no es un instalador portable:** exige el ejecutable en
+   `C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe`, directorios y
+   referencias históricas locales, y la instancia standalone original en
+   27017 sin cambios. Su opción `-Preparar` crea directorios y captura una
+   referencia inicial, pero sigue dependiendo de esas comprobaciones; no debe
+   presentarse como solución automática para otra máquina. En otro equipo,
+   un administrador debe aprovisionar primero un replica set propio y ajustar
+   `MONGODB_URI` a ese destino, sin alterar los guardias de los scripts.
+
+   `scripts/iniciarMongoPilotoLocal.ps1` sirve para arrancar el piloto existente
+   en 27019: exige sus datos previos y no inicializa una instalación nueva.
+   Al ejecutar `npm run dev`, el servidor inicializa las colecciones e índices
+   del autoservicio mediante el servicio existente; por ello el usuario de
+   MongoDB necesita los permisos correspondientes. Los índices de los modos
+   Gmail tienen preparación adicional: consultar el
+   [manual técnico](docs/entrega/manual-tecnico.md) antes de habilitarlos.
+   Los scripts específicos de migración no son un paso general de instalación.
+
+6. **Revisar la creación del superadministrador antes de utilizarla.** Existe
+   el comando:
+
+   ```powershell
+   npm run crear-superadmin
+   ```
+
+   Ejecuta `scripts/crearSuperadmin.js`, carga `.env`, crea el usuario con
+   contraseña almacenada como hash bcrypt y no modifica un email existente.
+   **Limitación verificada:** el script no establece `estadoAcceso`, cuyo
+   valor predeterminado en el modelo es `pendiente_verificacion`; el login
+   rechaza estados distintos de `activo`. Por tanto, en una base nueva este
+   comando no garantiza una cuenta con acceso. No hay en este recorrido un
+   paso validado de activación inicial: resolver ese requisito con el
+   responsable antes de utilizar el alta. No modificar directamente la base
+   ni omitir controles para completar la instalación.
+
+7. **Iniciar la aplicación de desarrollo.** Con MongoDB preparado y las
+   variables completadas:
+
+   ```powershell
+   npm run dev
+   ```
+
+   El comando ejecuta `nodemon server.js`. Esperar el mensaje de arranque;
+   si falla la validación de topología o índices, revisar el diagnóstico y
+   el manual técnico antes de continuar.
+
+8. **Abrir la aplicación.** Acceder a <http://localhost:3000> si se mantiene
+   `PORT=3000`, valor de la plantilla y predeterminado del servidor. Si se
+   configura otro puerto, utilizar ese puerto. La disponibilidad de la web
+   no acredita acceso administrativo ni activación de proveedores externos.
+
+9. **Configurar las integraciones solo cuando se necesiten.** No son
+   necesarias para iniciar la web con los proveedores deshabilitados:
+
+   | Integración | Configuración y alcance |
+   |---|---|
+   | SMTP de plataforma | Necesario para completar el registro con verificación por correo real. Utiliza `EMAIL_USER`, `EMAIL_PASS` (contraseña de aplicación), `TRANSACTIONAL_PUBLIC_ORIGIN` y `TRANSACTIONAL_EMAIL_ENABLED`; el trabajador tiene habilitación independiente. En desarrollo local, el origen debe coincidir con `http://localhost:3000` si ese es el puerto elegido. Es independiente del Gmail empresarial. |
+   | Gmail OAuth/API | Necesario para conectar la cuenta empresarial y enviar campañas reales. Requiere `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_OAUTH_REDIRECT_URI` registrado y `GMAIL_TOKEN_ENCRYPTION_KEY` de 32 bytes codificados en base64, además de OAuth por empresa e índices y políticas del modo elegido. `GMAIL_CAMPAIGNS_ENABLED`, `GMAIL_CAMPAIGNS_MODE`, límites y empresas permitidas controlan el envío. |
+   | IA con Gemini | Opcional para crear contenido asistido; la creación manual no la necesita. Revisar `AI_ENABLED`, `AI_PROVIDER`, `AI_MODEL`, `GEMINI_API_KEY`, `AI_FREE_TIER_CONFIRMED` y el backend de cuotas indicado en el manual técnico. Tener una clave no acredita gratuidad ni disponibilidad del modelo. |
+   | n8n | No es requisito del motor Gmail directo. `N8N_WEBHOOK_URL` y `N8N_WEBHOOK_TIMEOUT_MS` pertenecen a contratos históricos bloqueados; rellenarlas no activa un flujo ni habilita transporte. |
+
+   Mantener los envíos y trabajadores apagados hasta contar con autorización
+   expresa y preparación del entorno. Estas instrucciones no afirman que
+   Gmail, SMTP, Gemini o n8n estén activos en una instalación nueva.
+
+10. **Reconocer el uso de asistentes de IA.** Durante el desarrollo se utilizó
+    OpenAI Codex como apoyo en programación, depuración, implementación,
+    pruebas y revisión documental, y ChatGPT en planificación, revisión
+    técnica y documentación. La autora conserva la responsabilidad de
+    revisar, comprender y validar el trabajo. Gemini es además una integración
+    del producto para proponer contenido sujeto a revisión humana. Consultar
+    la [declaración de autoría y uso de IA](docs/entrega/autoria-ia.md).
+
 MVP desarrollado y funcional para campañas **email** con registro empresarial
 verificado, roles, aislamiento multiempresa, contactos y consentimiento, creación
 manual o Gemini, Gmail OAuth/API y envío múltiple supervisado con resultados por
