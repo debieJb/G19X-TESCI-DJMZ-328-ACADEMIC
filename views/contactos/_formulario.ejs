@@ -2,12 +2,12 @@
 <form class="formulario" action="<%= accion %>" method="post"><%- include('../partials/_csrfSuperadmin') %>
 <%- include('../partials/_csrfContactos') %>
 <fieldset class="campo"><legend>Consentimiento de marketing</legend>
-<p>Registrar una decision requiere evidencia del titular. No pegues credenciales, enlaces privados ni tokens. Habilitar el canal no concede consentimiento.</p>
+<p>Registrar una decisión requiere evidencia del titular. No pegues credenciales, enlaces privados ni tokens. Habilitar el canal no concede consentimiento.</p>
 <p>Estado actual: <%= datos.consentimientoMarketing?.estado || 'sin registro' %>.</p>
-<label for="accionConsentimiento">Accion</label><select id="accionConsentimiento" name="accionConsentimiento"><option value="conservar">Conservar sin otorgar</option><option value="otorgar">Registrar consentimiento otorgado</option><option value="revocar">Registrar revocacion</option></select>
+<label for="accionConsentimiento">Acción</label><select id="accionConsentimiento" name="accionConsentimiento"><option value="conservar">Conservar sin otorgar</option><option value="otorgar">Registrar consentimiento otorgado</option><option value="revocar">Registrar revocación</option></select>
 <label for="fechaConsentimiento">Fecha del otorgamiento (con zona horaria)</label><input id="fechaConsentimiento" name="fechaConsentimiento" placeholder="AAAA-MM-DDTHH:mm:ssZ">
-<label for="fuenteConsentimiento">Referencia de evidencia o motivo de revocacion</label><input id="fuenteConsentimiento" name="fuenteConsentimiento" maxlength="300">
-<label><input type="checkbox" name="confirmarConsentimiento" value="true">Confirmo que la decision indicada y su evidencia corresponden al titular de este email.</label>
+<label for="fuenteConsentimiento">Referencia de evidencia o motivo de revocación</label><input id="fuenteConsentimiento" name="fuenteConsentimiento" maxlength="300">
+<label><input type="checkbox" name="confirmarConsentimiento" value="true">Confirmo que la decisión indicada y su evidencia corresponden al titular de este email.</label>
 </fieldset>
 <% if (accion === '/contactos' && usuarioActual.rol === 'superadmin') { %>
 <div class="campo"><label for="empresa">Empresa propietaria</label><select id="empresa" name="empresa" required><option value="">Selecciona una empresa</option><% for (const empresa of empresasDisponibles) { %><option value="<%= empresa._id %>" <%= String(empresa._id) === datos.empresa ? 'selected' : '' %>><%= empresa.nombre %></option><% } %></select></div>

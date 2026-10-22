@@ -15,6 +15,10 @@ const usuarioSchema = new mongoose.Schema({
   rol: { type: String, required: true, enum: ROLES },
   estadoAcceso: { type: String, enum: ['pendiente_verificacion', 'activo', 'bloqueado'],
     default: function () { return this.isNew ? 'pendiente_verificacion' : undefined; } },
+  // Ausencia en cuentas históricas equivale a cero; bloquear incrementa la
+  // versión para invalidar también sesiones que no se usaron durante el bloqueo.
+  versionSesion: { type: Number, min: 0, validate: Number.isSafeInteger,
+    default: function () { return this.isNew ? 0 : undefined; } },
   emailVerificadoEn: Date,
   empresa: {
     type: mongoose.Schema.Types.ObjectId,

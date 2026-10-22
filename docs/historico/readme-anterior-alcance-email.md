@@ -1,3 +1,5 @@
+> **Antecedente histórico conservado.** Sus pendientes y decisiones pertenecen a una etapa anterior; consulte el [expediente final](../entrega/indice-entrega.md) para el MVP implementado y sus evidencias.
+
 # Antecedente historico del README
 
 Contenido conservado literalmente antes de la revision de alcance email. No es el estado vigente ni una guia actual de ejecucion: contiene etapas, contratos y restricciones superados. Las referencias a conectar otros canales no son compromisos del MVP actual. La modificacion formal de los requisitos originales de PluriOne no esta confirmada. Consultar [alcance vigente](../alcance-mvp-actual.md) y [README actual](../../README.md).
@@ -10,13 +12,13 @@ Contenido conservado literalmente antes de la revision de alcance email. No es e
 
 El administrador empresarial puede entrar a `/empresa/gmail` desde su panel para conectar, consultar, renovar o desconectar una cuenta real de Google mediante OAuth. Los tokens se guardan cifrados y separados por empresa, con protección CSRF, state de un solo uso, PKCE y verificación de identidad. Si falta configuración, la pantalla lo informa sin simular una conexión. La conexión todavía no realiza envíos ni cambia n8n.
 
-Consulta [gmail-oauth.md](docs/gmail-oauth.md) para configurar Google Cloud, las variables privadas, las pruebas manuales y los límites de despliegue. Esta etapa conserva las campañas, contactos y controles de aislamiento anteriores.
+Consulta [gmail-oauth.md](../gmail-oauth.md) para configurar Google Cloud, las variables privadas, las pruebas manuales y los límites de despliegue. Esta etapa conserva las campañas, contactos y controles de aislamiento anteriores.
 
 ## Seguridad multiempresa: etapa 1
 
 Las ejecuciones consultan el estado persistido de la empresa y bloquean empresas inactivas, incluso para superadmin. Las relaciones de campaña no se transfieren una vez asignadas; las campañas históricas conservan sus datos. Email excluye contactos con `canales.email === false`; los documentos sin el campo conservan su elegibilidad histórica. Esta habilitación técnica no acredita consentimiento de marketing.
 
-En producción los webhooks requieren HTTPS y un origen autorizado: el origen global administrado si no hay lista, o exclusivamente los orígenes de `N8N_WEBHOOK_ORIGENES_PERMITIDOS` cuando se define. Desarrollo conserva HTTP local. La política, compatibilidad y límites se detallan en [seguridad-multiempresa-etapa1.md](docs/seguridad-multiempresa-etapa1.md).
+En producción los webhooks requieren HTTPS y un origen autorizado: el origen global administrado si no hay lista, o exclusivamente los orígenes de `N8N_WEBHOOK_ORIGENES_PERMITIDOS` cuando se define. Desarrollo conserva HTTP local. La política, compatibilidad y límites se detallan en [seguridad-multiempresa-etapa1.md](../seguridad-multiempresa-etapa1.md).
 
 ## Contactos por empresa
 

@@ -1,0 +1,32 @@
+<% const seleccionEnvio = typeof evaluacion !== 'undefined' ? evaluacion.validos : contactos.filter(c => (campana.destinatarios?.contactos || []).some(id => String(id) === String(c._id))); %>
+<section class="panel envio-campana" data-supervisado="<%= typeof supervisado !== 'undefined' && supervisado ? 'true' : 'false' %>" data-destinatarios="<%= typeof revisionDestinatarios !== 'undefined' ? revisionDestinatarios : '' %>" data-revision="<%= typeof revisionEnvio !== 'undefined' ? revisionEnvio : '' %>" data-envio-campana="<%= campana._id %>" data-bloqueado="<%= bloqueosEnvio.length ? 'true' : 'false' %>">
+  <h2>Revisar y enviar</h2>
+  <dl class="detalle">
+    <div><dt>Empresa</dt><dd><%= usuarioActual.empresa?.nombre || 'Empresa de la campaña' %></dd></div>
+    <div><dt>Remitente</dt><dd><%= estado.correoAutorizado || 'Conecta el Gmail de tu empresa' %></dd></div>
+    <div><dt>Destinatarios autorizados</dt><dd><%= seleccionEnvio.length %></dd></div>
+  </dl>
+  <ul><% for (const contacto of seleccionEnvio) { %><li><%= contacto.nombre %> — <%= contacto.email %></li><% } %></ul>
+  <p>Revisa el asunto y el mensaje de arriba antes de continuar.</p>
+  <% if (bloqueosEnvio.length) { %><div data-motivos-bloqueo role="status"><h3>Qué falta para enviar</h3><ul><% for (const mensaje of bloqueosEnvio) { %><li><%= mensaje %></li><% } %></ul><a href="#preparar-envio">Seleccionar contactos y preparar</a> · <a href="/empresa/gmail">Conectar Gmail</a></div><% } %>
+  <button type="button" data-abrir-envio disabled>Enviar campaña</button>
+  <dialog data-confirmacion-envio aria-labelledby="titulo-confirmar-envio">
+    <h2 id="titulo-confirmar-envio">Confirmar envío de campaña</h2>
+    <p>Se enviará desde <strong><%= estado.correoAutorizado %></strong> a <strong><%= seleccionEnvio.length %> <%= seleccionEnvio.length === 1 ? 'destinatario' : 'destinatarios' %></strong>:</p>
+    <ul><% for (const contacto of seleccionEnvio) { %><li><%= contacto.email %></li><% } %></ul>
+    <h3><%= campana.asunto %></h3><pre class="mensaje-campana"><%= campana.cuerpoTexto %></pre>
+    <p>Al confirmar autorizas este envío. No podrás repetirlo desde esta campaña.</p>
+    <form data-enviar-campana>
+      <%- include('_csrfCampana') %>
+      <div class="acciones"><button type="button" data-cancelar-envio>Volver a revisar</button><button type="submit">Confirmar y enviar</button></div>
+    </form>
+  </dialog>
+  <button type="button" data-continuar-envio hidden>Continuar destinatarios pendientes</button>
+  <p role="status" aria-live="polite" data-estado-campana>Consultando el historial de la campaña…</p>
+  <section aria-labelledby="titulo-historial-envio"><h3 id="titulo-historial-envio">Historial de envíos</h3>
+    <div data-historial-campana></div>
+    <button type="button" class="secundario" data-actualizar-historial>Actualizar historial</button>
+  </section>
+  <noscript>Activa JavaScript para consultar el historial y confirmar el envío de forma segura.</noscript>
+</section>
+<script src="/js/envioCampanaManual.js" defer></script>

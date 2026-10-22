@@ -8,6 +8,7 @@ const schema = new mongoose.Schema({
   verifierCifrado: { type: String, required: true, select: false },
   clienteOAuthHash: { type: String, required: true },
   versionConexion: { type: Number, required: true },
+  emailEsperado: { type: String, lowercase: true, trim: true, maxlength: 254 },
   expiraEn: { type: Date, required: true }
 }, { timestamps: true });
 schema.index({ hash: 1 }, { unique: true });

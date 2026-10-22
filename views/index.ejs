@@ -9,7 +9,7 @@
         <p class="sobrelinea"><span class="punto-marca" aria-hidden="true"></span> Tu marketing, con dirección</p>
         <h1 id="titulo-inicio">De una buena idea<br> a una campaña<br> <span>bien preparada.</span></h1>
         <p class="intro">Conecta tus contactos, tus mensajes y tu equipo en un espacio de trabajo diseñado para tu empresa.</p>
-        <div class="acciones"><a class="boton" href="/registro">Registrar empresa <span aria-hidden="true">↗</span></a><a class="boton secundario" href="/login">Iniciar sesión</a></div>
+        <div class="acciones"><% if (usuarioActual) { %><a class="boton" href="/panel">Ir a mi panel <span aria-hidden="true">↗</span></a><% } else { %><a class="boton" href="/registro">Registrar empresa <span aria-hidden="true">↗</span></a><a class="boton secundario" href="/login">Iniciar sesión</a><% } %></div>
         <p class="nota-disponibilidad">Prepara y revisa tus campañas. El envío real por correo y Gemini están pendientes de activación y validación.</p>
       </div>
       <div class="producto-ilustrado" role="img" aria-label="Vista ilustrativa del dashboard: campañas en borrador, contactos con consentimiento y revisión humana. No contiene datos ni métricas reales.">
@@ -40,7 +40,7 @@
       <ol class="recorrido-publico"><li><span>01</span><h3>Registra tu empresa</h3><p>Indica su nombre y el correo que utilizarás para acceder.</p></li><li><span>02</span><h3>Verifica y configura</h3><p>Confirma un enlace válido y configura tu administrador y contraseña.</p></li><li><span>03</span><h3>Prepara tu campaña</h3><p>Inicia sesión y organiza contactos, consentimiento y contenido.</p></li></ol>
       <p class="nota-disponibilidad">El correo transaccional sigue pendiente de activación. Solicitar el registro no confirma que se haya enviado un mensaje.</p>
     </section>
-    <section class="cierre-publico" aria-labelledby="titulo-empezar"><div><p class="sobrelinea">Un mejor punto de partida</p><h2 id="titulo-empezar">Pon tus ideas en movimiento.</h2><p>Empieza por crear el espacio de tu empresa.</p></div><a class="boton" href="/registro">Registrar empresa <span aria-hidden="true">↗</span></a></section>
+    <section class="cierre-publico" aria-labelledby="titulo-empezar"><div><p class="sobrelinea">Un mejor punto de partida</p><h2 id="titulo-empezar">Pon tus ideas en movimiento.</h2><p><%= usuarioActual ? 'Continúa en tu espacio de trabajo.' : 'Empieza por crear el espacio de tu empresa.' %></p></div><a class="boton" href="<%= usuarioActual ? '/panel' : '/registro' %>"><%= usuarioActual ? 'Ir a mi panel' : 'Registrar empresa' %> <span aria-hidden="true">↗</span></a></section>
   </main>
   <%- include('partials/_piePublico') %>
 </body>

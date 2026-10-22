@@ -1,5 +1,8 @@
 # Cierre tecnico de jornada - 2026-10-15
 
+> **Contexto histórico — edición final 19/10/2026.** El contenido original siguiente se conserva como informe o referencia de su etapa. Las cifras, configuraciones y afirmaciones de proveedores «pendientes» describen aquella jornada, no el estado final del MVP. Gmail y Gemini fueron comprobados con servicios reales; registro/verificación y envío múltiple reales están confirmados por la responsable. El [expediente vigente](entrega/indice-entrega.md) y el [registro de evidencia](entrega/evidencias-validacion.md) distinguen pruebas simuladas, comprobaciones reales y aceptación formal. Los controles técnicos siguen sujetos al código; los procedimientos históricos no autorizan ejecutar servicios ni campañas.
+
+
 ## Alcance y estado operativo
 
 Se conserva el trabajo del proyecto: seguridad y fixtures efimeras, autoservicio empresarial transaccional, Gmail OAuth por empresa, motor persistente, autorizacion temporal de un intento, consentimiento, sesiones persistentes, pruebas aisladas e infraestructura/documentacion. No se elimina trabajo previo ni se reescribe historial.

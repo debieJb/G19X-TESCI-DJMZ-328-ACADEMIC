@@ -16,6 +16,9 @@ test('transporte Google: canje real de biblioteca con timeout, sin retries ni re
     assert.equal(opciones.retry, false); assert.equal(opciones.maxRedirects, 0);
     assert.equal(opciones.data.get('grant_type'), 'authorization_code');
     assert.equal(opciones.data.get('code_verifier'), 'verifier-solo-pruebas');
+    assert.equal(opciones.data.get('client_id'), google.configuracion().clientId);
+    assert.equal(opciones.data.get('client_secret'), google.configuracion().clientSecret);
+    assert.equal(opciones.data.get('redirect_uri'), google.configuracion().redirectUri);
     return { data: { access_token: 'token-solo-pruebas', expires_in: 3600 }, headers: new Headers() };
   });
   const cliente = google.crearCliente(google.configuracion());

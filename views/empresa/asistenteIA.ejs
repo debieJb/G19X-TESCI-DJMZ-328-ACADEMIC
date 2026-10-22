@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title><%= titulo %></title><link rel="stylesheet" href="/css/styles.css"></head>
-<body class="pagina-admin"><%- include('../partials/_encabezado', { seccion: 'ia' }) %>
+<head><%- include('../partials/_headInterno') %></head>
+<body class="pagina-admin pagina-interna"><%- include('../partials/_encabezado', { seccion: 'ia' }) %>
 <main id="contenido" tabindex="-1"><h1>Asistente de campañas con IA</h1>
 <p>Prepara una propuesta en español y revísala antes de guardarla como borrador.</p>
 <% if (!disponible) { %><p class="aviso-error" role="status">Generación real deshabilitada: falta configurar y autorizar un proveedor de IA. No se mostrará una respuesta simulada.</p><% } %>
@@ -9,7 +9,7 @@
 <form method="post" action="/empresa/ia/generar" class="formulario">
 <input type="hidden" name="_csrf" value="<%= iaCsrf %>">
 <div class="campo campo-amplio"><label for="nombreCampana">Nombre de campaña</label><input id="nombreCampana" name="nombreCampana" maxlength="100" required value="<%= datos.nombreCampana || '' %>"></div>
-<div class="campo campo-amplio"><label for="imagenArchivo">Imagen opcional (PNG simple de 8 bits, máximo 48 KiB y 1024 × 1024, no entrelazada)</label><input type="file" id="imagenArchivo" accept="image/png" disabled><input type="hidden" id="imagen" name="imagen" value=""><noscript>La carga opcional requiere JavaScript.</noscript><p id="imagenEstado" role="status">La imagen se conserva localmente en el borrador; no se envía a Gemini ni como correo.</p></div>
+<div class="campo campo-amplio"><label for="imagenArchivo">Imagen opcional (PNG simple de 8 bits, máximo 48 KiB y 1024 × 1024, no entrelazada)</label><input type="file" id="imagenArchivo" accept="image/png" aria-describedby="imagenEstado" disabled><button type="button" id="quitarImagen" aria-controls="imagenArchivo imagen imagenEstado" hidden>Quitar imagen</button><input type="hidden" id="imagen" name="imagen" value=""><noscript>La carga opcional requiere JavaScript.</noscript><p id="imagenEstado" role="status">La imagen se conserva localmente en el borrador; no se envía a Gemini ni como correo.</p></div>
 <div class="campo campo-amplio"><label for="instrucciones">&#191;Qu&#233; campa&#241;a quieres crear?</label><textarea id="instrucciones" name="instrucciones" rows="10" maxlength="4000" required placeholder="Quiero una promoci&#243;n con un tono elegante. Respeta exactamente este descuento..."><%= datos.instrucciones || '' %></textarea></div>
 <div class="campo campo-amplio"><label for="indicacionesAdicionales">Indicaciones adicionales (opcional)</label><textarea id="indicacionesAdicionales" name="indicacionesAdicionales" rows="4" maxlength="1500"><%= datos.indicacionesAdicionales || '' %></textarea></div>
 <div class="campo campo-amplio"><label for="textoProtegido">Texto original intocable (opcional): se conservar&#225; literalmente en el mensaje</label><textarea id="textoProtegido" name="textoProtegido" rows="5" maxlength="1500"><%= datos.textoProtegido || '' %></textarea></div>

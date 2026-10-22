@@ -7,6 +7,9 @@ const schema = new mongoose.Schema({
   idempotenciaHash: { ...hash, required: true, immutable: true },
   solicitudHash: { ...hash, required: true, immutable: true },
   tokenHash: hash,
+  enlacesAnteriores: { type: [new mongoose.Schema({ hash: { type: String, required: true, match: /^[a-f0-9]{64}$/ },
+    estado: { type: String, enum: ['sustituido', 'usado'], required: true }, fecha: { type: Date, required: true }
+  }, { _id: false })], select: false, default: undefined },
   expiraEn: Date,
   verificadoEn: Date,
   configuracionSesionHash: hash,
@@ -19,14 +22,17 @@ const schema = new mongoose.Schema({
   proximoEnvioEn: { type: Date, required: true },
   entregaHash: hash,
   entregaHasta: Date,
-  versionEnvio: { type: Number, default: 0 }
+  versionEnvio: { type: Number, default: 0 },
+  correoError: { type: String, enum: ['TRABAJADOR_INTERRUMPIDO', 'REAUTORIZAR_TRANSACCIONAL',
+    'GMAIL_TRANSACCIONAL_RECHAZADO', 'ENTREGA_CANCELADA', 'ENTREGA_INCIERTA', 'PROVEEDOR_RECHAZADO'] },
+  proveedorMensajeId: { type: String, match: /^[a-zA-Z0-9_-]{1,128}$/ }
 }, { timestamps: true, strict: 'throw', autoIndex: false, autoCreate: false });
 schema.index({ correo: 1 }, { unique: true });
 schema.index({ idempotenciaHash: 1 }, { unique: true });
 schema.index({ tokenHash: 1 }, { unique: true, partialFilterExpression: { tokenHash: { $type: 'string' } } });
 schema.index({ correoEstado: 1, createdAt: 1 });
 const limpiar = (doc, objeto) => {
-  for (const campo of ['tokenHash', 'idempotenciaHash', 'solicitudHash', 'configuracionSesionHash', 'entregaHash']) delete objeto[campo];
+  for (const campo of ['tokenHash', 'idempotenciaHash', 'solicitudHash', 'configuracionSesionHash', 'entregaHash', 'enlacesAnteriores']) delete objeto[campo];
   return objeto;
 };
 schema.set('toJSON', { transform: limpiar }); schema.set('toObject', { transform: limpiar });

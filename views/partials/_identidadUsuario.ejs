@@ -1,0 +1,3 @@
+<% const identidad = usuarioActual; %>
+<span class="avatar-interno" aria-hidden="true"><%= identidad.nombre?.slice(0,1).toUpperCase() || 'P' %></span>
+<span class="datos-identidad"><strong><%= identidad.nombre %></strong><small><%= ({superadmin:'Superadministrador',admin_empresa:'Administrador de empresa',operador:'Operador'})[identidad.rol] || 'Usuario' %></small><% if (identidad.empresa?.nombre) { %><small><%= identidad.empresa.nombre %></small><% } %></span>

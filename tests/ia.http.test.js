@@ -25,8 +25,10 @@ beforeEach(t => {
   t.mock.method(Empresa, 'findById', () => ({ select: () => ({ lean: async () => empresa }) }));
   t.mock.method(Contacto, 'find', filtro => {
     assert.equal(String(filtro.empresa), A);
-    return { select: () => ({ sort: () => ({ lean: async () => [] }) }) };
+    return { select: () => ({ lean: async () => [], sort: () => ({ lean: async () => [] }) }) };
   });
+  for (const n of ['EjecucionGmail', 'AutorizacionPilotoGmail']) t.mock.method(require('../models/' + n), 'findOne', () => ({ lean: async () => null }));
+  for (const n of ['EnvioGmail', 'ControlEnvioGmail']) t.mock.method(require('../models/' + n), 'exists', async () => null);
   generar = t.mock.fn(async () => propuesta());
   t.mock.method(proveedores, 'disponible', () => habilitado);
   t.mock.method(proveedores, 'crear', () => { if (!habilitado) throw new ErrorIA('DESHABILITADA'); return { nombre: 'Proveedor simulado solo para pruebas', generar }; });
@@ -36,7 +38,7 @@ beforeEach(t => {
     partialFilterExpression: { 'asistenciaIA.aprobacionHash': { $type: 'string' } } }] }));
   guardar = t.mock.method(Campana, 'create', async valores => { await new Campana(valores).validate(); return {}; });
 });
-const token = async () => (await cliente.get('/empresa/ia').expect(200)).text.match(/name="_csrf" value="([A-Za-z0-9_-]{43})"/)[1];
+const token = async () => (await cliente.get('/empresa/ia').expect(200)).text.match(/<form method="post" action="\/empresa\/ia\/generar"[^>]*>[\s\S]*?name="_csrf" value="([A-Za-z0-9_-]{43})"/)[1];
 const crearPropuesta = async (cambios = {}) => {
   const csrf = await token();
   const respuesta = await cliente.post('/empresa/ia/generar').type('form').send({ _csrf: csrf, ...datos(), ...cambios }).expect(200);
@@ -44,6 +46,50 @@ const crearPropuesta = async (cambios = {}) => {
 };
 const borrador = p => ({ _csrf: p.csrf, ticket: p.ticket, nombre: 'Borrador revisado', objetivo: 'Presentar producto', asunto: 'Asunto revisado',
   mensaje: 'Mensaje revisado por la persona.', llamadaAccion: 'Solicita información', segmentacion: 'Sugerencia sin aplicar' });
+
+test('IA HTTP: diagnóstico protegido refleja el proceso web y no consume cuota ni genera', async t => {
+  const comprobar = t.mock.method(require('../services/ia/arranqueIA'), 'comprobar', async empresaId => {
+    assert.equal(empresaId, A); return { backend: 'piloto_local', entorno: 'development', pid: process.pid, cuotasVerificadas: true };
+  });
+  await request(app).get('/empresa/ia/diagnostico').expect(302);
+  const r = await cliente.get('/empresa/ia/diagnostico').expect(200).expect('Cache-Control', 'no-store');
+  assert.equal(r.body.backend, 'piloto_local'); assert.equal(r.body.pid, process.pid);
+  assert.equal(comprobar.mock.callCount(), 1); assert.equal(generar.mock.callCount(), 0);
+  usuario.rol = actor.rol = 'operador';
+  await cliente.get('/empresa/ia/diagnostico').expect(403);
+  assert.equal(comprobar.mock.callCount(), 1);
+});
+
+test('IA HTTP: cuotas sin configurar muestran causa local y nunca llaman Gemini ni guardan', async t => {
+  t.mock.method(limites, 'consumir', async () => { throw new ErrorIA('PROVEEDOR'); });
+  const respuesta = await cliente.post('/empresa/ia/generar').send({ _csrf: await token(), ...datos() }).expect(503);
+  assert.match(respuesta.text, /control de cuotas no está disponible/);
+  assert.match(respuesta.text, /No se llamó a Gemini/);
+  assert.equal(generar.mock.callCount(), 0); assert.equal(guardar.mock.callCount(), 0);
+});
+
+test('Nickki Velas: una propuesta se aprueba como borrador editable sin destinatarios ni envío', async t => {
+  let documento;
+  guardar.mock.mockImplementation(async valores => { documento = new Campana(valores); await documento.validate(); return documento; });
+  t.mock.method(Campana, 'findOne', async filtro => documento && String(filtro._id) === String(documento._id) && String(filtro.empresa) === A ? documento : null);
+  t.mock.method(require('../models/ConexionGmail'), 'findOne', () => ({ select: () => ({ lean: async () => null }) }));
+  generar.mock.mockImplementation(async () => ({ asunto: 'Conoce Nickki Velas', mensaje: 'Descubre nuestra colección de velas.', llamadaAccion: 'Conoce la colección', segmentacion: ['Personas interesadas en velas con consentimiento'] }));
+  const csrf = await token();
+  const propuesta = await cliente.post('/empresa/ia/generar').send({ _csrf: csrf, nombreCampana: 'Nickki Velas | Propuesta IA',
+    producto: 'Nickki Velas', instrucciones: 'Presenta Nickki Velas con tono cálido. No inventes descuentos.', confirmacionPrivacidad: 'CONFIRMO' }).expect(200);
+  const ticket = propuesta.text.match(/name="ticket" value="([A-Za-z0-9_-]{43})"/)[1];
+  assert.equal(guardar.mock.callCount(), 0);
+  const guardada = await cliente.post('/empresa/ia/borrador').send({ _csrf: csrf, ticket,
+    nombre: 'Nickki Velas | Propuesta revisada', objetivo: 'Presentar la colección', asunto: 'Descubre Nickki Velas',
+    mensaje: 'Mensaje revisado por el administrador.', llamadaAccion: 'Conoce la colección', segmentacion: 'Personas interesadas en velas con consentimiento' }).expect(303);
+  await cliente.get(guardada.headers.location).expect(200);
+  const edicion = await cliente.get(`/campanas/${documento._id}/editar`).expect(200);
+  assert.match(edicion.text, /Descubre Nickki Velas/);
+  assert.equal(documento.estado, 'borrador'); assert.equal(documento.destinatarios, undefined);
+  assert.equal(documento.asistenciaIA.segmentacion.length, 1);
+  assert.equal(guardar.mock.callCount(), 1); assert.equal(generar.mock.callCount(), 1);
+  assert.equal(global.fetch.mock.callCount(), 0);
+});
 
 test('IA HTTP: formulario empresarial, privacidad, CSRF y respuestas no cacheables', async () => {
   const res = await cliente.get('/empresa/ia').expect(200).expect('Cache-Control', 'no-store').expect('Referrer-Policy', 'no-referrer');
@@ -166,6 +212,16 @@ test('IA flujo: crear campaña ofrece manual o asistida y captura nombre e image
   assert.match(pagina.text, /Creación manual/); assert.match(pagina.text, /Creación asistida por IA/);
   const asistente = await cliente.get('/empresa/ia').expect(200);
   assert.match(asistente.text, /name="nombreCampana"/); assert.match(asistente.text, /type="file"/);
+  assert.match(asistente.text, /<button type="button" id="quitarImagen"[^>]* hidden>Quitar imagen<\/button>/);
+  assert.match(asistente.text, /aria-describedby="imagenEstado"/);
+});
+
+test('IA flujo: imagen retirada permite generar y guardar el resto del formulario sin imagen', async () => {
+  const p = await crearPropuesta({ nombreCampana: 'Campaña sin imagen', imagen: '' });
+  await cliente.post('/empresa/ia/borrador').send(borrador(p)).expect(303);
+  assert.equal(generar.mock.callCount(), 1);
+  assert.equal(guardar.mock.callCount(), 1);
+  assert.equal(guardar.mock.calls[0].arguments[0].imagenLocal, undefined);
 });
 
 test('IA flujo: regeneración real conserva datos locales, consume cuota y rota aprobación', async () => {
@@ -198,7 +254,7 @@ test('IA flujo: aprobación conserva selecciones e imagen como borrador sin dest
   const p = await crearPropuesta({ nombreCampana: 'Campaña elegida', imagen });
   const id = '507f1f77bcf86cd799439099';
   guardar.mock.mockImplementation(async valores => { const doc = new Campana({ ...valores, _id: id }); await doc.validate(); return doc; });
-  await cliente.post('/empresa/ia/borrador').send(borrador(p)).expect(303).expect('Location', `/campanas/${id}/automatizacion`);
+  await cliente.post('/empresa/ia/borrador').send(borrador(p)).expect(303).expect('Location', `/campanas/${id}/enviar`);
   const r = guardar.mock.calls[0].arguments[0];
   assert.equal(r.versionFlujo, 2); assert.equal(r.estado, 'borrador'); assert.equal(r.destinatarios, undefined);
   assert.equal(r.asistenciaIA.producto, datos().producto); assert.equal(r.asistenciaIA.audiencia, datos().audiencia);
@@ -225,7 +281,7 @@ test('IA flujo: sin índice de aprobación no guarda y una carrera duplicada rec
     assert.equal(String(filtro.empresa), A); assert.match(filtro['asistenciaIA.aprobacionHash'], /^[a-f0-9]{64}$/);
     return { select: () => ({ lean: async () => ({ _id: B }) }) };
   });
-  await cliente.post('/empresa/ia/borrador').send(borrador(p)).expect(303).expect('Location', `/campanas/${B}/automatizacion`);
+  await cliente.post('/empresa/ia/borrador').send(borrador(p)).expect(303).expect('Location', `/campanas/${B}/enviar`);
 });
 
 test('IA flujo completo: crear, regenerar, aprobar, editar y preparar mantiene la misma campaña sin envío', async t => {
@@ -238,9 +294,10 @@ test('IA flujo completo: crear, regenerar, aprobar, editar y preparar mantiene l
   const otra = await cliente.post('/empresa/ia/regenerar').send(borrador(p)).expect(200);
   const actual = { ...p, ticket: otra.text.match(/name="ticket" value="([A-Za-z0-9_-]{43})"/)[1] };
   const guardada = await cliente.post('/empresa/ia/borrador').send(borrador(actual)).expect(303);
-  assert.equal(guardada.headers.location, `/campanas/${documento._id}/automatizacion`);
+  assert.equal(guardada.headers.location, `/campanas/${documento._id}/enviar`);
   const configuracion = await cliente.get(guardada.headers.location).expect(200);
-  assert.match(configuracion.text, /Envío real no disponible/);
+  assert.match(configuracion.text, /La infraestructura de este modo no se validó al arrancar/);
+  assert.match(configuracion.text, /Conecta el Gmail autorizado/);
   await cliente.get(`/campanas/${documento._id}/editar`).expect(200);
   assert.equal(documento.estado, 'borrador'); assert.equal(documento.destinatarios, undefined);
   assert.equal(guardar.mock.callCount(), 1); assert.equal(generar.mock.callCount(), 2);
@@ -359,7 +416,7 @@ test('IA libre completo: crear, revisar, generar variante y continuar abre prepa
   const t2 = variante.text.match(/name="ticket" value="([A-Za-z0-9_-]{43})"/)[1];
   const r = await cliente.post('/empresa/ia/borrador').send({ ...borrador(p), ticket: t2, mensaje: libreSalida().mensaje }).expect(303);
   await cliente.get(r.headers.location).expect(200).then(res => {
-    assert.match(res.text, /Guardar imagen sin enviar/); assert.match(res.text, /Env[ií]o real no disponible/);
+    assert.match(res.text, /Activar y preparar envío/); assert.match(res.text, /Guardar esta revisión no envía correos/);
   });
   assert.equal(documento.estado, 'borrador'); assert.equal(documento.destinatarios, undefined);
   assert.equal(documento.asistenciaIA.instrucciones, undefined);

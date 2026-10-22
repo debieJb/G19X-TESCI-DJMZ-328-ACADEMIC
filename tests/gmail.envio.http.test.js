@@ -19,6 +19,29 @@ beforeEach(t => {
   t.mock.method(global, 'fetch', () => { throw Error('SIN_RED_REAL'); });
 });
 const datos = () => ({ confirmacion: 'ENVIAR', idempotencia: randomBytes(24).toString('base64url') });
+
+test('supervisado HTTP: paso requiere infraestructura, CSRF, cuerpo estricto y actor de sesión', async t => {
+  t.mock.method(require('../config/enviosGmail'), 'obtenerPolitica', () => ({ supervisado: true }));
+  t.mock.method(motorService, 'crearMotor', () => ({ procesarPasoSupervisado: async d => { llamados.push(d); return { envios: [] }; } }));
+  const ruta = `/campanas/${campana}/gmail/supervisado/paso`, body = { confirmacion: 'PROCESAR_CAMPANA_CONFIRMADA', ejecucion: campana };
+  await contexto.cliente.post(ruta).send(body).expect(503);
+  contexto.app.locals.gmailSupervisadoValidado = true;
+  await contexto.cliente.post(ruta).send({ ...body, _csrf: 'incorrecto' }).expect(403);
+  await contexto.cliente.post(ruta).send({ ...body, empresa }).expect(422);
+  await contexto.cliente.post(ruta).send(body).expect(200);
+  assert.equal(llamados.length, 1); assert.equal(llamados[0].actorId, actor);
+});
+
+test('automático HTTP: exige infraestructura validada y solo transmite revisión y actor autenticado', async t => {
+  const config = require('../config/enviosGmail');
+  t.mock.method(config, 'obtenerPolitica', () => ({ automatico: true }));
+  t.mock.method(motorService, 'crearMotor', () => ({ encolar: async d => { llamados.push(d); return { total: 1 }; } }));
+  await contexto.cliente.post(`/campanas/${campana}/gmail/confirmar`).send({ ...datos(), revision: 'a'.repeat(64) }).expect(503);
+  contexto.app.locals.gmailAutomaticoValidado = true;
+  await contexto.cliente.post(`/campanas/${campana}/gmail/confirmar`).send({ ...datos(), revision: 'a'.repeat(64), rol: 'superadmin' }).expect(422);
+  await contexto.cliente.post(`/campanas/${campana}/gmail/confirmar`).send({ ...datos(), revision: 'a'.repeat(64) }).expect(202);
+  assert.equal(llamados.length, 1); assert.equal(llamados[0].revision, 'a'.repeat(64)); assert.equal(llamados[0].actorId, actor);
+});
 test('Gmail HTTP: bandera predeterminada bloquea antes de persistir', async t => {
   // Usar motor real con política cerrada, sin depender del entorno del ejecutor.
   t.mock.method(motorService, 'crearMotor', () => original({ conexion: {}, politica: () => ({ habilitado: false }) }));
@@ -72,4 +95,21 @@ test('piloto HTTP: arranque normal sin infraestructura validada no autoriza ni e
   await contexto.cliente.post(`/campanas/${campana}/gmail/piloto/autorizar`).send({ confirmacion: 'AUTORIZAR_UN_ENVIO' }).expect(503);
   await contexto.cliente.post(`/campanas/${campana}/gmail/confirmar`).send(datos()).expect(503);
   assert.equal(llamados.length, 0);
+});
+
+test('manual HTTP: infraestructura, CSRF, confirmacion y cuerpo estricto antes del motor', async t => {
+  t.mock.method(require('../services/pilotoManualGmailService'), 'permitido', () => true);
+  t.mock.method(motorService, 'crearMotor', opciones => ({ despacharManual: async d => { llamados.push({ opciones, d }); return { envios: [{ estado: 'aceptado' }] }; } }));
+  const ruta = '/campanas/' + campana + '/gmail/piloto/despachar';
+  const cuerpo = { ...datos(), confirmacion: 'ENVIAR_UN_CORREO_REAL' };
+  await contexto.cliente.post(ruta).send(cuerpo).expect(503);
+  contexto.app.locals.gmailManualValidado = true;
+  await contexto.cliente.post(ruta).send({ ...cuerpo, _csrf: 'invalido' }).expect(403);
+  await contexto.cliente.post(ruta).send(datos()).expect(422);
+  await contexto.cliente.post(ruta).send({ ...cuerpo, envioId: actor }).expect(422);
+  const res = await contexto.cliente.post(ruta).send(cuerpo).expect(200);
+  assert.equal(llamados.length, 1);
+  assert.equal(llamados[0].opciones.manualSupervisado, true);
+  assert.deepEqual(llamados[0].d, { campanaId: campana, actorId: actor, claveIdempotencia: cuerpo.idempotencia });
+  assert.equal(res.headers['cache-control'], 'no-store');
 });

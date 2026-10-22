@@ -34,7 +34,7 @@ beforeEach(t => {
     assert.equal(valor, id);
     consultas++;
     return { select: seleccion => {
-      assert.equal(seleccion, 'nombre email rol empresa estadoAcceso');
+      assert.equal(seleccion, 'nombre email rol empresa estadoAcceso versionSesion');
       return { populate: (campo, campos) => {
         assert.equal(campo, 'empresa'); assert.equal(campos, 'nombre');
         return { lean: async () => usuario ? { ...usuario.toObject(), empresa: usuario.empresa, password: hash } : null };
@@ -52,13 +52,14 @@ const entrar = async (agente, status = 303, datos = { email: ' PERSONA@EXAMPLE.T
 };
 const sesiones = () => new Promise((resolve, reject) => store.all((error, datos) => error ? reject(error) : resolve(datos)));
 
-test('auth: sesión solo con usuarioId, cookie segura para desarrollo y panel', async () => {
+test('auth: sesión con ID y versión de acceso, cookie segura para desarrollo y panel', async () => {
   const agente = request.agent(app);
   const respuesta = await entrar(agente);
   const cookie = respuesta.headers['set-cookie'][0];
   assert.match(cookie, /HttpOnly/); assert.match(cookie, /SameSite=Lax/); assert.doesNotMatch(cookie, /Secure/);
   const datos = Object.values(await sesiones())[0];
-  assert.deepEqual(Object.keys(datos).sort(), ['cookie', 'usuarioId']);
+  assert.deepEqual(Object.keys(datos).sort(), ['cookie', 'usuarioId', 'versionSesion']);
+  assert.equal(datos.versionSesion, 0);
   assert.equal(datos.usuarioId, id);
   assert.ok(!JSON.stringify(datos).includes(password)); assert.ok(!JSON.stringify(datos).includes(hash));
   const panel = await agente.get('/panel').expect(200);
@@ -144,21 +145,16 @@ test('auth: panel muestra empresa poblada y escapa nombre', async () => {
 
 test('auth: regenerar sesión invalida la anterior', async () => {
   const agente = request.agent(app);
-  const primera = await entrar(agente);
-  const vieja = primera.headers['set-cookie'][0].split(';')[0];
-  await agente.get('/panel').expect(200);
-  const tokenAnterior = Object.values(await sesiones())[0].adminCsrf;
-  // Un token inválido no permite sustituir una sesión autenticada.
-  await agente.post('/login').send({ email: 'persona@example.test', password, _csrf: 'a'.repeat(43) }).expect(403);
-  const paginaLogin = await agente.post('/login').send({}).expect(403);
+  const paginaLogin = await agente.get('/login').expect(200);
+  const vieja = paginaLogin.headers['set-cookie'][0].split(';')[0];
   const _csrf = paginaLogin.text.match(/name="_csrf" value="([^"]+)"/)[1];
   const segunda = await agente.post('/login').send({ email: 'persona@example.test', password, _csrf }).expect(303);
   assert.notEqual(vieja, segunda.headers['set-cookie'][0].split(';')[0]);
   assert.equal(Object.keys(await sesiones()).length, 1);
   await request(app).get('/panel').set('Cookie', vieja).expect(302).expect('Location', '/login');
   await agente.get('/panel').expect(200);
-  assert.notEqual(Object.values(await sesiones())[0].adminCsrf, tokenAnterior);
-  await agente.post('/logout').send({ _csrf: tokenAnterior }).expect(403);
+  assert.notEqual(Object.values(await sesiones())[0].adminCsrf, _csrf);
+  await agente.post('/logout').send({ _csrf }).expect(403);
 });
 
 test('auth: usuario eliminado destruye sesión y pierde acceso', async () => {

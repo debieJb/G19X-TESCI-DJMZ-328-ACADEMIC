@@ -78,7 +78,7 @@ let pendiente, claveActual;
 const cerrar = async () => {
   const conexion = pendiente;
   pendiente = undefined; claveActual = undefined;
-  if (conexion) await conexion.then(c => c.close()).catch(() => {});
+  if (conexion) await conexion.then(({ conexion: c }) => c.close()).catch(() => {});
 };
 const abrir = async () => {
   const config = configuracion();

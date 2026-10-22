@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-<html lang="es"><head><%- include('../partials/_headPublico', { tituloPagina: titulo }) %></head>
-<body class="pagina-admin pagina-empresa"><%- include('../partials/_encabezadoEmpresa') %>
+<html lang="es"><head><%- include('../partials/_headInterno') %></head>
+<body class="pagina-admin pagina-empresa pagina-interna"><%- include('../partials/_encabezadoEmpresa') %>
 <main id="contenido" tabindex="-1">
 <div class="cabecera-empresa"><div><p class="sobrelinea">Tu espacio de trabajo</p><h1><%= empresa.nombre %></h1><p><%= usuarioActual.nombre %> · <%= usuarioActual.email %> · <%= usuarioActual.rol %></p></div>
-<form class="salida-admin" action="/logout" method="post"><%- include('../partials/_csrfLogout') %><button type="submit">Cerrar sesión</button></form>
+
 </div>
+<%- include('../partials/_accesosEmpresa') %>
 <section class="resumen-admin seccion-admin"><article class="panel"><h2>Usuarios</h2><p class="total-admin"><%= totalUsuarios %></p></article><article class="panel"><h2>Campañas</h2><p class="total-admin"><%= totalCampanas %></p></article></section>
-<section class="seccion-admin"><h2>Usuarios de tu empresa</h2><a class="boton" href="/empresa/usuarios/nuevo">Nuevo operador</a>
+<section id="usuarios" class="seccion-admin"><h2>Usuarios de tu empresa</h2><a class="boton" href="/empresa/usuarios/nuevo">Nuevo operador</a>
 <%- include('../admin/_usuarios', { usuarios, sinEmpresa: false, leyenda: 'Usuarios de tu empresa' }) %>
-<h2>Operadores</h2><%- include('../admin/_usuarios', { usuarios: operadores, sinEmpresa: false, leyenda: 'Operadores de tu empresa' }) %></section>
+<p>Activa los operadores pendientes después de completar la verificación empresarial. Los administradores pendientes deben verificar su correo.</p></section>
 <%- include('_campanas') %>
 <section class="seccion-admin panel"><h2>Gmail de tu empresa</h2><p>Conecta y administra la cuenta Gmail autorizada para tu empresa.</p><a class="boton" href="/empresa/gmail">Configurar Gmail</a></section>
 <section class="seccion-admin panel"><h2>Contactos</h2><p>Administra la base de contactos de tu empresa.</p><div class="acciones"><a class="boton" href="/contactos">Ver contactos</a><a class="boton secundario" href="/contactos/nuevo">Nuevo contacto</a></div></section>

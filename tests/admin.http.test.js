@@ -40,6 +40,7 @@ beforeEach(t => {
   obtenerDetalle = t.mock.method(adminService, 'obtenerDetalleEmpresa', async () => detalle);
   t.mock.method(adminService, 'listarEmpresas', async () => [empresa]);
   existeEmpresa = t.mock.method(Empresa, 'exists', async filtro => filtro._id === empresaId ? { _id: empresaId } : null);
+  t.mock.method(Empresa.collection, 'findOne', async filtro => String(filtro._id) === empresaId ? empresa : null);
   guardarEmpresa = t.mock.method(Empresa.collection, 'insertOne', async datos => ({ insertedId: datos._id }));
   guardarUsuario = t.mock.method(Usuario.collection, 'insertOne', async datos => ({ insertedId: datos._id }));
 });
@@ -148,6 +149,7 @@ for (const rol of ['admin_empresa', 'operador']) {
     const respuesta = await agente.post('/admin/usuarios').send({ ...entrada, rol, _id: id, admin: true, usuario: { rol: 'superadmin' } }).expect(303).expect('Location', `/admin/empresas/${empresaId}`);
     const datos = guardarUsuario.mock.calls[0].arguments[0];
     assert.equal(datos.rol, rol); assert.equal(String(datos.empresa), empresaId);
+    assert.equal(datos.estadoAcceso, rol === 'operador' ? 'pendiente_verificacion' : 'activo');
     assert.equal(datos.nombre, 'Nueva persona'); assert.equal(datos.email, 'nueva@example.test');
     assert.equal(datos.admin, undefined); assert.equal(datos.usuario, undefined); assert.notEqual(String(datos._id), id);
     assert.notEqual(datos.password, password); assert.equal(await bcrypt.compare(password, datos.password), true);

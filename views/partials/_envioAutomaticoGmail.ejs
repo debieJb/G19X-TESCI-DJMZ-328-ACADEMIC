@@ -1,0 +1,16 @@
+<section class="panel" data-campana-gmail="<%= campana._id %>" data-envio-bloqueado="<%= typeof bloqueosEnvio !== 'undefined' && bloqueosEnvio.length > 0 ? 'true' : 'false' %>">
+  <h2>Confirmar campaña Gmail</h2>
+  <p>Revisa el contenido y guarda primero los destinatarios y la modalidad. Al confirmar, el trabajador enviará automáticamente desde la cuenta Google de tu empresa. No necesitas abrir n8n.</p>
+  <p>Modalidad guardada: <strong><%= campana.automatizacion?.modo || 'Sin preparar' %></strong>.
+  <% if (campana.automatizacion?.fechaProgramada) { %>Fecha UTC: <%= campana.automatizacion.fechaProgramada.toISOString() %>.<% } %></p>
+  <p>Máximo <%= typeof maxDestinatarios !== 'undefined' ? maxDestinatarios : 1 %> destinatario(s) por campaña; solo contactos activos con consentimiento válido. Selecciona exactamente un contacto para la prueba controlada. Las imágenes locales todavía no se envían.</p>
+  <form action="/campanas/<%= campana._id %>/gmail/confirmar" method="post" class="formulario" data-confirmar-gmail>
+    <%- include('_csrfCampana') %><input type="hidden" name="idempotencia" value=""><input type="hidden" name="revision" value="<%= revisionEnvio %>">
+    <label><input type="checkbox" name="confirmacion" value="ENVIAR" required>Confirmo remitente, contenido, destinatarios y envío real según la modalidad guardada</label>
+    <button type="submit" disabled><%= campana.automatizacion?.modo === 'programado' ? 'Programar envío' : 'Enviar ahora' %></button>
+  </form>
+  <button type="button" data-historial-gmail>Actualizar historial persistente</button>
+  <p role="status" aria-live="polite" data-estado-gmail></p>
+  <pre data-resultado-gmail aria-label="Historial de ejecución"></pre>
+  <noscript>La confirmación guiada requiere JavaScript.</noscript>
+</section><script src="/js/campanaGmail.js" defer></script>

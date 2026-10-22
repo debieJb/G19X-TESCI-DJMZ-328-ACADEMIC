@@ -1,26 +1,22 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= titulo %> | Marketing Automation</title>
-  <link rel="stylesheet" href="/css/styles.css">
-</head>
-<body class="pagina-admin">
-  <%- include('../partials/_encabezadoAdmin') %>
+<head><%- include('../partials/_headInterno') %></head>
+<body class="pagina-admin pagina-interna">
+  <%- include('../partials/_encabezadoAdmin', { seccionAdmin: 'empresas' }) %>
   <main id="contenido" tabindex="-1">
     <p class="sobrelinea">Administración / Empresa</p><h1><%= empresa.nombre %></h1>
+    <a class="boton secundario" href="/admin/empresas/<%= empresa._id %>/editar">Editar empresa</a>
     <dl class="detalle"><div><dt>Estado</dt><dd><%= empresa.estado %></dd></div><div><dt>Fecha de registro</dt><dd><%= empresa.fechaRegistro ? new Intl.DateTimeFormat('es-MX', { timeZone: 'UTC' }).format(new Date(empresa.fechaRegistro)) : 'Sin fecha disponible' %></dd></div></dl>
     <section class="seccion-admin panel"><h2>Automatizaciones</h2>
         <p>Correo electrónico (Gmail): <%= (empresa.automatizaciones?.email?.habilitada ?? true) ? 'Habilitada' : 'Deshabilitada' %></p>
         <a class="boton" href="/admin/empresas/<%= empresa._id %>/automatizaciones">Editar automatizaciones</a>
       </section>
     <section class="seccion-admin"><h2>Usuarios de la empresa</h2>
-      <%- include('_usuarios', { usuarios, sinEmpresa: false, leyenda: 'Usuarios de ' + empresa.nombre }) %>
+      <%- include('_usuarios', { usuarios, empresaContexto: empresa, sinEmpresa: false, leyenda: 'Usuarios de ' + empresa.nombre }) %>
     </section>
     <section class="seccion-admin"><h2>Campañas de la empresa</h2>
       <% if (!campanas.length) { %><p class="muted">No hay campañas registradas</p><% } else { %>
-      <div class="tabla-admin"><table><caption>Campañas de <%= empresa.nombre %></caption>
+      <div class="tabla-admin" role="region" aria-label="Campañas de <%= empresa.nombre %>" tabindex="0"><table><caption>Campañas de <%= empresa.nombre %></caption>
         <thead><tr><th scope="col">Nombre</th><th scope="col">Canal</th><th scope="col">Estado</th><th scope="col">Creado por</th></tr></thead>
         <tbody><% for (const campana of campanas) { %><tr>
           <td><a href="/campanas/<%= campana._id %>"><%= campana.nombre %></a></td><td><%= campana.canal === 'email' ? 'Correo electrónico (Gmail)' : 'Canal fuera del MVP actual' %></td><td><%= campana.estado %></td>

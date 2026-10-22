@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title><%= titulo %></title><link rel="stylesheet" href="/css/styles.css"></head>
-<body class="pagina-admin"><%- include('../partials/_encabezado', { seccion: 'ia' }) %>
+<head><%- include('../partials/_headInterno') %></head>
+<body class="pagina-admin pagina-interna"><%- include('../partials/_encabezado', { seccion: 'ia' }) %>
 <main id="contenido" tabindex="-1"><h1>Revisar propuesta generada por IA</h1>
 <p>Proveedor: <%= resultado.proveedor %>. Revisa exactitud, ofertas y lenguaje. La propuesta no ejecuta campañas ni selecciona contactos.</p>
 <% if (mensaje) { %><p class="aviso-error" role="alert"><%= mensaje %></p><% } %>

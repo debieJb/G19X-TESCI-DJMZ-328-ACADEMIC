@@ -1,0 +1,75 @@
+{
+  "documentaryEdition": "2026-10-19",
+  "functionalBase": "78c743424b84cf7ea6d7fc63d2cbf58205727c88",
+  "sourceKind": "preserved_authentic_edge_fixture_run",
+  "sourceArtifactDirectoryBasename": "ma-campana-ux-YiHPEb",
+  "sourceReportSha256": "3c39a834d23fcac18004cfd05df33f3a950515bd3b9a538b0490986790537dcd",
+  "sourceLog": "multi-navegador.log",
+  "checks": [
+    "campana aceptada no ofrece repetir 1440",
+    "sin controles internos 1440",
+    "sin desbordamiento en historial-1440 {\"ancho\":1440,\"total\":1425,\"elementos\":[]}",
+    "dialogo de revision visible 1440",
+    "sin desbordamiento en confirmacion-1440 {\"ancho\":1440,\"total\":1425,\"elementos\":[]}",
+    "cancelar no envia 1440",
+    "una confirmacion realiza dos pasos internos 1440",
+    "seguridad de peticiones 1440",
+    "recarga no envia 1440",
+    "campana aceptada no ofrece repetir 390",
+    "sin controles internos 390",
+    "sin desbordamiento en historial-390 {\"ancho\":390,\"total\":390,\"elementos\":[]}",
+    "dialogo de revision visible 390",
+    "sin desbordamiento en confirmacion-390 {\"ancho\":390,\"total\":390,\"elementos\":[]}",
+    "cancelar no envia 390",
+    "una confirmacion realiza dos pasos internos 390",
+    "seguridad de peticiones 390",
+    "recarga no envia 390",
+    "activar prepara sin enviar 1440",
+    "activacion transmite CSRF y contacto unico 1440",
+    "sin desbordamiento en flujo-revision-1440 {\"ancho\":1440,\"total\":1425,\"elementos\":[]}",
+    "confirmacion unica desde recorrido completo 1440",
+    "historial no repite envio 1440",
+    "activar prepara sin enviar 390",
+    "activacion transmite CSRF y contacto unico 390",
+    "sin desbordamiento en flujo-revision-390 {\"ancho\":390,\"total\":390,\"elementos\":[]}",
+    "confirmacion unica desde recorrido completo 390",
+    "historial no repite envio 390",
+    "sin errores JS ni proveedores externos"
+  ],
+  "errors": [],
+  "mongoUsed": false,
+  "externalProvidersUsed": false,
+  "syntheticData": true,
+  "imagesGeneratedByAI": false,
+  "pixelsEdited": false,
+  "widths": [
+    1440,
+    390
+  ],
+  "images": [
+    {
+      "file": "flujo-revision-1440.png",
+      "sha256": "8ecf4544724798278a28d77426249bde6498fcd4b926e4e850feac798c6cd102",
+      "sourceReportListsImage": true,
+      "unalteredCopy": true
+    },
+    {
+      "file": "flujo-revision-390.png",
+      "sha256": "aafb0f70daf7a1edba1a641fcf7d12843e0c66343c33841dd23b8293fd6840ab",
+      "sourceReportListsImage": true,
+      "unalteredCopy": true
+    },
+    {
+      "file": "confirmacion-1440.png",
+      "sha256": "efb024347dbb4610bfde26367ee3d23747581dc681067b8f0116456ee5503dd4",
+      "sourceReportListsImage": true,
+      "unalteredCopy": true
+    },
+    {
+      "file": "historial-390.png",
+      "sha256": "b9c873babd2948702ff5aa69db5c295a007bc8ad15cc153df56d95a4737293db",
+      "sourceReportListsImage": true,
+      "unalteredCopy": true
+    }
+  ]
+}

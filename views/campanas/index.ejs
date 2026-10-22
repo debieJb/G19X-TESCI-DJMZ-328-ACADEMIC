@@ -1,12 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= titulo %></title>
-  <link rel="stylesheet" href="/css/styles.css">
-</head>
-<body>
+<head><%- include('../partials/_headInterno') %></head>
+<body class=" pagina-interna">
   <%- include('../partials/_encabezado', { seccion: 'campanas' }) %>
   <main id="contenido" tabindex="-1">
     <div class="cabecera-pagina">
@@ -16,6 +11,7 @@
     <% if (!campanas.length) { %>
       <section class="vacio"><h2>Tu próxima campaña empieza aquí</h2><p>Aún no hay campañas. Crea la primera para comenzar.</p><a class="boton" href="/campanas/nueva">Crear campaña</a></section>
     <% } else { %>
+      <p class="panel">Crear, guardar o activar una campaña no envía correos. Pulsa Enviar campaña para revisar el destinatario y confirmar el envío.</p>
       <div class="tabla-contenedor" role="region" aria-label="Listado de campañas" tabindex="0">
         <table>
           <caption>Campañas, de la más reciente a la más antigua</caption>
@@ -26,12 +22,14 @@
                 <td><%= campana.nombre %></td>
                 <td><%= campana.objetivo %></td>
                 <td><%= campana.canal === 'email' ? 'Correo electrónico (Gmail)' : 'Canal fuera del MVP actual' %></td>
-                <td><span class="insignia estado-<%= campana.estado %>"><%= estados[campana.estado] || 'Sin definir' %></span></td>
+                <td><span class="insignia estado-<%= campana.estado %>" data-estado-envio="<%= campana._id %>"><%= estados[campana.estado] || 'Sin definir' %></span></td>
                 <td><%= formatearFecha(campana.fechaInicio) %></td>
                 <td><%= formatearFecha(campana.fechaFin) %></td>
                 <td><nav class="tabla-acciones" aria-label="Acciones de <%= campana.nombre %>">
                   <a class="boton secundario" href="/campanas/<%= campana._id %>">Detalle</a>
                   <a class="boton editar" href="/campanas/<%= campana._id %>/editar">Editar</a>
+                  <a class="boton" data-revisar-envio="<%= campana._id %>" href="/campanas/<%= campana._id %>/enviar">Enviar campaña</a>
+                  <a href="/campanas/<%= campana._id %>/historial#historial">Ver historial</a>
                   <% if (puedeCampana('campanas.eliminar', campana)) { %><a class="boton eliminar" href="/campanas/<%= campana._id %>/eliminar">Eliminar</a><% } %>
                 </nav></td>
               </tr>
@@ -42,7 +40,7 @@
       <section class="tarjetas" aria-label="Listado de campañas">
         <% for (const campana of campanas) { %>
           <article class="tarjeta">
-            <span class="insignia estado-<%= campana.estado %>"><%= estados[campana.estado] || 'Sin definir' %></span>
+            <span class="insignia estado-<%= campana.estado %>" data-estado-envio="<%= campana._id %>"><%= estados[campana.estado] || 'Sin definir' %></span>
             <h2><%= campana.nombre %></h2>
             <p><%= campana.objetivo %></p>
             <dl>
@@ -53,6 +51,8 @@
             <nav class="acciones" aria-label="Acciones de <%= campana.nombre %>">
               <a class="boton secundario" href="/campanas/<%= campana._id %>">Detalle</a>
               <a class="boton editar" href="/campanas/<%= campana._id %>/editar">Editar</a>
+              <a class="boton" data-revisar-envio="<%= campana._id %>" href="/campanas/<%= campana._id %>/enviar">Enviar campaña</a>
+              <a href="/campanas/<%= campana._id %>/historial#historial">Ver historial</a>
               <% if (puedeCampana('campanas.eliminar', campana)) { %><a class="boton eliminar" href="/campanas/<%= campana._id %>/eliminar">Eliminar</a><% } %>
             </nav>
           </article>
@@ -60,5 +60,5 @@
       </section>
     <% } %>
   </main>
-</body>
+<script src="/js/estadosCampanas.js" defer></script><%- include('../partials/_piePublico') %></body>
 </html>

@@ -9,11 +9,13 @@ const pantallas = {
   completada: ['Registro completado', 'Tu espacio está listo para iniciar sesión.'],
   invalido: ['Enlace no disponible', 'No se pudo validar el enlace o la sesión.'],
   caducado: ['Enlace caducado', 'El plazo para verificar este enlace terminó.'],
-  usado: ['Enlace ya utilizado', 'Este navegador ya confirmó este enlace.'],
+  usado: ['Enlace ya utilizado', 'Este enlace ya fue confirmado.'],
+  sustituido: ['Enlace sustituido', 'Se autorizó un nuevo enlace. Abre únicamente el correo más reciente.'],
+  sesion_invalida: ['Sesión de verificación no disponible', 'Abre de nuevo el enlace recibido y permite las cookies en este navegador.'],
   configuracion_caducada: ['Sesión de configuración caducada', 'Solicita un nuevo enlace para continuar de forma segura.']
 };
 const pantalla = pantallas[paso] || pantallas.invalido;
-const esError = ['invalido', 'caducado', 'usado', 'configuracion_caducada'].includes(paso);
+const esError = ['invalido', 'caducado', 'usado', 'sustituido', 'sesion_invalida', 'configuracion_caducada'].includes(paso);
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -43,9 +45,9 @@ const esError = ['invalido', 'caducado', 'usado', 'configuracion_caducada'].incl
           <div class="campo"><label for="correo">Correo empresarial</label><input id="correo" name="correo" type="email" autocomplete="email" maxlength="320" placeholder="tu@empresa.com" aria-describedby="correo-ayuda" required><p id="correo-ayuda" class="ayuda-campo">Será el correo de acceso de tu administrador.</p></div>
           <button type="submit">Solicitar verificación</button>
         </form>
-        <p class="nota-disponibilidad">El envío real de verificaciones está pendiente de activación. Solicitar el registro no confirma el envío de un correo.</p>
+        <p class="nota-disponibilidad">Cuando el transporte está habilitado, el sistema procesa automáticamente las solicitudes nuevas autorizadas. Solicitar el registro no confirma la recepción de un correo.</p>
       <% } else if (['aceptada', 'pendiente'].includes(paso)) { %>
-        <div class="estado-registro"><h2>El siguiente paso es verificar tu correo</h2><p>Si corresponde continuar, el servicio autorizado procesará tu solicitud. Por ahora, el envío transaccional real permanece pendiente de activación y validación.</p><p>No se confirma que un mensaje haya sido enviado o entregado. No podrás configurar el administrador sin un enlace válido.</p></div>
+        <div class="estado-registro"><h2>El siguiente paso es verificar tu correo</h2><p>Si la solicitud fue autorizada y el transporte está disponible, se procesa automáticamente. Revisa el correo más reciente y la carpeta de spam.</p><p>No se confirma que un mensaje haya sido enviado o entregado. No podrás configurar el administrador sin un enlace válido.</p></div>
         <% if (paso === 'aceptada') { %><a class="boton ancho-completo" href="/registro/estado">Ver estado de la verificación</a><% } %>
       <% } else if (paso === 'reenvio') { %>
         <p>Si la solicitud es elegible, podrás pedir otro enlace. Los límites y los plazos se comprueban en el servidor.</p>

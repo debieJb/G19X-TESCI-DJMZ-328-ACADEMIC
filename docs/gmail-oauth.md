@@ -1,5 +1,8 @@
 # Gmail OAuth independiente por empresa (etapa 2)
 
+> **Contexto histórico — edición final 19/10/2026.** El contenido original siguiente se conserva como informe o referencia de su etapa. Las cifras, configuraciones y afirmaciones de proveedores «pendientes» describen aquella jornada, no el estado final del MVP. Gmail y Gemini fueron comprobados con servicios reales; registro/verificación y envío múltiple reales están confirmados por la responsable. El [expediente vigente](entrega/indice-entrega.md) y el [registro de evidencia](entrega/evidencias-validacion.md) distinguen pruebas simuladas, comprobaciones reales y aceptación formal. Los controles técnicos siguen sujetos al código; los procedimientos históricos no autorizan ejecutar servicios ni campañas.
+
+
 ## Funcionalidad
 
 El administrador empresarial encuentra **Configurar Gmail** en `/panel` y en la navegación. La pantalla está en `/empresa/gmail` y permite conectar, consultar el estado, comprobar/renovar autorización y desconectar. No envía correo, no cambia los workflows de n8n y todavía no incorpora estos tokens al envío de campañas.

@@ -1,5 +1,10 @@
 # Piloto Gmail: un correo autorizado
 
+> **Contexto histórico — edición final 19/10/2026.** El contenido original siguiente se conserva como informe o referencia de su etapa. Las cifras, configuraciones y afirmaciones de proveedores «pendientes» describen aquella jornada, no el estado final del MVP. Gmail y Gemini fueron comprobados con servicios reales; registro/verificación y envío múltiple reales están confirmados por la responsable. El [expediente vigente](entrega/indice-entrega.md) y el [registro de evidencia](entrega/evidencias-validacion.md) distinguen pruebas simuladas, comprobaciones reales y aceptación formal. Los controles técnicos siguen sujetos al código; los procedimientos históricos no autorizan ejecutar servicios ni campañas.
+
+
+El procedimiento vigente para el despacho manual de Nickki Velas en el entorno local existente está en [despacho manual supervisado](gmail-manual-nickki-2026-10-18.md). Las restricciones de infraestructura dedicada descritas abajo siguen aplicando al supervisor y al perfil de piloto anterior; ese supervisor no es necesario para el nuevo despacho desde el navegador.
+
 Actualizacion de infraestructura al cierre: ya existe una instancia nueva y exclusiva en 127.0.0.1:27019, directorio C:\Users\jocam\Documents\marketing-automation-pilot-mongo-rs\data, replica set marketingPilotLocalRs con unico miembro 127.0.0.1:27019, PRIMARY confirmado y solo bases de sistema. Se autorizo su creacion e inicializacion, no el envio de un correo. No volver a crear el directorio ni ejecutar replSetInitiate. Migracion, HTTPS, OAuth y piloto real siguen pendientes de autorizacion y validacion.
 
 Estado: implementado y probado con datos sinteticos; envio real bloqueado por defecto. Ninguna autorizacion real se creo en esta tarea. No se modificaron archivos de entorno, cuentas, tokens, datos existentes ni configuracion MongoDB.

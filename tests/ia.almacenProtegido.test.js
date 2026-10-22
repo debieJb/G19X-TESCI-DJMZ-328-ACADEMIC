@@ -58,3 +58,36 @@ test('cuotas protegidas: exige índices únicos y TTL exactos y nunca los crea a
     x => x.push({ name: 'extra', key: { otro: 1 } })
   ]) { const copia = indices(); cambiar(copia); assert.throws(() => almacen.validarIndices(copia), /NO_AUTORIZADAS/); }
 });
+
+test('cuotas protegidas: cerrar libera la conexión independiente y permite volver a abrir', async t => {
+  const anteriores = Object.fromEntries(Object.keys(env()).map(k => [k, process.env[k]]));
+  Object.assign(process.env, env());
+  t.after(async () => {
+    await almacen.cerrar();
+    for (const [k, v] of Object.entries(anteriores)) {
+      if (v === undefined) delete process.env[k]; else process.env[k] = v;
+    }
+  });
+  let abiertas = 0, cerradas = 0;
+  t.mock.method(mongoose, 'createConnection', () => {
+    abiertas++;
+    const info = identidad();
+    const conexion = { ...info.conexion,
+      getClient: () => ({ options: { hosts: [{ host: 'quota-db.example.test' }], tls: true } }),
+      db: { admin: () => ({ command: async cmd => cmd.hello ? info.hello : info.estado }) },
+      models: { UsoIA: { collection: { listIndexes: () => ({ toArray: async () => indices() }) } } },
+      close: async () => { cerradas++; }
+    };
+    conexion.asPromise = async () => conexion;
+    return conexion;
+  });
+  await almacen.obtener('507f1f77bcf86cd799439011');
+  await almacen.cerrar();
+  assert.equal(cerradas, 1);
+  await almacen.cerrar();
+  assert.equal(cerradas, 1);
+  await almacen.obtener('507f1f77bcf86cd799439011');
+  assert.equal(abiertas, 2);
+  await almacen.cerrar();
+  assert.equal(cerradas, 2);
+});

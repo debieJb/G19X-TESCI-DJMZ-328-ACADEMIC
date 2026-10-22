@@ -6,6 +6,7 @@ const mensajes = {
   DESHABILITADA: [503, 'La generación con IA está deshabilitada. Falta configurar y autorizar un proveedor real.'],
   LIMITE: [429, 'Se alcanzó el límite del asistente. Intenta más tarde.'],
   PROVEEDOR: [503, 'El proveedor de IA no pudo completar la solicitud. No se guardó ninguna campaña.'],
+  CUOTAS_NO_DISPONIBLES: [503, 'El asistente no puede generar porque su control de cuotas no está disponible. Solicita al administrador revisar la configuración de IA. No se llamó a Gemini.'],
   RESPUESTA: [502, 'La IA no devolvió una propuesta válida. No se guardó ninguna campaña.'],
   PROPUESTA: [409, 'La propuesta caducó o pertenece a otra sesión. Genera una nueva propuesta.']
 };

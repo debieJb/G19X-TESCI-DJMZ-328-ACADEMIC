@@ -1,0 +1,32 @@
+<section class="panel" data-piloto-gmail data-bloqueado="<%= typeof bloqueosEnvio !== 'undefined' && bloqueosEnvio.length ? 'true' : 'false' %>" data-campana="<%= campana._id %>" aria-labelledby="titulo-piloto">
+  <h2 id="titulo-piloto">Piloto Gmail: un destinatario</h2>
+  <p>Guarda primero una preparación inmediata de texto con exactamente un contacto y consentimiento documentado. Revisa arriba el destinatario, el remitente y todo el contenido. No se admiten imágenes ni programación en este piloto.</p>
+  <p>Autorizar permite un único intento durante diez minutos. El despacho manual requiere otra confirmación explícita desde este navegador. No necesita un trabajador automático. Una aceptación de Gmail no demuestra recepción.</p>
+  <form method="post" action="/campanas/<%= campana._id %>/gmail/piloto/autorizar" data-piloto-accion="autorizar">
+    <%- include('_csrfCampana') %>
+    <label><input type="checkbox" name="confirmacion" value="AUTORIZAR_UN_ENVIO" required>Autorizo un intento al contacto seleccionado con este contenido y remitente</label>
+    <button type="submit">Autorizar un intento</button>
+  </form>
+  <% if (typeof manualSupervisado !== 'undefined' && manualSupervisado) { %>
+  <form method="post" action="/campanas/<%= campana._id %>/gmail/piloto/despachar" data-piloto-accion="despachar">
+    <%- include('_csrfCampana') %><input type="hidden" name="idempotencia" value="">
+    <label><input type="checkbox" name="confirmacion" value="ENVIAR_UN_CORREO_REAL" required>Confirmo remitente, destinatario seleccionado y contenido. Enviar un único correo real ahora</label>
+    <button type="submit" disabled>Enviar un correo real ahora</button>
+  </form>
+  <% } else { %>
+  <form method="post" action="/campanas/<%= campana._id %>/gmail/confirmar" data-piloto-accion="encolar">
+    <%- include('_csrfCampana') %>
+    <input type="hidden" name="idempotencia" value="">
+    <label><input type="checkbox" name="confirmacion" value="ENVIAR" required>Confirmo registrar la ejecución previamente autorizada</label>
+    <button type="submit" disabled>Encolar ejecución autorizada</button>
+  </form>
+  <% } %>
+  <form method="post" action="/campanas/<%= campana._id %>/gmail/piloto/revocar" data-piloto-accion="revocar">
+    <%- include('_csrfCampana') %><button type="submit">Revocar autorización</button>
+  </form>
+  <button type="button" data-piloto-consultar>Consultar resultado persistido</button>
+  <p role="status" aria-live="polite" data-piloto-estado>No se ha solicitado ninguna operación.</p>
+  <pre data-piloto-resultado aria-label="Resultado del envío"></pre>
+  <noscript>La operación guiada requiere JavaScript. No se ejecuta ningún envío automáticamente.</noscript>
+</section>
+<script src="/js/pilotoGmail.js" defer></script>

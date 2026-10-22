@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html lang="es"><head><%- include('../partials/_headInterno') %></head>
+<body class="pagina-admin pagina-interna"><%- include('../partials/_encabezado', { seccion: 'usuarios' }) %>
+<main id="contenido" tabindex="-1" class="formulario-pagina"><h1>Editar usuario</h1>
+<%- include('../partials/_validacionServidor') %>
+<form class="formulario" method="post" action="<%= base %>/<%= datos._id %>">
+<% if (usuarioActual.rol === 'superadmin') { %><%- include('../partials/_csrfSuperadmin') %><% } else { %><%- include('../partials/_csrfCampana') %><% } %>
+<%- include('../partials/_camposUsuario', { passwordOpcional: true }) %>
+<div class="acciones"><button type="submit">Guardar cambios</button><a href="/panel">Cancelar</a></div></form></main>
+<%- include('../partials/_piePublico') %></body></html>

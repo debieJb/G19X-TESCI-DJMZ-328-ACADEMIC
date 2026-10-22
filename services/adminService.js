@@ -8,7 +8,7 @@ const mapaConteos = filas => new Map(filas.map(fila => [String(fila._id), fila.t
 const obtenerDashboard = async () => {
   const [empresas, usuarios, campanasSinEmpresa, totalEmpresas, totalUsuarios, totalCampanas, conteosUsuarios, conteosCampanas] = await Promise.all([
     Empresa.find().select('nombre estado').sort({ nombre: 1, _id: 1 }).lean(),
-    Usuario.find().select('nombre email rol empresa').sort({ nombre: 1, _id: 1 }).lean(),
+    Usuario.find().select('nombre email rol empresa estadoAcceso').sort({ nombre: 1, _id: 1 }).lean(),
     Campana.find({ empresa: null }).select('nombre canal estado').sort({ createdAt: -1, _id: -1 }).lean(),
     Empresa.countDocuments(), Usuario.countDocuments(), Campana.countDocuments(),
     Usuario.aggregate(conteosPorEmpresa()), Campana.aggregate(conteosPorEmpresa())
@@ -39,7 +39,7 @@ const obtenerDetalleEmpresa = async id => {
   const empresa = await Empresa.findById(id).select('nombre estado fechaRegistro automatizaciones.email.habilitada').lean();
   if (!empresa) return null;
   const [usuarios, campanas] = await Promise.all([
-    Usuario.find({ empresa: id }).select('nombre email rol').sort({ nombre: 1, _id: 1 }).lean(),
+    Usuario.find({ empresa: id }).select('nombre email rol empresa estadoAcceso').sort({ nombre: 1, _id: 1 }).lean(),
     Campana.find({ empresa: id }).select('nombre canal estado creadoPor')
       .populate('creadoPor', 'nombre').sort({ createdAt: -1, _id: -1 }).lean()
   ]);

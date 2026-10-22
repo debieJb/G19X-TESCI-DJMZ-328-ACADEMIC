@@ -1,0 +1,49 @@
+{
+  "documentaryEdition": "2026-10-19",
+  "functionalBase": "78c743424b84cf7ea6d7fc63d2cbf58205727c88",
+  "kind": "derived_from_preserved_local_logs_not_a_new_test_execution",
+  "rawLogsPublished": false,
+  "providerCallsDuringDocumentation": false,
+  "results": [
+    {
+      "sourceLog": "entrega-final-suite.log",
+      "sourceSha256": "7bd5558763d1c07dafd2aa6824ad31837daac69b0a0a2a7ad04e78895a2ec093",
+      "sourceLastModifiedUtc": "2026-10-19T07:35:27.533Z",
+      "tests": 851,
+      "pass": 851,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "sourceLog": "entrega-final-integracion.log",
+      "sourceSha256": "5d01274c73597c8ee10b227dc6f364303927ded143a1c4bf5da9da65e61ce129",
+      "sourceLastModifiedUtc": "2026-10-19T07:36:06.590Z",
+      "tests": 65,
+      "pass": 65,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "sourceLog": "multi-navegador.log",
+      "sourceSha256": "1279bce969f23c62dba0278af0a37c616d435deed8fa2b2ae469d9d0e7676e52",
+      "sourceLastModifiedUtc": "2026-10-19T07:21:00.132Z",
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "sourceLog": "multi-navegador-piloto.log",
+      "sourceSha256": "0a3297d3723b7d60b1a92a32ebcaf21f05668d723986ba608a5bf5b80b5a2ca9",
+      "sourceLastModifiedUtc": "2026-10-19T07:21:06.437Z",
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    }
+  ]
+}

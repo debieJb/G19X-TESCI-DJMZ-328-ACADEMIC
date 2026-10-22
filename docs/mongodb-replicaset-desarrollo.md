@@ -1,5 +1,8 @@
 # MongoDB replica set independiente de desarrollo
 
+> **Contexto histórico — edición final 19/10/2026.** El contenido original siguiente se conserva como informe o referencia de su etapa. Las cifras, configuraciones y afirmaciones de proveedores «pendientes» describen aquella jornada, no el estado final del MVP. Gmail y Gemini fueron comprobados con servicios reales; registro/verificación y envío múltiple reales están confirmados por la responsable. El [expediente vigente](entrega/indice-entrega.md) y el [registro de evidencia](entrega/evidencias-validacion.md) distinguen pruebas simuladas, comprobaciones reales y aceptación formal. Los controles técnicos siguen sujetos al código; los procedimientos históricos no autorizan ejecutar servicios ni campañas.
+
+
 Entorno exclusivo: `marketingDevRs`, puerto `27018`, bind `127.0.0.1`, miembro anunciado `localhost:27018`. Directorio independiente `C:\Users\jocam\Documents\marketing-automation-dev-mongo-rs`, con `data` y `logs`. Ejecutable MongoDB 8.2.6: `C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe`.
 
 No se registra un servicio Windows ni se modifica el standalone en 27017. No se carga .env, no se cambia la conexión de Express ni se importan datos reales. No se requieren credenciales: este nodo local solo admite datos ficticios. Cualquier proceso local puede acceder; nunca exponerlo a la red o usarlo para producción. Un solo miembro no ofrece alta disponibilidad.

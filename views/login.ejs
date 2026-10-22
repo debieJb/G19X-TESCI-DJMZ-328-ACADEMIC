@@ -1,36 +1,130 @@
 ﻿<!DOCTYPE html>
 <html lang="es">
-<head><%- include('partials/_headPublico', { tituloPagina: titulo }) %></head>
+<head>
+  <%- include('partials/_headPublico', { tituloPagina: titulo }) %>
+</head>
 <body class="pagina-publica pagina-login">
   <%- include('partials/_encabezadoPublico') %>
+
   <main class="acceso-publico acceso-dividido" id="contenido" tabindex="-1">
+
     <aside class="acceso-contexto" aria-labelledby="titulo-espacio">
-      <span class="identidad-acceso"><span class="marca-icono" aria-hidden="true">P.</span> PluriOne</span>
-      <p class="sobrelinea">Bienvenido a tu espacio</p>
-      <h2 id="titulo-espacio">Tus ideas.<br> Tu equipo.<br> <span>Una dirección.</span></h2>
-      <p>Organiza contactos, prepara mensajes y mantén el control de cada campaña.</p>
-      <div class="grafico-acceso" aria-hidden="true"><span class="nodo-acceso nodo-central"><%- include('partials/_icono', { nombre: 'panel' }) %></span><span class="nodo-acceso nodo-correo"><%- include('partials/_icono', { nombre: 'correo' }) %></span><span class="nodo-acceso nodo-equipo"><%- include('partials/_icono', { nombre: 'contactos' }) %></span><span class="nodo-acceso nodo-seguro"><%- include('partials/_icono', { nombre: 'escudo' }) %></span></div>
-      <ul class="lista-confianza"><li>Acceso y permisos por empresa</li><li>Consentimiento documentado</li><li>Revisión humana antes del envío</li></ul>
-      <p class="firma-publica">Marketing Automation <span>por PluriOne</span></p>
+      <span class="identidad-acceso">
+        <span class="marca-icono" aria-hidden="true">P.</span> PluriOne
+      </span>
+
+      <p class="sobrelinea">Plataforma de Marketing Automation</p>
+
+      <h2 id="titulo-espacio">
+        Tu empresa.<br>
+        Tu equipo.<br>
+        <span>Tu crecimiento.</span>
+      </h2>
+
+      <p>
+        Gestiona tus contactos, crea campañas inteligentes y automatiza
+        la comunicación de tu empresa desde un solo lugar.
+      </p>
+
+      <div class="grafico-acceso" aria-hidden="true">
+        <span class="nodo-acceso nodo-central">
+          <%- include('partials/_icono', { nombre: 'panel' }) %>
+        </span>
+        <span class="nodo-acceso nodo-correo">
+          <%- include('partials/_icono', { nombre: 'correo' }) %>
+        </span>
+        <span class="nodo-acceso nodo-equipo">
+          <%- include('partials/_icono', { nombre: 'contactos' }) %>
+        </span>
+        <span class="nodo-acceso nodo-seguro">
+          <%- include('partials/_icono', { nombre: 'escudo' }) %>
+        </span>
+      </div>
+
+      <ul class="lista-confianza">
+        <li>Espacio independiente para cada empresa</li>
+        <li>Administración de usuarios y permisos</li>
+        <li>Campañas y contactos organizados de forma segura</li>
+      </ul>
+
+      <p class="firma-publica">
+        Marketing Automation <span>por PluriOne</span>
+      </p>
     </aside>
+
     <section class="panel tarjeta-acceso" aria-labelledby="titulo-login">
-      <span class="insignia-publica">Acceso empresarial</span>
+      <span class="insignia-publica">Portal empresarial</span>
+
       <h1 id="titulo-login">Iniciar sesión</h1>
-      <p class="intro">Continúa con el correo de tu cuenta.</p>
-      <% if (error) { %><p class="aviso-error" role="alert"><%= error %></p><% } %>
-      <form class="campos-acceso" action="/login" method="post" aria-labelledby="titulo-login" data-public-form data-loading-label="Iniciando sesión…">
+
+      <p class="intro">
+        Ingresa con las credenciales de tu usuario empresarial.
+      </p>
+
+      <% if (error) { %>
+        <p class="aviso-error" role="alert"><%= error %></p>
+      <% } %>
+
+      <form
+        class="campos-acceso"
+        action="/login"
+        method="post"
+        aria-labelledby="titulo-login"
+        data-public-form
+        data-loading-label="Iniciando sesión…"
+      >
         <%- include('partials/_erroresFormulario') %>
+
         <input type="hidden" name="_csrf" value="<%= authCsrf %>">
-        <div class="campo"><label for="email">Correo electrónico</label><div class="entrada-con-icono"><%- include('partials/_icono', { nombre: 'correo' }) %><input id="email" name="email" type="email" autocomplete="username" maxlength="320" placeholder="tu@empresa.com" required></div></div>
-        <%- include('partials/_passwordPublico', { id: 'password', nombre: 'password', etiqueta: 'Contraseña', nuevo: false }) %>
+
+        <div class="campo">
+          <label for="email">Correo electrónico del usuario</label>
+
+          <div class="entrada-con-icono">
+            <%- include('partials/_icono', { nombre: 'correo' }) %>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autocomplete="username"
+              maxlength="320"
+              placeholder="tu@empresa.com"
+              required
+            >
+          </div>
+        </div>
+
+        <%- include('partials/_passwordPublico', {
+          id: 'password',
+          nombre: 'password',
+          etiqueta: 'Contraseña',
+          nuevo: false
+        }) %>
+
         <button type="submit">Iniciar sesión</button>
       </form>
-      <p class="ayuda-acceso">¿Aún no tienes una cuenta? <a href="/registro">Registrar empresa</a></p>
-      <p class="ayuda-acceso">¿Te falta verificar tu correo? <a href="/registro/reenviar">Solicitar otro enlace</a></p>
-      <p class="nota-sesion">Si tu sesión caducó, vuelve a iniciar sesión. No compartas tu contraseña.</p>
+
+      <p class="ayuda-acceso">
+        ¿Tu empresa aún no está registrada?
+        <a href="/registro">Registrar mi empresa</a>
+      </p>
+
+      <p class="ayuda-acceso">
+        ¿Registraste tu empresa pero no recibiste el correo?
+        <a href="/registro/reenviar">Reenviar enlace de verificación</a>
+      </p>
+
+      <p class="nota-sesion">
+        Si tu sesión caducó, vuelve a iniciar sesión.
+        Para acceder, tu empresa debe completar la verificación del
+        correo y configurar su primer administrador.
+        No compartas tus credenciales.
+      </p>
+
       <a class="volver-inicio" href="/">← Volver al inicio</a>
     </section>
   </main>
+
   <%- include('partials/_piePublico') %>
 </body>
 </html>

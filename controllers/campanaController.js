@@ -160,12 +160,12 @@ const crearCampana = async (req, res) => {
     }
     if (Object.keys(errores).length) return mostrarFormulario(res, datos, errores, '', 422);
     const creada = await Campana.create(valores);
-    if (req.borradorIAValidado && creada?._id) return res.redirect(303, `/campanas/${creada._id}/automatizacion`);
+    if ((req.borradorIAValidado || req.body?.continuar === 'revisar') && creada?._id) return res.redirect(303, `/campanas/${creada._id}/enviar`);
     return res.redirect(303, '/campanas');
   } catch (error) {
     if (error.code === 11000 && req.borradorIAValidado && valores.empresa) {
       const previa = await Campana.findOne({ empresa: valores.empresa, 'asistenciaIA.aprobacionHash': req.borradorIAValidado.asistenciaIA.aprobacionHash }).select('_id').lean();
-      if (previa) return res.redirect(303, `/campanas/${previa._id}/automatizacion`);
+      if (previa) return res.redirect(303, `/campanas/${previa._id}/enviar`);
     }
     return responderErrorFormulario(res, error, datos);
   }
@@ -188,8 +188,37 @@ const consultarCampana = (vista, titulo) => async (req, res, next) => {
     const mensaje = vista === 'detalle' && req.query.automatizacion === 'enviada'
       ? 'Solicitud enviada a la automatización. Esto confirma la recepción, no la finalización del flujo.' : '';
     const resumenDestinatarios = vista === 'detalle' ? await destinatariosService.resumenCampana(campana) : null;
+    let resultadosEnvio = null;
+    if (vista === 'detalle' && campana.canal === 'email' && campana.empresa) {
+      try {
+        const empresa = campana.empresa._id || campana.empresa;
+        // Solo lectura después de buscarCampana: última ejecución, con desempate estable.
+        const ejecucion = await require('../models/EjecucionGmail').findOne({ empresa, campana: campana._id })
+          .sort({ createdAt: -1, _id: -1 }).select('_id').lean();
+        resultadosEnvio = { sinEjecucion: !ejecucion, intentados: 0, aceptados: 0, rechazados: 0, cancelados: 0, inciertos: 0 };
+        if (ejecucion) {
+          const envios = await require('../models/EnvioGmail').find({ empresa, ejecucion: ejecucion._id })
+            .sort({ updatedAt: -1, _id: -1 }).select('emailHash estado intentos').lean();
+          // Un correo único por huella: estado del registro más reciente y cualquier intento.
+          const destinatarios = new Map();
+          for (const envio of envios) {
+            const previo = destinatarios.get(envio.emailHash);
+            if (previo) previo.intentado ||= envio.intentos > 0;
+            else destinatarios.set(envio.emailHash, { estado: envio.estado, intentado: envio.intentos > 0 });
+          }
+          for (const destinatario of destinatarios.values()) {
+            if (destinatario.intentado) resultadosEnvio.intentados++;
+            const indicador = { aceptado: 'aceptados', rechazado: 'rechazados', cancelado: 'cancelados', incierto: 'inciertos' }[destinatario.estado];
+            if (indicador) resultadosEnvio[indicador]++;
+          }
+        }
+      } catch {
+        // Una métrica no disponible no cambia la respuesta ni el recorrido de la campaña.
+        resultadosEnvio = null;
+      }
+    }
     return res.render(`campanas/${vista}`, { titulo, campana, canales, estados, formatearFecha, mensaje, errorAutomatizacion: false,
-      resumenDestinatarios,
+      resumenDestinatarios, resultadosEnvio,
       mensajeCanal: automatizacionService.mensajeCanalNoDisponible(campana.canal) });
   } catch (error) {
     if ([400, 403, 404].includes(error.status)) return responderErrorRecurso(res, error);
@@ -238,7 +267,7 @@ const actualizarCampana = async (req, res) => {
     // Validar el documento completo, incluso cuando solo cambia fechaInicio.
     await campana.validate();
     await campana.save();
-    return res.redirect(303, `/campanas/${req.params.id}`);
+    return res.redirect(303, `/campanas/${req.params.id}${req.body?.continuar === 'revisar' ? '/enviar' : ''}`);
   } catch (error) {
     if (error.name === 'DocumentNotFoundError') error.status = 404;
     if (error.status === 404) return responderErrorRecurso(res, errorRecurso(404, 'La campaña no existe o fue eliminada.'));

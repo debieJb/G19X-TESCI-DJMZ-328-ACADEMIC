@@ -1,0 +1,5 @@
+<% if (errores.length) { %>
+<div class="aviso-error" role="alert" tabindex="-1" aria-label="Revisa los datos del formulario">
+  <ul><% for (const error of errores) { %><li><%= error %></li><% } %></ul>
+</div>
+<% } %>

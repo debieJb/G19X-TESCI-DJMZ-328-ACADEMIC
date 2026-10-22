@@ -1,0 +1,26 @@
+<% const actual = typeof usuarioActual !== 'undefined' ? usuarioActual : null;
+const activa = typeof seccion !== 'undefined' ? seccion : 'panel';
+const global = actual?.rol === 'superadmin'; %>
+<% if (!actual) { %><%- include('_encabezadoPublico') %><% } else { %>
+<a class="saltar" href="#contenido">Saltar al contenido</a>
+<header class="encabezado encabezado-publico encabezado-interno" data-sesion-autenticada>
+  <div class="barra">
+    <a class="marca" href="/" aria-label="Marketing Automation de PluriOne, inicio"><span class="marca-icono" aria-hidden="true">P.</span><span>Marketing Automation<small>POR PLURIONE</small></span></a>
+    <div class="identidad-interna"><%- include('_identidadUsuario') %></div>
+    <button class="menu-publico" type="button" data-menu-toggle aria-expanded="false" aria-controls="navegacion-publica" hidden>Menú</button>
+  </div>
+  <div class="barra barra-navegacion"><nav id="navegacion-publica" class="navegacion" aria-label="Navegación del espacio de trabajo">
+    <div class="identidad-menu"><%- include('_identidadUsuario') %></div>
+    <a href="/">Inicio</a>
+    <a href="/panel" <%- activa === 'panel' ? 'aria-current="page"' : '' %>><%- include('_icono', {nombre:'panel'}) %> Mi panel</a>
+    <% if (global) { %><a href="/panel#empresas" <%- activa === 'empresas' ? 'aria-current="page"' : '' %>>Empresas</a><a href="/panel#usuarios-empresa" <%- activa === 'usuarios' ? 'aria-current="page"' : '' %>>Usuarios</a><a href="/admin/usuarios/nuevo">Nuevo usuario</a><a href="/admin/empresas/nueva">Nueva empresa</a><% } %>
+    <a href="/campanas" <%- ['campanas','nueva'].includes(activa) ? 'aria-current="page"' : '' %>><%- include('_icono', {nombre:'campana'}) %> <%= global ? 'Ver campañas' : 'Campañas' %></a>
+    <a href="/contactos" <%- activa === 'contactos' ? 'aria-current="page"' : '' %>><%- include('_icono', {nombre:'contactos'}) %> Contactos</a>
+    <% if (actual.rol === 'admin_empresa') { %><a href="/empresa/gmail" <%- activa === 'gmail' ? 'aria-current="page"' : '' %>>Gmail empresarial</a><a href="/panel#usuarios" <%- activa === 'usuarios' ? 'aria-current="page"' : '' %>>Operadores</a><a href="/empresa/usuarios/nuevo">Nuevo operador</a><% } %>
+    <% if (!global) { %><a href="/empresa/ia" <%- activa === 'ia' ? 'aria-current="page"' : '' %>>Asistente IA</a><% } %>
+    <%- include('_cerrarSesion') %>
+  </nav></div>
+</header>
+<div class="contexto-interno"><span class="punto-marca" aria-hidden="true"></span><span><%= global ? 'Administración de la plataforma' : actual.empresa?.nombre || 'Espacio empresarial' %></span><span class="contexto-etiqueta">Acceso autenticado</span></div>
+<% if (typeof avisoOperacion !== 'undefined' && avisoOperacion) { %><div class="aviso-operacion" role="status"><%= avisoOperacion %></div><% } %>
+<% } %>

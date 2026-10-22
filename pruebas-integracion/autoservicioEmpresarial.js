@@ -15,6 +15,9 @@ after(async () => { await rs.compararOriginal(); assert.equal(mongoose.connectio
 const fixture = async t => {
   const nombre = 'ma_tx_test_' + randomUUID().replaceAll('-', ''), marca = randomUUID();
   const conexion = await mongoose.createConnection(rs.URI, { dbName: nombre, autoCreate: false, autoIndex: false }).asPromise();
+  try {
+    assert.ok(!(await conexion.db.admin().listDatabases()).databases.some(d => d.name === nombre));
+  } catch (e) { await conexion.close(); throw e; }
   t.after(async () => {
     try {
       const c = await rs.conectar(); try { await rs.verificar(c); } finally { await c.close(); }
@@ -27,8 +30,8 @@ const fixture = async t => {
   const m = {};
   for (const n of nombres) {
     m[n] = conexion.model(n, require(`../models/${n}`).schema.clone().set('autoIndex', false).set('autoCreate', false));
-    await m[n].createCollection(); await m[n].createIndexes();
   }
+  await autoservicio.inicializar(conexion);
   let ahora = new Date(); const mensajes = [];
   const transporte = { enviar: async mensaje => { mensajes.push(mensaje); } };
   const correo = crearCorreoTransaccional({ autorizado: true, simulado: true, transporte,
@@ -43,9 +46,70 @@ const fixture = async t => {
     const valor = await iniciar(); const resultado = await servicio.verificar({ hashEnlace: autoservicio.tokenHash(valor), sesion });
     return { ...resultado, sesion };
   };
-  return { m, conexion, servicio, entrada, mensajes, transporte, token, iniciar, verificar, configurarDatos,
+  return { m, conexion, servicio, entrada, mensajes, transporte, correo, token, iniciar, verificar, configurarDatos,
     avanzar: ms => { ahora = new Date(+ahora + ms); } };
 };
+test('registro: inicialización aditiva es idempotente y preserva datos existentes', async t => {
+  const f = await fixture(t); await f.servicio.solicitar(f.entrada);
+  const antes = await f.m.SolicitudRegistro.collection.findOne({});
+  await autoservicio.inicializar(f.conexion); await autoservicio.preparar(f.conexion);
+  assert.deepEqual(await f.m.SolicitudRegistro.collection.findOne({}), antes);
+});
+
+test('registro: reenvío devuelve ID únicamente autorizado y clasifica sustituido/usado/caducado', async t => {
+  const f = await fixture(t), anterior = await f.iniciar();
+  assert.equal(await f.servicio.reenviar(f.entrada.datos.correo), undefined);
+  assert.equal(await f.servicio.consultarEnlace({ hashEnlace: autoservicio.tokenHash(anterior) }), 'vigente');
+  f.avanzar(61000);
+  const respuestas = await Promise.all([f.servicio.reenviar(f.entrada.datos.correo), f.servicio.reenviar(f.entrada.datos.correo)]);
+  assert.equal(respuestas.filter(Boolean).length, 1);
+  assert.match(respuestas.find(Boolean), /^[a-f0-9]{24}$/);
+  assert.equal(await f.servicio.consultarEnlace({ hashEnlace: autoservicio.tokenHash(anterior) }), 'sustituido');
+  await f.servicio.despachar(); const nuevo = f.token();
+  await f.servicio.verificar({ hashEnlace: autoservicio.tokenHash(nuevo), sesion: randomUUID() });
+  assert.equal(await f.servicio.consultarEnlace({ hashEnlace: autoservicio.tokenHash(nuevo) }), 'usado');
+});
+
+test('registro HTTP + SMTP simulado: sin worker registra, reenvía, verifica y permite login', async t => {
+  const f = await fixture(t), crear = autoservicio.crearServicio, mensajes = [];
+  const entorno = { NODE_ENV: 'development', TRANSACTIONAL_EMAIL_ENABLED: 'true', TRANSACTIONAL_WORKER_ENABLED: 'false',
+    TRANSACTIONAL_PUBLIC_ORIGIN: 'http://localhost:3000', EMAIL_USER: 'plataforma@example.test', EMAIL_PASS: 'sintetica' };
+  const previos = Object.fromEntries(Object.keys(entorno).map(k => [k, process.env[k]]));
+  for (const [k, v] of Object.entries(entorno)) process.env[k] = v;
+  t.after(() => { for (const [k, v] of Object.entries(previos)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; } });
+  t.mock.method(require('nodemailer'), 'createTransport', () => ({ close() {}, sendMail: async mensaje => {
+    mensajes.push(mensaje); return { accepted: [mensaje.to], rejected: [], messageId: `<registro-${mensajes.length}@example.test>` };
+  } }));
+  t.mock.method(autoservicio, 'crearServicio', opciones => crear({ ...opciones, conexion: f.conexion, reloj: () => relojActual }));
+  let relojActual = new Date();
+  t.mock.method(require('../models/Usuario'), 'findOne', filtro => f.m.Usuario.findOne(filtro));
+  t.mock.method(require('../models/LimiteRegistro').collection, 'listIndexes', () => f.m.LimiteRegistro.collection.listIndexes());
+  t.mock.method(require('../models/LimiteRegistro'), 'findOneAndUpdate', (...args) => f.m.LimiteRegistro.findOneAndUpdate(...args));
+  const { app, store } = crearAppRegistro(); t.after(() => store.clear()); const agente = request.agent(app);
+  const pagina = await agente.get('/registro');
+  const datos = { _csrf: campo(pagina.text, '_csrf'), idempotencia: campo(pagina.text, 'idempotencia'), nombreEmpresa: 'Empresa SMTP web', correo: f.entrada.datos.correo };
+  await agente.post('/registro').type('form').send(datos).expect(202); assert.equal(mensajes.length, 1);
+  await agente.post('/registro').type('form').send(datos).expect(202); assert.equal(mensajes.length, 1);
+  const reenvio = await agente.get('/registro/reenviar');
+  const reenviar = () => agente.post('/registro/reenviar').type('form').send({ _csrf: campo(reenvio.text, '_csrf'), correo: datos.correo });
+  await reenviar().expect(202); assert.equal(mensajes.length, 1);
+  relojActual = new Date(+relojActual + 61000); await reenviar().expect(202); assert.equal(mensajes.length, 2);
+  const enlace = n => new URL(mensajes[n].text.match(/http:\/\/\S+/)[0]);
+  assert.equal(enlace(1).origin, 'http://localhost:3000');
+  await agente.get(enlace(0).pathname + enlace(0).search).expect(303);
+  await agente.get('/registro/verificar').expect(422).then(r => assert.match(r.text, /Enlace sustituido/));
+  await agente.get(enlace(1).pathname + enlace(1).search).expect(303);
+  const confirmar = await agente.get('/registro/verificar').expect(200);
+  await agente.post('/registro/verificar').expect(403);
+  await agente.post('/registro/verificar').type('form').send({ _csrf: campo(confirmar.text, '_csrf') }).expect(303);
+  const administrador = await agente.get('/registro/administrador').expect(200), credenciales = f.configurarDatos();
+  await agente.post('/registro/administrador').type('form').send({ ...credenciales, _csrf: campo(administrador.text, '_csrf') }).expect(200);
+  const login = await agente.get('/login');
+  await agente.post('/login').type('form').send({ email: datos.correo, password: credenciales.password, _csrf: campo(login.text, '_csrf') }).expect(303);
+  assert.equal((await f.m.Empresa.findOne()).estadoActivacion, 'verificada');
+  assert.equal(await f.m.Usuario.countDocuments(), 1); assert.equal(mensajes.length, 2);
+});
+
 test('autoservicio real: reserva sin usuario; verificación y configuración crean empresa activa y contraseña bcrypt', async t => {
   const f = await fixture(t), token = await f.iniciar();
   assert.equal(await f.m.Empresa.countDocuments(), 0); assert.equal(await f.m.Usuario.countDocuments(), 0);
@@ -181,13 +245,14 @@ test('autoservicio real: dos consumidores no entregan dos veces la misma versió
   const r = await Promise.all([f.servicio.despachar(), f.servicio.despachar()]);
   assert.equal(r.filter(e => e.estado === 'enviada').length, 1); assert.equal(f.mensajes.length, 1);
 });
-test('autoservicio real: una caída durante entrega requiere reenvío explícito tras vencer reserva', async t => {
+test('autoservicio real: reserva vencida e incertidumbre bloquean reenvíos que podrían duplicar', async t => {
   const f = await fixture(t); await f.servicio.solicitar(f.entrada);
   await f.m.SolicitudRegistro.updateOne({}, { $set: { correoEstado: 'procesando', entregaHasta: new Date(Date.now() + 120000) } });
   await f.servicio.reenviar(f.entrada.datos.correo);
   assert.equal((await f.servicio.despachar()).estado, 'sin_trabajo');
-  f.avanzar(180000); await f.servicio.reenviar(f.entrada.datos.correo);
-  assert.equal((await f.servicio.despachar()).estado, 'enviada'); assert.equal(f.mensajes.length, 1);
+  f.avanzar(180000); assert.equal(await f.servicio.reenviar(f.entrada.datos.correo), undefined);
+  await f.servicio.recuperarIncierta(); assert.equal(await f.servicio.reenviar(f.entrada.datos.correo), undefined);
+  assert.equal((await f.servicio.despachar()).estado, 'sin_trabajo'); assert.equal(f.mensajes.length, 0);
 });
 test('autoservicio real: reenvío limitado invalida enlace anterior y reinicia ventana diaria', async t => {
   const f = await fixture(t), anterior = await f.iniciar();
@@ -232,7 +297,7 @@ test('autoservicio real: registro repetido de cuenta existente no crea ni modifi
 test('autoservicio real HTTP: solicitud, enlace, contraseña e inicio de sesión con MongoDB temporal', async t => {
   const f = await fixture(t), crear = autoservicio.crearServicio;
   const datos = f.configurarDatos();
-  t.mock.method(autoservicio, 'crearServicio', () => crear({ conexion: f.conexion }));
+  t.mock.method(autoservicio, 'crearServicio', opciones => crear({ ...opciones, conexion: f.conexion }));
   const Usuario = require('../models/Usuario');
   t.mock.method(Usuario, 'findOne', filtro => f.m.Usuario.findOne(filtro));
   const { app, store } = crearAppRegistro(); t.after(() => store.clear());
@@ -245,12 +310,15 @@ test('autoservicio real HTTP: solicitud, enlace, contraseña e inicio de sesión
   const Limite = require('../models/LimiteRegistro');
   t.mock.method(Limite.collection, 'listIndexes', () => f.m.LimiteRegistro.collection.listIndexes());
   t.mock.method(Limite, 'findOneAndUpdate', (...args) => f.m.LimiteRegistro.findOneAndUpdate(...args));
+  const cancelar = new AbortController();t.after(() => cancelar.abort());
+  const automatico = require('../services/trabajadorVerificacionService').ejecutar({ conexion: f.conexion, correo: f.correo,
+    signal: cancelar.signal, intervaloMs: 10, informar: codigo => { if (codigo === 'CORREO_ACEPTADO_PROVEEDOR') cancelar.abort(); } });
   await agente.post('/registro').type('form').send({ _csrf: campo(pagina.text, '_csrf'), idempotencia: campo(pagina.text, 'idempotencia'),
     nombreEmpresa: 'Empresa HTTP', correo: 'administracion@example.test' }).expect(202);
   assert.equal(await f.m.Usuario.countDocuments(), 0);
   await login(401);
-  // Solo el consumidor con transporte simulado emite el enlace de esta prueba.
-  await f.servicio.despachar();
+  // Consumidor residente con Gmail simulado: sin ID ni despacho administrativo.
+  await automatico;
   await agente.get('/registro/verificar').query({ token: f.token() }).expect(303);
   const confirmacion = await agente.get('/registro/verificar').expect(200);
   await agente.post('/registro/verificar').type('form').send({ _csrf: campo(confirmacion.text, '_csrf') }).expect(303);

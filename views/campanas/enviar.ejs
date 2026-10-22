@@ -1,0 +1,42 @@
+<!DOCTYPE html><html lang="es"><head><%- include('../partials/_headInterno') %></head>
+<body class="pagina-interna"><%- include('../partials/_encabezado', { seccion: 'campanas' }) %>
+<main id="contenido" tabindex="-1">
+  <div class="cabecera-pagina"><div><p>Revisar → Enviar → Ver resultado</p><h1><%= campana.nombre %></h1><p><span class="insignia"><%= estadoVisible %></span></p></div></div>
+  <nav aria-label="Navegación de campaña"><a href="/campanas">Todas las campañas</a><a href="/campanas/<%= campana._id %>">Ver detalle</a><a href="/campanas/<%= campana._id %>/editar">Editar campaña</a><a href="#historial">Ver historial</a></nav>
+  <% if (puedePreparar) { %>
+  <section class="panel" id="preparar-envio"><h2><%= campana.estado === 'borrador' ? 'Activar y preparar envío' : 'Elegir contactos' %></h2>
+    <p>Elige contactos con consentimiento documentado. Guardar esta revisión no envía correos. Las selecciones por todos o etiquetas se fijan al guardar; contactos nuevos no se añaden después.</p>
+    <form method="post" action="/campanas/<%= campana._id %>/activar-preparar" class="formulario">
+      <%- include('../partials/_csrfCampana') %><input type="hidden" name="revisionCampana" value="<%= campana.updatedAt?.toISOString() || '0' %>">
+      <% if (typeof supervisado !== 'undefined' && supervisado) { %>
+      <div class="campo"><label for="tipo-envio">Elegir contactos</label><select id="tipo-envio" name="tipo"><option value="contactos">Contactos específicos</option><option value="todos">Todos los contactos válidos de mi empresa</option><option value="etiquetas">Por etiquetas</option></select></div>
+      <div class="campo"><label for="etiquetas-envio">Etiquetas (solo para segmentar por etiquetas)</label><select id="etiquetas-envio" name="etiquetas" multiple size="4"><% for (const etiqueta of [...new Set(evaluacion.opciones.flatMap(c => c.etiquetas || []))].sort()) { %><option><%= etiqueta %></option><% } %></select></div>
+      <% } %>
+      <% if (typeof supervisado !== 'undefined' && supervisado) { %>
+      <fieldset class="campo campo-amplio seleccion-contactos" id="contacto-envio"><legend>Contactos específicos autorizados</legend><p>Marca cada contacto que deseas incluir. Para todos o etiquetas, usa la opción de arriba.</p>
+        <% for (const c of evaluacion.opciones) { %><label class="opcion-contacto"><input type="checkbox" name="contactos" value="<%= c._id %>" <%= (campana.destinatarios?.contactos || []).some(id => String(id) === String(c._id)) ? 'checked' : '' %>><span><%= c.nombre %><br><%= c.email %></span></label><% } %>
+      </fieldset>
+      <% } else { %>
+      <div class="campo campo-amplio"><label for="contacto-envio">Destinatarios autorizados</label><select id="contacto-envio" name="contactos" required>
+        <option value="">Selecciona un contacto</option>
+        <% for (const c of evaluacion.opciones) { %><option value="<%= c._id %>" <%= (campana.destinatarios?.contactos || []).some(id => String(id) === String(c._id)) ? 'selected' : '' %>><%= c.nombre %> — <%= c.email %></option><% } %>
+      </select></div>
+      <% } %>
+      <div class="acciones"><button type="submit"><%= campana.estado === 'borrador' ? 'Activar y preparar envío' : 'Preparar revisión' %></button><a href="/contactos">Gestionar contactos y consentimiento</a></div>
+    </form>
+  </section><% } %>
+  <% if (typeof contactosNoElegibles !== 'undefined' && contactosNoElegibles.length && puedePreparar) { %><section class="panel"><h2>Contactos excluidos de la selección</h2><p>Estos contactos no recibirán la campaña.</p><ul><% for (const c of contactosNoElegibles) { %><li><%= c.nombre %>: <%= c.motivo %></li><% } %></ul><a href="/contactos">Revisar consentimiento y estado</a></section><% } %>
+  <section class="panel" id="politica-envio"><h2>Límites de envío</h2><p>Límite por campaña: <%= typeof maxDestinatarios !== 'undefined' ? maxDestinatarios : 1 %>. Se envía un mensaje individual por correo, sin mostrar otros destinatarios.</p><% if (typeof avisosPolitica !== 'undefined') { for (const aviso of avisosPolitica) { %><p><%= aviso.mensaje %></p><% } } %></section>
+  <section class="panel"><h2>Confirmación de campaña</h2>
+    <p>Empresa: <strong><%= usuarioActual.empresa?.nombre || 'Empresa de la campaña' %></strong></p>
+    <p>Gmail remitente: <strong><%= estado.correoAutorizado || 'Sin conectar' %></strong></p>
+    <h3><%= campana.asunto || 'Asunto pendiente' %></h3><pre class="vista-previa-campana"><%= campana.cuerpoTexto || 'Mensaje pendiente' %></pre>
+    <p>Destinatarios válidos: <strong><%= evaluacion.validos.length %></strong>. Excluidos: <strong><%= evaluacion.excluidos.length %></strong>.</p>
+    <% if (evaluacion.excluidos.length) { %><h3>Destinatarios excluidos</h3><ul><% for (const c of evaluacion.excluidos) { %><li><strong><%= c.nombre %></strong>: <%= c.motivo %></li><% } %></ul><a href="/contactos">Revisar consentimiento y estado de contactos</a><% } %>
+  </section>
+  <% if (bloqueos.length && !ejecucion) { %><section class="panel" role="status"><h2>Antes de enviar</h2><ul><% for (const b of bloqueos) { %><li><%= b.mensaje %> <a href="<%= b.href %>"><%= b.accion %></a></li><% } %></ul></section><% } %>
+  <div id="historial" tabindex="-1">
+  <%- include('../partials/_envioCampanaManual', { campana }) %>
+  <% if (envios.length) { %><noscript><h2>Resultado guardado</h2><ul><% for (const e of envios) { %><li><%= ({ aceptado: 'Enviada a Gmail', incierto: 'Resultado incierto', rechazado: 'Error', cancelado: 'Error', enviando: 'Enviando', reservado: 'Enviando', pendiente: 'Enviando' })[e.estado] || 'Estado por verificar' %></li><% } %></ul></noscript><% } %>
+  </div>
+</main><%- include('../partials/_piePublico') %></body></html>

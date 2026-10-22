@@ -6,8 +6,14 @@ const MODELOS = Object.freeze(['Empresa', 'Usuario', 'Contacto', 'Campana', 'Con
 const exigir = (ok, codigo) => { if (!ok) throw Error(codigo); };
 const asegurarEnvioApagado = () => exigir(!obtenerPolitica().habilitado
   && process.env.GMAIL_CAMPAIGNS_ENABLED !== 'true', 'PREPARACION_REQUIERE_ENVIO_APAGADO');
-const modelos = conexion => Object.fromEntries(MODELOS.map(n => [n, conexion.models[n] || conexion.model(n,
-  require(`../models/${n}`).schema.clone().set('autoIndex', false).set('autoCreate', false))]));
+const modelos = conexion => Object.fromEntries(MODELOS.map(n => {
+  if (conexion.models[n]) return [n, conexion.models[n]];
+  // require registra el modelo en la conexion global. Comprobar de nuevo antes
+  // de clonar: registrar otro schema en esa misma conexion produce OverwriteModelError.
+  const original = require(`../models/${n}`);
+  return [n, conexion.models[n] || conexion.model(n,
+    original.schema.clone().set('autoIndex', false).set('autoCreate', false))];
+}));
 const planIndices = conexion => {
   const m = modelos(conexion);
   return [...MODELOS.map(n => ({ modelo: n, coleccion: m[n].collection.name,

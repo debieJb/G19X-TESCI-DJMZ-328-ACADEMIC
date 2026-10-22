@@ -1,5 +1,8 @@
 # Almacén protegido de cuotas de IA
 
+> **Contexto histórico — edición final 19/10/2026.** El contenido original siguiente se conserva como informe o referencia de su etapa. Las cifras, configuraciones y afirmaciones de proveedores «pendientes» describen aquella jornada, no el estado final del MVP. Gmail y Gemini fueron comprobados con servicios reales; registro/verificación y envío múltiple reales están confirmados por la responsable. El [expediente vigente](entrega/indice-entrega.md) y el [registro de evidencia](entrega/evidencias-validacion.md) distinguen pruebas simuladas, comprobaciones reales y aceptación formal. Los controles técnicos siguen sujetos al código; los procedimientos históricos no autorizan ejecutar servicios ni campañas.
+
+
 > Nota de cierre 2026-10-15: las instrucciones inferiores conservan evidencia y procedimientos historicos, no la identidad actual de 27019. Ese puerto corresponde ahora a marketingPilotLocalRs, directorio marketing-automation-pilot-mongo-rs, PRIMARY verificado. No ejecutar sobre el los scripts de aprovisionamiento/recuperacion de cuotas IA ni asumir que contiene su almacen. Gemini sigue pendiente de validacion real. Ver [cierre tecnico](cierre-tecnico-2026-10-15.md).
 
 ## Nuevo almacén local independiente para el piloto Gemini

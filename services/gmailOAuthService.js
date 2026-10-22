@@ -29,8 +29,9 @@ const obtenerEstado = async usuario => {
   return { estado: doc?.estado || 'desconectada', email: doc?.email || '', conectadoEn: doc?.conectadoEn || null,
     renovadoEn: doc?.renovadoEn || null, expiraEn: doc?.expiraEn || null };
 };
-const iniciar = async (usuario, sesionId) => {
+const iniciar = async (usuario, sesionId, emailEsperado) => {
   const empresa = await acceso(usuario, true);
+  if (emailEsperado !== undefined && !require('./elegibilidadEmailService').emailValido(emailEsperado)) throw new ErrorGmail('IDENTIDAD');
   const config = google.configuracion();
   if (typeof sesionId !== 'string' || !sesionId) throw new ErrorGmail('ESTADO_INVALIDO');
   let conexion;
@@ -43,9 +44,9 @@ const iniciar = async (usuario, sesionId) => {
   const stateHash = google.hash(state);
   await EstadoOAuth.create({ hash: stateHash, empresa, usuario: usuario._id, sesionHash: google.hash(sesionId),
     nonceHash: google.hash(nonce), verifierCifrado: cifrado.cifrar(verifier, empresa, `pkce:${stateHash}`),
-    clienteOAuthHash: config.hash, versionConexion: conexion.versionConexion, expiraEn: new Date(Date.now() + 10 * 60 * 1000) });
+    clienteOAuthHash: config.hash, versionConexion: conexion.versionConexion, emailEsperado, expiraEn: new Date(Date.now() + 10 * 60 * 1000) });
   return google.crearCliente(config).generateAuthUrl({ access_type: 'offline', prompt: 'consent select_account',
-    scope: google.SCOPES, include_granted_scopes: false, state, nonce,
+    scope: google.SCOPES, include_granted_scopes: false, state, nonce, ...(emailEsperado ? { login_hint: emailEsperado } : {}),
     code_challenge: require('node:crypto').createHash('sha256').update(verifier).digest('base64url'), code_challenge_method: 'S256' });
 };
 const validarTokens = tokens => {
@@ -60,8 +61,12 @@ const validarScopes = scope => {
   return scopes;
 };
 const completar = async (usuario, sesionId, query) => {
+  let etapa = 'ACCESO';
+  try {
   const empresa = await acceso(usuario, true);
+  etapa = 'CONFIGURACION';
   const config = google.configuracion();
+  etapa = 'ESTADO_OAUTH';
   if (typeof query?.state !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(query.state)
     || typeof sesionId !== 'string' || !sesionId) throw new ErrorGmail('ESTADO_INVALIDO');
   // Consumir con DELETE atómico; la caducidad se comprueba aunque TTL no haya corrido.
@@ -70,34 +75,43 @@ const completar = async (usuario, sesionId, query) => {
   if (!pendiente || pendiente.clienteOAuthHash !== config.hash) throw new ErrorGmail('ESTADO_INVALIDO');
   if (query.error !== undefined) throw new ErrorGmail('RECHAZADA');
   if (typeof query.code !== 'string' || !query.code || query.code.length > 4096) throw new ErrorGmail('ESTADO_INVALIDO');
+  etapa = 'CONEXION';
   const conexion = await Conexion.findOne({ empresa }).select(TOKENS);
   if (!conexion || conexion.versionConexion !== pendiente.versionConexion || conexion.estado === 'revocacion_pendiente') throw new ErrorGmail('CONFLICTO');
   const cliente = google.crearCliente(config);
   let tokens, identidad;
-  try {
-    ({ tokens } = await cliente.getToken({ code: query.code, codeVerifier: cifrado.descifrar(pendiente.verifierCifrado, empresa, `pkce:${pendiente.hash}`), redirect_uri: config.redirectUri }));
+    etapa = 'PKCE';
+    const codeVerifier = cifrado.descifrar(pendiente.verifierCifrado, empresa, `pkce:${pendiente.hash}`);
+    etapa = 'CANJE_TOKENS';
+    ({ tokens } = await cliente.getToken({ code: query.code, codeVerifier, redirect_uri: config.redirectUri }));
+    etapa = 'VALIDAR_TOKENS';
     validarTokens(tokens);
     if (!textoToken(tokens.id_token)) throw new ErrorGmail('IDENTIDAD');
-    let ticket;
-    try { ticket = await cliente.verifyIdToken({ idToken: tokens.id_token, audience: config.clientId }); }
-    catch (error) { throw new ErrorGmail(error.response || error.code ? 'GOOGLE' : 'IDENTIDAD'); }
+    etapa = 'VERIFICAR_ID_TOKEN';
+    const ticket = await cliente.verifyIdToken({ idToken: tokens.id_token, audience: config.clientId });
     identidad = ticket.getPayload();
-  } catch (error) { if (error instanceof ErrorGmail) throw error; throw new ErrorGmail('GOOGLE'); }
+  etapa = 'IDENTIDAD';
   if (!identidad || typeof identidad.sub !== 'string' || !identidad.sub || identidad.sub.length > 255
     || identidad.email_verified !== true || typeof identidad.email !== 'string'
     || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identidad.email) || identidad.email.length > 320
     || typeof identidad.nonce !== 'string'
     || typeof pendiente.nonceHash !== 'string' || !/^[a-f\d]{64}$/.test(pendiente.nonceHash)
     || !timingSafeEqual(Buffer.from(google.hash(identidad.nonce)), Buffer.from(pendiente.nonceHash))) throw new ErrorGmail('IDENTIDAD');
+  etapa = 'SCOPES';
   const scopes = validarScopes(tokens.scope);
+  etapa = 'IDENTIDAD';
+  if (pendiente.emailEsperado && pendiente.emailEsperado !== identidad.email.toLowerCase()) throw new ErrorGmail('CUENTA_DISTINTA');
   if (conexion.googleSub && conexion.googleSub !== identidad.sub) throw new ErrorGmail('CUENTA_DISTINTA');
+  etapa = 'REFRESH_TOKEN';
   let refresh = tokens.refresh_token;
   if (!textoToken(refresh) && conexion.googleSub === identidad.sub && conexion.refreshTokenCifrado && conexion.clienteOAuthHash === config.hash) {
     refresh = cifrado.descifrar(conexion.refreshTokenCifrado, empresa, 'refresh');
   }
   if (!textoToken(refresh)) throw new ErrorGmail('REFRESH_AUSENTE');
   // La empresa pudo desactivarse mientras se esperaba a Google.
+  etapa = 'REVALIDAR_EMPRESA';
   await acceso(usuario, true);
+  etapa = 'GUARDAR_CONEXION';
   try {
     const resultado = await Conexion.updateOne({ empresa, versionConexion: pendiente.versionConexion, estado: { $ne: 'revocacion_pendiente' } }, {
       $set: { googleSub: identidad.sub, email: identidad.email, estado: 'conectada', scopes, clienteOAuthHash: config.hash,
@@ -107,6 +121,11 @@ const completar = async (usuario, sesionId, query) => {
     }, { runValidators: true });
     if (!resultado.matchedCount) throw new ErrorGmail('CONFLICTO');
   } catch (error) { if (error.code === 11000) throw new ErrorGmail('CUENTA_OCUPADA'); throw error; }
+  } catch (error) {
+    require('./diagnosticoGmailOAuthService').registrar(etapa, error);
+    if (error instanceof ErrorGmail) throw error;
+    throw new ErrorGmail(etapa === 'VERIFICAR_ID_TOKEN' && !error.response && !error.code ? 'IDENTIDAD' : 'GOOGLE');
+  }
 };
 
 // contexto es exclusivamente interno; nunca se deriva de req.body.

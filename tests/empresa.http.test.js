@@ -72,6 +72,7 @@ test('admin_empresa: crea únicamente operador propio pese a rol y empresa manip
     await cliente.post('/empresa/usuarios').send({ nombre: ' Nuevo ', email: ' NUEVO@A.TEST ', password: 'clave-privada', rol, empresa: String(B), _id: String(id(99)) }).expect(303).expect('Location', '/panel');
   }
   for (const usuario of insertados) {
+    assert.equal(usuario.estadoAcceso, 'pendiente_verificacion');
     assert.equal(usuario.rol, 'operador'); assert.equal(String(usuario.empresa), String(A));
     assert.equal(usuario.email, 'nuevo@a.test'); assert.equal(usuario.nombre, 'Nuevo');
     assert.notEqual(usuario.password, 'clave-privada'); assert.equal(await bcrypt.compare('clave-privada', usuario.password), true);
@@ -133,4 +134,42 @@ test('admin_empresa: validación de operador no devuelve password ni cambia rela
   const respuesta = await cliente.post('/empresa/usuarios').send({ nombre: '', email: 'invalido', password: 'SECRETO_NUNCA_DEVOLVER', rol: 'superadmin', empresa: String(B) }).expect(422);
   assert.doesNotMatch(respuesta.text, /SECRETO_NUNCA_DEVOLVER|value="superadmin"/);
   assert.equal(insertados.length, 0);
+});
+
+test('alta de operador respeta verificación y estado empresarial', async t => {
+  const { cliente } = contexto(t, 'admin_empresa');
+  for (const cambio of [
+    { versionAlta: 1, estadoActivacion: 'pendiente_verificacion', estado: 'activa' },
+    { versionAlta: 1, estadoActivacion: 'verificada', estado: 'inactiva' },
+    { versionAlta: 1, estadoActivacion: 'verificada', estado: 'activa' }
+  ]) {
+    Object.assign(empresas[0], cambio);
+    await cliente.post('/empresa/usuarios').send({ nombre: 'Operador', email: 'op@example.test', password: 'clave-segura-nueva', estadoAcceso: 'activo' }).expect(303);
+  }
+  assert.deepEqual(insertados.map(u => u.estadoAcceso), ['pendiente_verificacion', 'pendiente_verificacion', 'pendiente_verificacion']);
+});
+
+test('superadmin edita empresa sin modificar verificación ni configuración', async t => {
+  const { cliente } = contexto(t, 'superadmin');
+  await cliente.get(`/admin/empresas/${A}/editar`).expect(200);
+  await cliente.post(`/admin/empresas/${A}`).send({ nombre: 'Empresa renovada', estado: 'inactiva', estadoActivacion: 'verificada', versionAlta: 1, automatizaciones: {} }).expect(303);
+  assert.equal(cambios.length, 1);
+  assert.deepEqual(cambios[0].update.$set, { nombre: 'Empresa renovada', estado: 'inactiva' });
+});
+
+test('edición empresarial rechaza roles inferiores, CSRF ausente y estados inválidos', async t => {
+  const { cliente } = contexto(t, 'admin_empresa');
+  await cliente.get(`/admin/empresas/${A}/editar`).expect(403);
+  await cliente.post(`/admin/empresas/${A}`).send({ nombre: 'Intrusa', estado: 'activa' }).expect(403);
+  assert.equal(cambios.length, 0);
+});
+
+test('edición empresarial exige CSRF y valida identificadores y estado', async t => {
+  const c = contexto(t, 'superadmin');
+  await c.cliente.get('/admin/empresas/invalido/editar').expect(400);
+  await c.cliente.get(`/admin/empresas/${id(99)}/editar`).expect(404);
+  await c.cliente.post(`/admin/empresas/${A}`).send({ nombre: 'Empresa', estado: 'otro' }).expect(422);
+  const sinCsrf = crearContexto(t, { _id: actor, nombre: 'Superadmin', rol: 'superadmin', empresa: null }, { csrf: false });
+  await sinCsrf.cliente.post(`/admin/empresas/${A}`).send({ nombre: 'Empresa', estado: 'activa' }).expect(403);
+  assert.equal(cambios.length, 0);
 });
