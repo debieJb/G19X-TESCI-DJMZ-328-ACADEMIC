@@ -1,5 +1,8 @@
 const Usuario = require('../models/Usuario');
 const { destruirSesion, limpiarCookie } = require('../middlewares/autenticacion');
+const bcrypt = require('bcryptjs');
+// Mismo trabajo de bcrypt para cuentas inexistentes; nunca usar una contraseña real.
+const hashInexistente = bcrypt.hash(require('node:crypto').randomBytes(32).toString('base64url'), 12);
 
 const mostrarLogin = (req, res) => {
   if (res.locals.usuarioActual) return res.redirect('/panel');
@@ -25,7 +28,8 @@ const iniciarSesion = async (req, res, next) => {
         error: limitado ? 'Demasiados intentos. Espera 15 minutos antes de volver a intentar.' : 'El acceso no está disponible temporalmente. Inténtalo más tarde.' });
     }
     const usuario = await Usuario.findOne({ email: email.trim().toLowerCase() }).select('+password');
-    if (!usuario || !(await usuario.compararPassword(password))) return rechazar();
+    const coincide = usuario ? await usuario.compararPassword(password) : await bcrypt.compare(password, await hashInexistente);
+    if (!usuario || !coincide) return rechazar();
     // Los usuarios históricos sin estado conservan compatibilidad. Los estados
     // nuevos deben estar explícitamente activos para iniciar sesión.
     if (usuario.estadoAcceso !== undefined && usuario.estadoAcceso !== 'activo') return rechazar();

@@ -20,6 +20,27 @@ const usuarioSchema = new mongoose.Schema({
   versionSesion: { type: Number, min: 0, validate: Number.isSafeInteger,
     default: function () { return this.isNew ? 0 : undefined; } },
   emailVerificadoEn: Date,
+  // Outbox de recuperación: ningún token original se persiste. Sin nueva colección/índice.
+  recuperacion: { type: new mongoose.Schema({
+    solicitudHash: { type: String, match: /^[a-f0-9]{64}$/ },
+    estado: { type: String, enum: ['pendiente', 'procesando', 'enviada', 'fallida', 'incierta', 'consumida'] },
+    solicitadaEn: Date,
+    proximoEn: Date,
+    tokenHash: { type: String, match: /^[a-f0-9]{64}$/ },
+    expiraEn: Date,
+    entregaHash: { type: String, match: /^[a-f0-9]{64}$/ },
+    entregaHasta: Date,
+    versionSesion: { type: Number, min: 0, validate: Number.isSafeInteger },
+    correo: String,
+    proveedorMensajeId: { type: String, maxlength: 128 },
+    correoError: { type: String, enum: ['REAUTORIZAR_TRANSACCIONAL', 'SMTP_RECHAZADO', 'SMTP_CUOTA', 'CONFIGURACION_SMTP',
+      'ORIGEN_SMTP_INVALIDO', 'CORREO_DESHABILITADO', 'LIMITES_TRABAJADOR_INVALIDOS', 'DESPACHO_NO_DISPONIBLE',
+      'ENTREGA_CANCELADA', 'ENTREGA_INCIERTA', 'MENSAJE_SMTP_INVALIDO', 'MENSAJE_INVALIDO', 'CUOTA_ENVIO_AGOTADA'] },
+    faseSmtp: { type: String, enum: ['AUTH', 'CONN', 'EHLO', 'HELO', 'STARTTLS', 'MAIL FROM', 'RCPT TO', 'DATA'] },
+    respuestaSmtp: { type: Number, min: 400, max: 599 },
+    estadoSmtp: { type: String, match: /^[245]\.\d{1,3}\.\d{1,3}$/ },
+    consumidaEn: Date
+  }, { _id: false, strict: 'throw' }), select: false, default: undefined },
   empresa: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Empresa',
@@ -58,7 +79,7 @@ for (const operacion of ['updateOne', 'updateMany', 'findOneAndUpdate']) {
     }
   });
 }
-const sinPassword = (doc, objeto) => { delete objeto.password; return objeto; };
+const sinPassword = (doc, objeto) => { delete objeto.password; delete objeto.recuperacion; return objeto; };
 usuarioSchema.set('toJSON', { transform: sinPassword });
 usuarioSchema.set('toObject', { transform: sinPassword });
 

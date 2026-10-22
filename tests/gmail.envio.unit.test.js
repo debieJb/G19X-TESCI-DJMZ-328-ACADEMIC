@@ -18,11 +18,11 @@ const mensaje = () => ({ remitente: 'empresa@example.test', destinatario: 'perso
   cuerpoTexto: 'Primera línea\nSegunda línea', mensajeId: randomBytes(32).toString('hex') + '@example.test' });
 const activar = () => { process.env.GMAIL_CAMPAIGNS_ENABLED = 'true'; process.env.GMAIL_CAMPAIGNS_PILOT_COMPANIES = empresa; };
 
-test('automático: un destinatario por defecto y límites inválidos bloqueados', () => {
+test('automático: hasta 50 por defecto y límites inválidos bloqueados', () => {
   activar(); process.env.GMAIL_CAMPAIGNS_MODE = 'automatico';
-  assert.equal(obtenerPolitica().maxDestinatarios, 1);
+  assert.equal(obtenerPolitica().maxDestinatarios, 50);
   process.env.GMAIL_CAMPAIGNS_MAX_RECIPIENTS = '50'; assert.equal(obtenerPolitica().maxDestinatarios, 50);
-  for (const valor of ['0', '51', '-1', 'NaN', '2.5', ' 2']) {
+  for (const valor of ['', '0', '51', '-1', 'NaN', '2.5', ' 2']) {
     process.env.GMAIL_CAMPAIGNS_MAX_RECIPIENTS = valor;
     assert.equal(obtenerPolitica().maxDestinatarios, 0);
   }

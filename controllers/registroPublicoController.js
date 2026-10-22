@@ -17,6 +17,9 @@ const regenerar = req => new Promise((resolve, reject) =>
 );
 
 const mensajeGenerico = 'Solicitud recibida. Si el registro puede continuar, se procesará la verificación cuando el servicio de correo esté disponible. Esta respuesta no confirma el envío ni la entrega de un mensaje.';
+const despuesDeResponder = (res, despachar) => res.once('finish', () => setImmediate(() => {
+  Promise.resolve().then(despachar).catch(() => console.error('VERIFICACION_DESPACHO_NO_DISPONIBLE'));
+}));
 
 const pagina = (res, paso, status = 200, mensaje = '') =>
   res.status(status).render('registro', { paso, mensaje });
@@ -115,7 +118,7 @@ const solicitud = async (req, res) => {
       // Solo la solicitud nueva confirmada, nunca un barrido de pendientes.
       if (typeof solicitudId === 'string' && /^[a-f0-9]{24}$/.test(solicitudId)
         && process.env.TRANSACTIONAL_EMAIL_ENABLED === 'true') {
-        await servicioRegistro.despachar({ solicitudId, primerIntento: true, destinatarioEsperado: datos.correo });
+        despuesDeResponder(res, () => servicioRegistro.despachar({ solicitudId, primerIntento: true, destinatarioEsperado: datos.correo }));
       }
     } catch (e) {
       if (e.codigo !== 'IDEMPOTENCIA_CONFLICTO') throw e;
@@ -170,7 +173,7 @@ const reenviar = async (req, res) => {
     const solicitudId = await servicioRegistro.reenviar(destino);
     if (typeof solicitudId === 'string' && /^[a-f0-9]{24}$/.test(solicitudId)
       && process.env.TRANSACTIONAL_EMAIL_ENABLED === 'true') {
-      await servicioRegistro.despachar({ solicitudId });
+      despuesDeResponder(res, () => servicioRegistro.despachar({ solicitudId }));
     }
     await new Promise(resolve =>
       setTimeout(resolve, Math.max(0, 250 - (Date.now() - inicio)))
@@ -280,7 +283,10 @@ const mostrarAdministrador = async (req, res) => {
     }
 
     if (estado === 'completada') {
-      return pagina(res, 'completada');
+      // consultarConfiguracion comprueba el permiso de esta sesión, obtenido
+      // al verificar el correo. Nunca mostrar esta vinculación en la solicitud pública.
+      return pagina(res, 'completada', 200,
+        'Ya existe una cuenta vinculada a este correo. Por favor, inicia sesión');
     }
 
     if (estado !== 'vigente') {

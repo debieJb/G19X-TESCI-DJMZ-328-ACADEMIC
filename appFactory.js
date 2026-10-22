@@ -30,6 +30,7 @@ app.use((req, res, next) => {
   next();
 });
 app.use('/registro', require('./routes/registroPublicoRoutes'));
+app.use('/recuperar', require('./routes/recuperacionPasswordRoutes'));
 app.use(require('./middlewares/csrfSuperadmin'));
 app.use(require('./middlewares/csrfCampanas'));
 app.use(require('./middlewares/csrfContactos'));

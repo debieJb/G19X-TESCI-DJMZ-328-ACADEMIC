@@ -57,9 +57,7 @@
 
       <h1 id="titulo-login">Iniciar sesión</h1>
 
-      <p class="intro">
-        Ingresa con las credenciales de tu usuario empresarial.
-      </p>
+      <p class="intro">Bienvenido de nuevo. Accede a tu espacio de trabajo.</p>
 
       <% if (error) { %>
         <p class="aviso-error" role="alert"><%= error %></p>
@@ -104,10 +102,10 @@
         <button type="submit">Iniciar sesión</button>
       </form>
 
-      <p class="ayuda-acceso">
-        ¿Tu empresa aún no está registrada?
-        <a href="/registro">Registrar mi empresa</a>
-      </p>
+      <nav class="opciones-acceso" aria-label="Opciones de acceso">
+        <a href="/recuperar">¿Olvidaste tu contraseña?</a>
+        <a href="/registro">¿No tienes cuenta? Regístrate</a>
+      </nav>
 
       <p class="ayuda-acceso">
         ¿Registraste tu empresa pero no recibiste el correo?

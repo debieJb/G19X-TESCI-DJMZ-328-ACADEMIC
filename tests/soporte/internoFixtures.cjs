@@ -27,6 +27,7 @@ const fixture = (vista, vacia = false) => {
     guardado: false, pilotoDisponible: true, estado: { motivo: 'Revisa la preparación antes de autorizar un único intento. No se envían mensajes al abrir esta página.', canalValido: true, estadoGmail: 'desconectada', gmailConfigurado: false, identidadCoincide: false, permisoEnvio: false },
     evaluacion: { opciones: vacia ? [] : [contacto], validos: vacia ? [] : [contacto], excluidos: [] },
     bloqueos: [], bloqueosEnvio: [], estadoVisible: 'Borrador', puedePreparar: true, programada: false, ejecucion: null, envios: [], autorizacion: null,
+    maxDestinatarios: 2, supervisado: false,
     configurado: false, esError: false, conexion: { estado: 'desconectada' },
     resultado: { nombre: campana.nombre, objetivo: campana.objetivo, asunto: campana.asunto, mensaje: campana.cuerpoTexto, llamadaAccion: 'Conoce más', segmentacion: ['Clientes con consentimiento'], proveedor: 'Fixture visual, sin llamada externa' }
   };

@@ -11,7 +11,9 @@ const cargar = async (req, res, permitirActiva = false) => {
 const fallo = (res, error) => {
   const status = [400, 403, 404, 409, 422, 503].includes(error.status) ? error.status : 503;
   return res.status(status).render('error', { titulo: 'Automatización no disponible', mensaje: status === 422
-    ? 'Revisa destinatarios autorizados, modalidad, fecha UTC futura y revisión del formulario.'
+    ? error.limiteDestinatarios !== undefined
+      ? `Has superado el límite de destinatarios permitido para esta campaña. Máximo: ${error.limiteDestinatarios}`
+      : 'Revisa destinatarios autorizados, modalidad, fecha UTC futura y revisión del formulario.'
     : status === 409 ? 'La campaña cambió. Recarga la configuración antes de continuar.'
       : 'No se pudo completar esta operación. No se enviaron mensajes ni se activó un workflow.' });
 };
@@ -21,6 +23,7 @@ const mostrar = async (req, res) => {
     const contactos = await preparacion.opciones(empresa), estado = await preparacion.evaluar(campana);
     const politica = require('../config/enviosGmail').obtenerPolitica();
     const bloqueosEnvio = [];
+    if (res.locals.usuarioActual.rol !== 'admin_empresa') bloqueosEnvio.push('La confirmación del envío requiere un administrador de empresa.');
     if (!politica.habilitado) bloqueosEnvio.push('El envío está apagado por la configuración del servidor.');
     if (!politica.empresas.includes(empresa)) bloqueosEnvio.push('Esta empresa no está autorizada para enviar en este despliegue.');
     if (!politica.automatico && req.app.locals.gmailManualValidado !== true) bloqueosEnvio.push('El modo automático no está habilitado.');
@@ -29,7 +32,7 @@ const mostrar = async (req, res) => {
     if (campana.automatizacion?.estado !== 'preparada') bloqueosEnvio.push('Guarda primero los destinatarios y la modalidad de envío.');
     const seleccion = [...new Set((campana.destinatarios?.contactos || []).map(String))];
     if (campana.destinatarios?.tipo !== 'contactos' || !seleccion.length || seleccion.length > politica.maxDestinatarios
-      || seleccion.some(id => !contactos.some(c => String(c._id) === id))) bloqueosEnvio.push('Selecciona contactos propios autorizados dentro del límite de envío; para la prueba, exactamente uno.');
+      || seleccion.some(id => !contactos.some(c => String(c._id) === id))) bloqueosEnvio.push(`Selecciona contactos propios autorizados dentro del límite de envío. Máximo: ${politica.maxDestinatarios}.`);
     if (!campana.asunto?.trim() || !campana.cuerpoTexto?.trim()) bloqueosEnvio.push('Completa el asunto y el mensaje antes de confirmar.');
     if (!estado.permisoEnvio || !estado.identidadCoincide) bloqueosEnvio.push('Conecta el Gmail de la empresa con identidad y permiso de envío válidos.');
     if (campana.imagenLocal) bloqueosEnvio.push('El motor actual solo envía texto; esta campaña contiene una imagen.');
@@ -69,6 +72,10 @@ const guardar = async (req, res) => {
     const ids = typeof req.body.contactos === 'string' ? [req.body.contactos] : req.body.contactos;
     if (!['inmediato', 'programado'].includes(modo) || typeof revision !== 'string' || !/^\d{1,9}$/.test(revision)
       || !Array.isArray(ids) || !ids.length || ids.length > 200 || ids.some(id => typeof id !== 'string' || !/^[a-f0-9]{24}$/.test(id))) throw Object.assign(new Error(), { status: 422 });
+    const limite = require('../config/enviosGmail').obtenerPolitica().maxDestinatarios;
+    if (!Number.isSafeInteger(limite) || limite < 1 || new Set(ids).size > limite) {
+      throw Object.assign(new Error(), { status: 422, limiteDestinatarios: limite });
+    }
     const actuales = await preparacion.opciones(empresa), permitidos = new Set(actuales.map(c => String(c._id)));
     if (ids.some(id => !permitidos.has(id)) || campana.canal !== 'email' || !campana.asunto?.trim() || !campana.cuerpoTexto?.trim()) throw Object.assign(new Error(), { status: 422 });
     const previa = campana.automatizacion?.revision || 0;

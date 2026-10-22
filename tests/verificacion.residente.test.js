@@ -59,3 +59,19 @@ test('supervisor residente: parada IPC ordenada espera salida del hijo', async (
   } });
   assert.equal(orden, 'detener');assert.equal(r.estado, 'detenido');
 });
+
+test('residente: procesa recuperación con el mismo transporte y límites de verificación', async t => {
+  const cancelar = new AbortController(), llamadas = [];
+  const correo = { disponible: true, enviarRecuperacion() {} }, limitesEnvio = { minuto: 8, dia: 80 };
+  t.mock.method(require('../services/autoservicioEmpresarialService'), 'crearServicio', () => ({
+    recuperarIncierta: async () => ({ estado: 'sin_trabajo' }), despachar: async () => ({ estado: 'sin_trabajo' })
+  }));
+  t.mock.method(require('../services/recuperacionPasswordService'), 'crearServicio', opciones => {
+    assert.equal(opciones.correo, correo); assert.equal(opciones.limitesEnvio, limitesEnvio);
+    return { recuperarInciertas: async () => llamadas.push('recuperar'), despachar: async () => { llamadas.push('despachar'); cancelar.abort(); return { estado: 'enviada' }; } };
+  });
+  const mensajes = [];
+  await worker.ejecutar({ conexion: {}, correo, limitesEnvio, signal: cancelar.signal, informar: m => mensajes.push(m) });
+  assert.deepEqual(llamadas, ['recuperar', 'despachar']);
+  assert.ok(mensajes.includes('RECUPERACION_ACEPTADA_PROVEEDOR'));
+});

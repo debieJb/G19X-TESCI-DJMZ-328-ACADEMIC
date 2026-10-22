@@ -5,8 +5,37 @@ Plataforma de gestión de campañas de marketing por correo electrónico con adm
 **Empresa:** PluriOne S.A. de C.V. (Develop Talent & Technology)
 **Institución:** Tecnológico de Estudios Superiores de Cuautitlán Izcalli (TESCI)
 **Autora y responsable académica:** Debanie Jocabed Montoya Zúñiga
-**Base funcional documentada:** `78c743424b84cf7ea6d7fc63d2cbf58205727c88`
+**Referencia histórica de implementación:** `78c743424b84cf7ea6d7fc63d2cbf58205727c88`
 **Rama de trabajo al efectuar esta revisión:** `respaldo-avances-18-oct`
+
+**Estado consolidado para presentación — 22 de octubre de 2026:** se conservan Gemini,
+Gmail OAuth/API y envío múltiple supervisado. Ambas pantallas de preparación permiten
+seleccionar todos los contactos elegibles, desmarcarlos y seleccionar individualmente,
+con contador y rechazo de excesos en cliente y servidor. El máximo configurable es
+1–50 destinatarios; un valor explícito de 2 sigue limitando a 2 y el piloto manual
+conserva un destinatario. Cada mensaje es individual y requiere confirmación del
+administrador, consentimiento válido, aislamiento empresarial y controles de duplicados.
+
+El login responsivo conserva CSRF, límites y errores genéricos. El registro reutiliza
+la detección existente de cuentas y solicitudes pendientes sin duplicar solicitudes
+ni verificaciones. La vinculación específica solo se muestra con titularidad verificada.
+La recuperación de contraseñas está implementada con token aleatorio de un uso,
+hash persistido, caducidad de 15 minutos, bcrypt e invalidación de sesiones anteriores.
+**Su envío real sigue pendiente: Google SMTP rechaza la autenticación con `535 / 5.7.8`.**
+La última comprobación real fue exclusivamente TLS/AUTH, sin enviar mensajes; no
+acredita recepción ni restablecimiento real. Se reutilizan el SMTP y las credenciales
+de verificación, sin crear otro Gmail. El bloqueo afecta al transporte transaccional
+de esa configuración; las evidencias históricas de verificación no acreditan su
+funcionamiento actual. El Gmail OAuth/API de campañas permanece separado.
+
+Detalles: [recuperación de cuentas](docs/recuperacion-cuentas.md),
+[diagnóstico SMTP y comprobación controlada](docs/diagnostico-recuperacion-smtp.md)
+y [envío múltiple supervisado](docs/envio-multiple-supervisado.md).
+
+**Validación del respaldo final (22 de octubre):** `node --test` terminó con
+**917 pruebas aprobadas, 0 fallidas y 0 omitidas**. No se enviaron correos ni
+campañas reales. Las comprobaciones de seguridad preceden al commit/push; esta
+cifra no certifica recepción real de correos de recuperación.
 
 ## Índice
 
@@ -231,7 +260,7 @@ Para revisar la interfaz, CRUD y pruebas de la aplicación no es imprescindible 
 
 | Integración | Para qué se usa | Variables/documentos que se deben revisar | Límite de validación |
 |---|---|---|---|
-| SMTP transaccional | Correos de verificación de registro | `EMAIL_USER`, `EMAIL_PASS`, `TRANSACTIONAL_PUBLIC_ORIGIN`, `TRANSACTIONAL_EMAIL_ENABLED`; trabajador independiente | La configuración no demuestra recepción real |
+| SMTP transaccional | Verificación de registro y recuperación de contraseña | `EMAIL_USER`, `EMAIL_PASS`, `TRANSACTIONAL_PUBLIC_ORIGIN`, `TRANSACTIONAL_EMAIL_ENABLED`; trabajador independiente | Recuperación implementada; envío real pendiente por rechazo AUTH `535 / 5.7.8` en la configuración diagnosticada |
 | Gmail empresarial OAuth/API | Conexión por empresa y envío de campañas | `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_OAUTH_REDIRECT_URI`, `GMAIL_TOKEN_ENCRYPTION_KEY`, `GMAIL_CAMPAIGNS_ENABLED`, `GMAIL_CAMPAIGNS_MODE`; manual y controles de envío | Envío aceptado por API no demuestra entrega, apertura ni clic |
 | Gemini | Redacción asistida sujeta a revisión humana | `AI_ENABLED`, `AI_PROVIDER`, `AI_MODEL`, `GEMINI_API_KEY`, `AI_FREE_TIER_CONFIRMED`; documentación de cuotas | Clave configurada no garantiza modelo disponible ni gratuidad |
 | n8n | Compatibilidad histórica de webhooks | `N8N_WEBHOOK_URL`, `N8N_WEBHOOK_TIMEOUT_MS` | No es el transporte activo del motor Gmail directo |
@@ -312,7 +341,7 @@ La programación automática aparece como implementada y probada con simulacione
 
 ## 3. Pruebas, evidencias y aceptación
 
-**Ejecución reciente comunicada en esta revisión:** 860/860 pruebas generales aprobadas, sin fallos ni omisiones. Incluye la prueba actualizada de creación del superadministrador activo.
+**Ejecución histórica del 21 de octubre:** 860/860 pruebas generales aprobadas, sin fallos ni omisiones. Incluye la prueba actualizada de creación del superadministrador activo. El corte del 22 de octubre se valida nuevamente antes del commit; las pruebas simuladas no acreditan envío de recuperación real.
 
 **Evidencia histórica consignada en la documentación:** 851/851 pruebas generales, 65/65 pruebas de integración y dos ensayos Edge con 58 comprobaciones en total, utilizando datos sintéticos. Son cifras de ejecuciones anteriores y no deben sumarse a las 860 como si fueran pruebas independientes de una misma corrida.
 

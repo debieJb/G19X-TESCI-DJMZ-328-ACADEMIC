@@ -1,0 +1,53 @@
+<%
+const titulos = { solicitud: 'Recupera tu acceso', aceptada: 'Revisa tu correo', restablecer: 'Crea una nueva contraseña', completada: 'Tu acceso está listo', invalida: 'Solicita un nuevo enlace' };
+const titulo = titulos[paso] || titulos.invalida;
+%>
+<!DOCTYPE html><html lang="es"><head>
+  <script src="/js/recuperacion.js" defer></script>
+  <%- include('partials/_headPublico', { tituloPagina: titulo }) %>
+</head><body class="pagina-publica pagina-login pagina-recuperacion">
+<%- include('partials/_encabezadoPublico') %>
+<main class="acceso-publico acceso-dividido" id="contenido" tabindex="-1">
+  <aside class="acceso-contexto" aria-labelledby="contexto-recuperacion">
+    <span class="identidad-acceso"><span class="marca-icono" aria-hidden="true">P.</span> PluriOne</span>
+    <p class="sobrelinea">Tu espacio de trabajo seguro</p>
+    <h2 id="contexto-recuperacion">Vuelve a conectar<br><span>con tu empresa.</span></h2>
+    <p>Recupera tu acceso con un enlace privado enviado a tu correo. Tu empresa, tus permisos y tus campañas permanecen vinculados a tu cuenta.</p>
+    <ul class="lista-confianza"><li>Enlace válido durante 15 minutos</li><li>Un solo uso para proteger tu acceso</li><li>Una nueva contraseña, un nuevo inicio</li></ul>
+  </aside>
+  <section class="panel tarjeta-acceso" aria-labelledby="titulo-recuperacion">
+    <span class="insignia-publica">Recuperación de cuenta</span>
+    <h1 id="titulo-recuperacion"><%= titulo %></h1>
+    <% if (mensaje) { %><p class="<%= paso === 'completada' || paso === 'aceptada' ? 'aviso-publico' : 'aviso-error' %>" role="<%= paso === 'completada' || paso === 'aceptada' ? 'status' : 'alert' %>"><%= mensaje %></p><% } %>
+    <% if (paso === 'solicitud') { %>
+      <p class="intro">Escribe el correo que utilizas para iniciar sesión.</p>
+      <form method="post" action="/recuperar" class="campos-acceso" data-public-form data-loading-label="Solicitando instrucciones…">
+        <%- include('partials/_erroresFormulario') %>
+        <input type="hidden" name="_csrf" value="<%= recuperacionCsrf %>">
+        <div class="campo"><label for="email">Correo electrónico</label><input type="email" id="email" name="email" autocomplete="email" maxlength="254" placeholder="tu@empresa.com" required></div>
+        <button type="submit">Enviar instrucciones</button>
+      </form>
+    <% } else if (paso === 'restablecer') { %>
+      <p class="intro">Elige una contraseña que no utilices en otros servicios.</p>
+      <form method="post" action="/recuperar/restablecer" class="campos-acceso" data-public-form data-loading-label="Actualizando contraseña…">
+        <%- include('partials/_erroresFormulario') %>
+        <input type="hidden" name="_csrf" value="<%= recuperacionCsrf %>">
+        <% const guardado = typeof codigoGuardado !== 'undefined' && codigoGuardado; %>
+        <div class="campo" id="campo-codigo-recuperacion" <%= guardado ? 'hidden' : '' %>><label for="token">Código del correo de recuperación</label><input type="<%= guardado ? 'hidden' : 'text' %>" id="token" name="token" autocomplete="off" spellcheck="false" autocapitalize="off" maxlength="68" <%= guardado ? '' : 'required' %>><p class="ayuda-campo">Si el enlace no completó el código, cópialo del correo.</p></div>
+        <p id="password-ayuda" class="ayuda-campo">Al menos 16 caracteres y cuatro diferentes; máximo 72 bytes.</p>
+        <%- include('partials/_passwordPublico', { id: 'password', nombre: 'password', etiqueta: 'Nueva contraseña', nuevo: true, ayuda: true }) %>
+        <%- include('partials/_passwordPublico', { id: 'confirmacionPassword', nombre: 'confirmacionPassword', etiqueta: 'Confirma la nueva contraseña', nuevo: true }) %>
+        <button type="submit">Guardar nueva contraseña</button>
+      </form>
+    <% } else if (paso === 'aceptada') { %>
+      <p class="intro">Revisa también la carpeta de spam. Por seguridad, esta pantalla no confirma si el correo está registrado. Si recibes varios enlaces, utiliza el más reciente.</p>
+      <p class="ayuda-acceso">¿Aún no verificaste el registro de tu empresa? <a href="/registro/reenviar">Solicitar verificación</a></p>
+    <% } else if (paso === 'completada') { %>
+      <a class="boton ancho-completo" href="/login">Iniciar sesión</a>
+    <% } else { %>
+      <a class="boton ancho-completo" href="/recuperar">Solicitar otro enlace</a>
+    <% } %>
+    <nav class="opciones-acceso" aria-label="Opciones de acceso"><a href="/login">Volver a iniciar sesión</a><a href="/registro">¿No tienes cuenta? Regístrate</a></nav>
+  </section>
+</main><%- include('partials/_piePublico', { anio: new Date().getFullYear() }) %>
+</body></html>

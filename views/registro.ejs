@@ -45,7 +45,7 @@ const esError = ['invalido', 'caducado', 'usado', 'sustituido', 'sesion_invalida
           <div class="campo"><label for="correo">Correo empresarial</label><input id="correo" name="correo" type="email" autocomplete="email" maxlength="320" placeholder="tu@empresa.com" aria-describedby="correo-ayuda" required><p id="correo-ayuda" class="ayuda-campo">Será el correo de acceso de tu administrador.</p></div>
           <button type="submit">Solicitar verificación</button>
         </form>
-        <p class="nota-disponibilidad">Cuando el transporte está habilitado, el sistema procesa automáticamente las solicitudes nuevas autorizadas. Solicitar el registro no confirma la recepción de un correo.</p>
+        <p class="nota-disponibilidad">Si ya tienes una cuenta con este correo, inicia sesión: no se creará otra solicitud ni se enviará otra verificación de registro. Si tienes una solicitud pendiente, utiliza el enlace recibido o solicita otro. Por seguridad, este formulario no confirma si el correo está registrado.</p>
       <% } else if (['aceptada', 'pendiente'].includes(paso)) { %>
         <div class="estado-registro"><h2>El siguiente paso es verificar tu correo</h2><p>Si la solicitud fue autorizada y el transporte está disponible, se procesa automáticamente. Revisa el correo más reciente y la carpeta de spam.</p><p>No se confirma que un mensaje haya sido enviado o entregado. No podrás configurar el administrador sin un enlace válido.</p></div>
         <% if (paso === 'aceptada') { %><a class="boton ancho-completo" href="/registro/estado">Ver estado de la verificación</a><% } %>
@@ -78,7 +78,8 @@ const esError = ['invalido', 'caducado', 'usado', 'sustituido', 'sesion_invalida
         <div class="estado-registro estado-advertencia"><p><%= paso === 'caducado' ? 'Los enlaces de verificación duran 30 minutos. Puedes solicitar otro si el servidor lo permite.' : paso === 'usado' ? 'Si aún no configuraste tu administrador, continúa en este navegador. Si terminaste, inicia sesión.' : paso === 'configuracion_caducada' ? 'Por seguridad, el permiso de configuración dura 20 minutos. No se puede continuar con una sesión caducada.' : 'El enlace puede ser inválido, haber caducado o haberse utilizado en otro navegador. No podemos confirmar una causa sin evidencia.' %></p></div>
         <% if (paso === 'usado') { %><a class="boton ancho-completo" href="/registro/administrador">Continuar configuración</a><% } else { %><a class="boton ancho-completo" href="/registro/reenviar">Solicitar otro enlace</a><% } %>
       <% } %>
-      <nav class="opciones-registro" aria-label="Opciones del registro"><a href="/registro">Solicitar registro</a><a href="/registro/reenviar">Solicitar otro enlace</a><a href="/login">Iniciar sesión</a></nav>
+      <p class="ayuda-acceso">Si ya solicitaste el registro, utiliza el enlace de verificación recibido o solicita otro. Si ya configuraste tu cuenta, inicia sesión o recupera tu contraseña. Por seguridad, no mostramos aquí si un correo está vinculado.</p>
+      <nav class="opciones-registro" aria-label="Opciones del registro"><a href="/registro">Solicitar registro</a><a href="/registro/reenviar">Solicitar otro enlace</a><a href="/login">Iniciar sesión</a><a href="/recuperar">Recuperar contraseña</a></nav>
     </section>
   </main>
   <%- include('partials/_piePublico', { anio: new Date().getFullYear() }) %>

@@ -41,7 +41,7 @@ const mostrar = async (req, res) => {
     if (!supervisado && !ejecucion && autorizacion && (autorizacion.estado !== 'autorizada' || +autorizacion.expiraEn <= Date.now())) agregar('Esta autorización ya no es utilizable. No se renueva un intento consumido, revocado o vencido.', 'Consultar historial', '#historial');
     if (!supervisado && !ejecucion && p.campanasSucesivas !== true && await Control.exists({ _id: 'piloto-manual:' + empresa })) agregar('El piloto de un único envío por empresa ya se consumió. La administración debe habilitar expresamente la política de campañas sucesivas; el historial anterior se conserva.', 'Consultar historial', '#historial');
     if (!ejecucion && await Envio.exists({ empresa, estado: { $in: ['incierto', 'reservado', 'enviando'] } })) agregar('Hay un envío anterior en curso o con resultado incierto. Debe conciliarse antes de otra campaña.', 'Consultar campañas', '/campanas');
-    if (!ejecucion && supervisado && (!evaluacion.validos.length || evaluacion.validos.length > p.maxDestinatarios || p.maxDestinatarios < 1)) agregar('Selecciona entre 1 y ' + p.maxDestinatarios + ' correos autorizados y guarda la preparación.', 'Seleccionar contactos', '#preparar-envio');
+    if (!ejecucion && supervisado && (!Number.isSafeInteger(p.maxDestinatarios) || p.maxDestinatarios < 1 || p.maxDestinatarios > 50 || !evaluacion.validos.length || evaluacion.validos.length > p.maxDestinatarios)) agregar('Destinatarios seleccionados: ' + evaluacion.validos.length + '. Selecciona entre 1 y ' + p.maxDestinatarios + ' correos autorizados y guarda la preparación.', 'Seleccionar contactos', '#preparar-envio');
     if (supervisado) {
       const empresaActual = await require('../models/Empresa').findById(empresa).select('estado estadoActivacion automatizaciones').lean();
       const cuenta = await require('../models/ConexionGmail').findOne({ empresa }).select('googleSub clienteOAuthHash').lean();
@@ -76,6 +76,7 @@ const activarPreparar = async (req, res) => {
     if (!['borrador', 'activa'].includes(c.estado) || c.automatizacion?.modo === 'programado') fallar(409, 'La programación y el estado actuales no se pueden modificar desde el envío inmediato.');
     const politica = require('../config/enviosGmail').obtenerPolitica();
     const lote = politica.supervisado === true;
+    if (lote && (!Number.isSafeInteger(politica.maxDestinatarios) || politica.maxDestinatarios < 1 || politica.maxDestinatarios > 50)) fallar(422, 'El límite de destinatarios no es válido. Debe estar entre 1 y 50.');
     const contacto = req.body?.contactos;
     if (!lote && (typeof contacto !== 'string' || !/^[a-f0-9]{24}$/.test(contacto))) fallar(422, 'Selecciona un único destinatario autorizado.');
     const version = c.updatedAt?.toISOString() || '0';

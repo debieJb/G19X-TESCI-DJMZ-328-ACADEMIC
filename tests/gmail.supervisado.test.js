@@ -23,3 +23,18 @@ test('supervisado: arranque valida índices sin iniciar consumidor ni migrar col
   assert.equal(await require('../services/trabajadorCampanasService').prepararArranque({ app }), null);
   assert.equal(require('../services/pilotoManualGmailService').permitido(), false);
 });
+
+test('supervisado: 50 por defecto, configuración explícita prevalece y inválidos cierran el envío', t => {
+  const keys = ['GMAIL_CAMPAIGNS_MODE', 'GMAIL_CAMPAIGNS_MAX_RECIPIENTS'];
+  const antes = keys.map(k => process.env[k]);
+  t.after(() => keys.forEach((k, i) => { if (antes[i] === undefined) delete process.env[k]; else process.env[k] = antes[i]; }));
+  process.env.GMAIL_CAMPAIGNS_MODE = 'supervisado';
+  delete process.env.GMAIL_CAMPAIGNS_MAX_RECIPIENTS;
+  const politica = require('../config/enviosGmail').obtenerPolitica;
+  assert.equal(politica().maxDestinatarios, 50);
+  process.env.GMAIL_CAMPAIGNS_MAX_RECIPIENTS = '2'; assert.equal(politica().maxDestinatarios, 2);
+  process.env.GMAIL_CAMPAIGNS_MAX_RECIPIENTS = '50'; assert.equal(politica().maxDestinatarios, 50);
+  for (const valor of ['', '51', '1000', '-2', 'dos']) {
+    process.env.GMAIL_CAMPAIGNS_MAX_RECIPIENTS = valor; assert.equal(politica().maxDestinatarios, 0);
+  }
+});
