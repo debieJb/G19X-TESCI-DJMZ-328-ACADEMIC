@@ -48,3 +48,7 @@ respaldos/
 *.7z
 /witch -c respaldo-avances-18-oct
 /usuarios y empresas
+
+# Auditoría privada de recuperación: rutas, PIDs e inventario del equipo original.
+/docs/revision-mongodb-6160/
+/docs/mongodb-reconciliacion-pid-v3.json

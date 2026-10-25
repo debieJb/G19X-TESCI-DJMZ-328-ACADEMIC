@@ -32,6 +32,105 @@ async function preparar(t) {
 }
 const sesiones = store => new Promise((resolve, reject) => store.all((e, s) => e ? reject(e) : resolve(s)));
 
+// Ruta/controlador/servicio/fábrica SMTP reales; solo MongoDB y la red son dobles.
+async function prepararSmtp(t, { errorSmtp } = {}) {
+  const f = await preparar(t);
+  require('../services/smtpTransaccionalService').crearCorreo.mock.restore();
+  const valores = { NODE_ENV: 'development', TRANSACTIONAL_EMAIL_ENABLED: 'true',
+    TRANSACTIONAL_WORKER_ENABLED: 'false', EMAIL_USER: 'plataforma@example.test',
+    EMAIL_PASS: 'credencial-sintetica-solo-pruebas', TRANSACTIONAL_PUBLIC_ORIGIN: 'http://localhost:3000' };
+  const anteriores = Object.fromEntries(Object.keys(valores).map(k => [k, process.env[k]]));
+  Object.assign(process.env, valores);
+  t.after(() => { for (const [k, v] of Object.entries(anteriores)) {
+    if (v === undefined) delete process.env[k]; else process.env[k] = v;
+  } });
+  t.mock.method(require('node:tls'), 'connect', () => assert.fail('TLS_REAL_PROHIBIDO'));
+  const mensajesSmtp = [];
+  const transporte = require('nodemailer').createTransport;
+  transporte.mock.mockImplementation(opciones => {
+    assert.equal(opciones.host, 'smtp.gmail.com');
+    assert.equal(opciones.port, 465);
+    assert.equal(opciones.secure, true);
+    assert.equal(opciones.auth.user, valores.EMAIL_USER);
+    assert.equal(opciones.auth.pass, valores.EMAIL_PASS);
+    assert.equal(opciones.tls.rejectUnauthorized, true);
+    return {
+      verify: () => assert.fail('La ruta debe despachar, no limitarse a verificar AUTH'),
+      sendMail: async mensaje => {
+        mensajesSmtp.push(mensaje);
+        if (errorSmtp) throw errorSmtp;
+        return { accepted: [mensaje.to], rejected: [], messageId: '<recuperacion-simulada@example.test>' };
+      },
+      close() {}
+    };
+  });
+  const logs = t.mock.method(console, 'error', () => {});
+  return { ...f, mensajesSmtp, transporte, logs };
+}
+
+test('recuperación HTTP SMTP: worker apagado despacha token por fábrica real sin usar plantilla de verificación', async t => {
+  const f = await prepararSmtp(t);
+  const respuesta = await f.pedir();
+  assert.equal(respuesta.status, 202);
+  await espera(() => f.datos[0].recuperacion?.estado === 'enviada');
+  assert.equal(process.env.TRANSACTIONAL_WORKER_ENABLED, 'false');
+  assert.equal(f.transporte.mock.callCount(), 1);
+  assert.equal(f.mensajesSmtp.length, 1);
+  assert.equal(f.mensajes.length, 0); // No pasó por la fábrica de correo sustituida del fixture.
+  const mensaje = f.mensajesSmtp[0];
+  assert.equal(mensaje.to, f.datos[0].email);
+  assert.equal(mensaje.subject, 'Recupera tu contraseña de PluriOne');
+  assert.deepEqual(mensaje.envelope, { from: 'plataforma@example.test', to: [f.datos[0].email] });
+  const enlace = new URL(mensaje.text.match(/http:\/\/\S+/)[0]);
+  assert.equal(enlace.pathname, '/recuperar/restablecer');
+  assert.equal(enlace.search, '');
+  const token = new URLSearchParams(enlace.hash.slice(1)).get('token');
+  assert.match(token, /^[a-f0-9]{24}\.[A-Za-z0-9_-]{43}$/);
+  assert.equal(f.datos[0].recuperacion.tokenHash, require('node:crypto').createHash('sha256').update(token).digest('hex'));
+  assert.equal(+f.datos[0].recuperacion.expiraEn - +f.reloj(), 15 * 60000);
+  assert.match(f.datos[0].recuperacion.proveedorMensajeId, /^[a-f0-9]{64}$/);
+  assert.ok(!respuesta.text.includes(token));
+  assert.ok(!JSON.stringify(await sesiones(f.store)).includes(token));
+});
+
+test('recuperación HTTP SMTP: AUTH 535 queda fallido y trazado, sin fingir aceptación ni revelar la cuenta', async t => {
+  const f = await prepararSmtp(t, { errorSmtp: Object.assign(Error('DETALLE_SMTP_PRIVADO'), {
+    code: 'EAUTH', command: 'AUTH PLAIN', responseCode: 535,
+    response: '535 5.7.8 DETALLE_SMTP_PRIVADO'
+  }) });
+  const respuesta = await f.pedir();
+  assert.equal(respuesta.status, 202);
+  await espera(() => f.datos[0].recuperacion?.estado === 'fallida');
+  const estado = f.datos[0].recuperacion;
+  assert.equal(estado.correoError, 'REAUTORIZAR_TRANSACCIONAL');
+  assert.equal(estado.faseSmtp, 'AUTH');
+  assert.equal(estado.respuestaSmtp, 535);
+  assert.equal(estado.estadoSmtp, '5.7.8');
+  assert.match(estado.tokenHash, /^[a-f0-9]{64}$/);
+  assert.equal(estado.proveedorMensajeId, undefined);
+  assert.equal(f.mensajesSmtp.length, 1);
+  const ausente = await f.pedir('ausente@example.test');
+  assert.equal(ausente.status, 202);
+  assert.equal(ausente.text, respuesta.text);
+  assert.equal(f.mensajesSmtp.length, 1);
+  assert.ok(!JSON.stringify(f.logs.mock.calls.map(c => c.arguments)).includes('DETALLE_SMTP_PRIVADO'));
+  await f.servicio.despachar();
+  assert.equal(f.mensajesSmtp.length, 1); // Una tarea fallida no se reenvía automáticamente.
+});
+
+test('recuperación HTTP SMTP: configuración inválida conserva pendiente con diagnóstico antes de SMTP', async t => {
+  const f = await prepararSmtp(t);
+  process.env.EMAIL_PASS = '';
+  const respuesta = await f.pedir();
+  assert.equal(respuesta.status, 202);
+  await espera(() => f.datos[0].recuperacion?.correoError === 'CONFIGURACION_SMTP');
+  assert.equal(f.datos[0].recuperacion.estado, 'pendiente');
+  assert.equal(f.datos[0].recuperacion.tokenHash, undefined);
+  assert.equal(f.transporte.mock.callCount(), 0);
+  assert.equal(f.mensajesSmtp.length, 0);
+  assert.doesNotMatch(respuesta.text, /CONFIGURACION_SMTP|persona@example\.test/);
+});
+
 test('recuperación HTTP: respuesta idéntica existente/inexistente/limitada y envío fuera de la respuesta', async t => {
   const f = await preparar(t);
   const existente = await f.pedir(' PERSONA@EXAMPLE.TEST '); assert.equal(existente.status, 202);

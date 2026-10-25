@@ -126,6 +126,7 @@ npm pkg get scripts
 | Comando | Uso |
 |---|---|
 | `npm run dev` | Servidor de desarrollo mediante `nodemon server.js` |
+| `npm run dev:piloto` | Desarrollo del MVP con cuotas `piloto_local`, restringidas a la empresa autorizada; requiere infraestructura existente |
 | `npm start` | Arranque mediante `node server.js` |
 | `npm test` | Suite habitual de `node:test` |
 | `npm run test:watch` | Pruebas en modo observación |
@@ -191,6 +192,12 @@ El autoservicio empresarial requiere una topología que permita transacciones Mo
 
 El repositorio incluye `scripts/iniciarMongoDevRs.ps1` y `scripts/verificarMongoDevRs.js`. Estos utilitarios dependen del entorno Windows original, de directorios, rutas y condiciones previamente preparadas; **no son un instalador universal**. El script `scripts/iniciarMongoPilotoLocal.ps1` corresponde a otro entorno local en el puerto `27019`, no a una instalación nueva.
 
+Para recuperar el nodo **existente** en el equipo autorizado se añadió
+`scripts/iniciarMongoDevRsExistente.ps1`, sin inicialización automática. Requiere
+el expediente privado de identidad, excluido de Git. Revisar el
+[procedimiento y sus límites](docs/recuperacion-entorno-piloto.md) antes de ejecutarlo;
+un clon nuevo no contiene esa referencia local ni aprovisiona MongoDB.
+
 En el **equipo que ya tiene MongoDB funcionando**, diagnosticar primero, sin arrancar ni reinicializar servicios:
 
 ```powershell
@@ -239,6 +246,51 @@ Esto invoca `nodemon server.js`. Dejar la terminal abierta mientras se usa el si
 ```powershell
 npm start
 ```
+
+#### MVP con asistente IA: arranque del piloto autorizado
+
+En el entorno piloto ya preparado, con MongoDB `marketingDevRs` activo en `27018`,
+cuentas e índices existentes y configuración privada de Gemini autorizada, usar desde
+la raíz del proyecto en PowerShell:
+
+```powershell
+npm run dev:piloto
+```
+
+Equivalente manual, en la misma terminal:
+
+```powershell
+$env:AI_QUOTA_BACKEND = 'piloto_local'
+npm run dev
+```
+
+Si ya hay un servidor en `3000`, detenerlo primero con **Ctrl+C** en su terminal.
+El lanzador usa nodemon y `server.js`, selecciona `piloto_local` solo en el proceso
+hijo y establece `development` si no se había definido entorno. No modifica `.env`,
+la terminal padre, credenciales, cuotas ni datos. Rechaza otro entorno o un backend
+explícito incompatible; no reemplaza silenciosamente una selección `protected`.
+No arranca MongoDB, crea bases/índices ni activa banderas de Gemini o correo.
+El arranque habitual de `server.js` conserva su preparación de índices y las
+políticas de integraciones ya configuradas; revisar esas políticas antes de iniciar.
+
+| Backend de cuotas IA | Alcance |
+|---|---|
+| `dev_fixture` | Predeterminado en desarrollo si falta `AI_QUOTA_BACKEND`. Solo admite empresas ficticias `f17e1a…`, con base y marcador de pruebas explícitos; rechaza empresas reales. |
+| `piloto_local` | Opt-in exclusivo de desarrollo para la empresa piloto autorizada, validada por ID fijo en el código. Usa la base separada existente `plurione_ai_quota_piloto_local`, valida destino, marcador e índices y conserva límites de 3/minuto y 20/día. |
+| `protected` | Backend exigido en producción; requiere infraestructura, autenticación y privilegios propios. El piloto local no lo sustituye ni habilita otras empresas. |
+
+Sin la selección del piloto, generar para una empresa real falla con
+`CUOTAS_NO_DISPONIBLES` **antes de llamar a Gemini**. Cuando `AI_ENABLED=true` y
+las comprobaciones pasan, el log de arranque debe indicar `backend: "piloto_local"`
+y `cuotasVerificadas: true`. El PID cambia en cada ejecución. Si IA está apagada,
+no se verifican cuotas en ese arranque; este comando no la habilita.
+
+Abrir <http://localhost:3000/login> con una cuenta autorizada del piloto. El
+administrador puede consultar `/empresa/ia/diagnostico` para verificar cuotas sin
+consumirlas ni llamar a Gemini. Generar una propuesta sí consume cuotas y utiliza
+la API real. Esta receta no aprovisiona otra computadora ni es configuración general
+de producción. Véanse el [manual del MVP](docs/entrega/manual-tecnico.md#41-arranque-del-mvp-piloto-con-ia)
+y la [guía del asistente](docs/asistente-ia.md).
 
 Si el servidor informa errores de conexión, topología, índices, puerto ocupado o sesiones, **leer el mensaje antes de cambiar configuración**. No modificar contraseñas ni desactivar controles de seguridad por ensayo y error.
 
@@ -310,6 +362,7 @@ En Windows pueden aparecer avisos `LF will be replaced by CRLF`: no son por sí 
 | Superadmin nuevo no puede entrar | Versión anterior del script, estado de acceso o configuración | Confirmar commit, revisar logs y pruebas; no editar estados directamente en MongoDB |
 | Registro no envía correo | Servicio SMTP o trabajador deshabilitado/no configurado | Distinguir un arranque local sin proveedores de una validación real de correo |
 | Gmail/Gemini no responde | Proveedor deshabilitado, permisos o credenciales | Seguir guías específicas, sin habilitar servicios en masa |
+| `CUOTAS_NO_DISPONIBLES` y backend `dev_fixture` con empresa real | Falta la selección explícita del almacén piloto | En el piloto autorizado, reiniciar con `npm run dev:piloto`; no quitar cuotas ni ampliar empresas permitidas |
 
 ### 1.13 Lista de aceptación de la instalación
 
