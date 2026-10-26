@@ -17,6 +17,7 @@ const regenerar = req => new Promise((resolve, reject) =>
 );
 
 const mensajeGenerico = 'Solicitud recibida. Si el registro puede continuar, se procesará la verificación cuando el servicio de correo esté disponible. Esta respuesta no confirma el envío ni la entrega de un mensaje.';
+const mensajeCuentaExistente = 'Este correo electrónico ya está vinculado a una cuenta existente en nuestra plataforma';
 const despuesDeResponder = (res, despachar) => res.once('finish', () => setImmediate(() => {
   Promise.resolve().then(despachar).catch(() => console.error('VERIFICACION_DESPACHO_NO_DISPONIBLE'));
 }));
@@ -282,11 +283,10 @@ const mostrarAdministrador = async (req, res) => {
       return pagina(res, 'configuracion_caducada', 422);
     }
 
-    if (estado === 'completada') {
+    if (['completada', 'cuenta_existente'].includes(estado)) {
       // consultarConfiguracion comprueba el permiso de esta sesión, obtenido
       // al verificar el correo. Nunca mostrar esta vinculación en la solicitud pública.
-      return pagina(res, 'completada', 200,
-        'Ya existe una cuenta vinculada a este correo. Por favor, inicia sesión');
+      return pagina(res, 'cuenta_existente', 200, mensajeCuentaExistente);
     }
 
     if (estado !== 'vigente') {
@@ -324,6 +324,9 @@ const configurar = async (req, res) => {
     return pagina(res, 'completada', 200,
       'Registro completado. Ya puedes iniciar sesión con el correo verificado.');
   } catch (e) {
+    if (e.codigo === 'CUENTA_EXISTENTE') {
+      return pagina(res, 'cuenta_existente', 200, mensajeCuentaExistente);
+    }
     return error(res, e, 'administrador');
   }
 };

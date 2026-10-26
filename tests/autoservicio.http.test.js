@@ -142,13 +142,13 @@ test('HTTP enlace: reutilización en navegador con evidencia muestra usado sin c
   const usado = await agente.get('/registro/verificar').expect(422);
   assert.match(usado.text, /Enlace ya utilizado/); assert.equal(consumos, 1); assert.ok(!usado.text.includes(token));
 });
-for (const estado of ['caducada', 'invalida', 'completada']) {
+for (const estado of ['caducada', 'invalida', 'completada', 'cuenta_existente']) {
   test(`HTTP administrador: permiso ${estado} no muestra un formulario de configuración`, async () => {
     await agente.get('/registro/verificar').query({ token: randomBytes(32).toString('base64url') }).expect(303);
     const p = await agente.get('/registro/verificar');
     await agente.post('/registro/verificar').type('form').send({ _csrf: campo(p.text, '_csrf') }).expect(303);
     doble.consultarConfiguracion = async () => estado;
-    const r = await agente.get('/registro/administrador').expect(estado === 'completada' ? 200 : 422);
+    const r = await agente.get('/registro/administrador').expect(['completada', 'cuenta_existente'].includes(estado) ? 200 : 422);
     assert.doesNotMatch(r.text, /type="password"/);
     if (estado === 'caducada') assert.match(r.text, /Sesión de configuración caducada/);
   });
@@ -160,6 +160,20 @@ test('HTTP verificación: errores de base fallan cerrados sin afirmar vigencia o
   assert.doesNotMatch(r.text, /action="\/registro\/verificar"|detalle-no-publico/);
 });
 
+test('HTTP configuración: cuenta creada durante el registro ofrece acceso sin anunciar un alta nueva', async () => {
+  await agente.get('/registro/verificar').query({ token: randomBytes(32).toString('base64url') }).expect(303);
+  const enlace = await agente.get('/registro/verificar').expect(200);
+  await agente.post('/registro/verificar').type('form').send({ _csrf: campo(enlace.text, '_csrf') }).expect(303);
+  const pagina = await agente.get('/registro/administrador').expect(200);
+  doble.configurar = async () => { throw { codigo: 'CUENTA_EXISTENTE' }; };
+  await agente.post('/registro/administrador').expect(403);
+  const respuesta = await agente.post('/registro/administrador').type('form').send({ _csrf: campo(pagina.text, '_csrf') }).expect(200);
+  assert.match(respuesta.text, /Este correo electrónico ya está vinculado a una cuenta existente en nuestra plataforma/);
+  assert.match(respuesta.text, /href="\/recuperar">Recuperar contraseña/);
+  assert.match(respuesta.text, /href="\/login">Iniciar sesión/);
+  assert.doesNotMatch(respuesta.text, /Tu administrador está configurado|name="password"/);
+});
+
 test('HTTP registro: cuenta existente y pendiente no despachan, correo nuevo continúa sin revelar existencia', async t => {
   const anterior = process.env.TRANSACTIONAL_EMAIL_ENABLED;
   process.env.TRANSACTIONAL_EMAIL_ENABLED = 'true';
@@ -167,7 +181,7 @@ test('HTTP registro: cuenta existente y pendiente no despachan, correo nuevo con
   t.mock.method(require('../services/smtpTransaccionalService'), 'crearCorreo', () => ({ disponible: true }));
   const despachar = doble.despachar = t.mock.fn(async () => ({ estado: 'enviada' }));
   const datos = { ...await formulario(), correo: ' PERSONA@EXAMPLE.TEST ' };
-  const especifico = 'Ya existe una cuenta vinculada a este correo. Por favor, inicia sesión';
+  const especifico = 'Este correo electrónico ya está vinculado a una cuenta existente en nuestra plataforma';
   // El servicio existente devuelve null tanto para cuentas como solicitudes previas.
   doble.solicitar = async entrada => { assert.equal(entrada.datos.correo, 'persona@example.test'); return null; };
   const existente = await agente.post('/registro').type('form').send(datos).expect(202);
@@ -187,7 +201,7 @@ test('HTTP registro: cuenta existente y pendiente no despachan, correo nuevo con
 });
 
 test('HTTP registro: mensaje de cuenta vinculada exige verificación de correo y permiso de sesión vigente', async () => {
-  const especifico = 'Ya existe una cuenta vinculada a este correo. Por favor, inicia sesión';
+  const especifico = 'Este correo electrónico ya está vinculado a una cuenta existente en nuestra plataforma';
   doble.consultarConfiguracion = async () => 'completada';
   const anonima = await agente.get('/registro/administrador').expect(422);
   assert.ok(!anonima.text.includes(especifico));

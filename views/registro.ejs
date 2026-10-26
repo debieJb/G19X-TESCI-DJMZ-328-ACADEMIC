@@ -6,6 +6,7 @@ const pantallas = {
   reenvio: ['Solicitar otro enlace', 'Recupera el recorrido de verificación de tu empresa.'],
   verificacion: ['Confirma tu correo', 'Este enlace es válido y solo puede utilizarse una vez.'],
   administrador: ['Configura tu administrador', 'Tu correo fue verificado. Completa tu acceso.'],
+  cuenta_existente: ['Accede a tu cuenta', 'Puedes iniciar sesión o recuperar tu contraseña.'],
   completada: ['Registro completado', 'Tu espacio está listo para iniciar sesión.'],
   invalido: ['Enlace no disponible', 'No se pudo validar el enlace o la sesión.'],
   caducado: ['Enlace caducado', 'El plazo para verificar este enlace terminó.'],
@@ -72,6 +73,8 @@ const esError = ['invalido', 'caducado', 'usado', 'sustituido', 'sesion_invalida
           <%- include('partials/_passwordPublico', { id: 'confirmacion', nombre: 'confirmacionPassword', etiqueta: 'Confirma la contraseña', nuevo: true }) %>
           <button type="submit">Crear administrador</button>
         </form>
+      <% } else if (paso === 'cuenta_existente') { %>
+        <div class="estado-registro"><p>Inicia sesión para acceder a tu cuenta o utiliza la recuperación de contraseña.</p></div><a class="boton ancho-completo" href="/login">Iniciar sesión</a>
       <% } else if (paso === 'completada') { %>
         <div class="estado-registro estado-correcto"><h2>Tu administrador está configurado</h2><p>Inicia sesión con el correo verificado y la contraseña que acabas de elegir. El acceso al panel requiere iniciar sesión.</p></div><a class="boton ancho-completo" href="/login">Iniciar sesión</a>
       <% } else { %>

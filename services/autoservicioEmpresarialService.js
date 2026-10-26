@@ -647,7 +647,7 @@ const crearServicio = ({
         _id: solicitud,
         configuracionSesionHash: hash(sesion)
       })
-      .select('estado configuracionExpiraEn')
+      .select('estado correo configuracionExpiraEn')
       .lean();
 
     if (!doc) {
@@ -660,6 +660,10 @@ const crearServicio = ({
     ) {
       return 'caducada';
     }
+
+    // La cuenta se consulta solo después de comprobar titularidad y vigencia.
+    if (doc.estado === 'correo_verificado' &&
+      await m.Usuario.exists({ email: doc.correo })) return 'cuenta_existente';
 
     return doc.estado === 'correo_verificado'
       ? 'vigente'
@@ -716,86 +720,102 @@ const crearServicio = ({
     const m = await preparar(conexion);
     const ahora = reloj();
 
-    return transaccion(async session => {
-      const filtro = {
-        _id: solicitud,
-        configuracionSesionHash: hash(sesion)
-      };
+    try {
+      return await transaccion(async session => {
+        const filtro = {
+          _id: solicitud,
+          configuracionSesionHash: hash(sesion)
+        };
 
-      const previa = await m.SolicitudRegistro
-        .findOne({
-          ...filtro,
-          estado: 'completada',
-          configuracionExpiraEn: { $gt: ahora }
-        })
-        .session(session);
-
-      if (previa) {
-        const usuario = await m.Usuario
+        const previa = await m.SolicitudRegistro
           .findOne({
-            _id: previa.usuario,
-            empresa: previa.empresa,
-            email: previa.correo,
-            estadoAcceso: 'activo'
+            ...filtro,
+            estado: 'completada',
+            configuracionExpiraEn: { $gt: ahora }
           })
-          .select('+password')
           .session(session);
 
-        exigir(
-          usuario &&
-          usuario.nombre === nombreAdministrador &&
-          previa.nombreEmpresa === nombreEmpresa &&
-          await usuario.compararPassword(datos.password),
-          'IDEMPOTENCIA_CONFLICTO'
+        if (previa) {
+          const usuario = await m.Usuario
+            .findOne({
+              _id: previa.usuario,
+              empresa: previa.empresa,
+              email: previa.correo,
+              estadoAcceso: 'activo'
+            })
+            .select('+password')
+            .session(session);
+
+          exigir(
+            usuario &&
+            usuario.nombre === nombreAdministrador &&
+            previa.nombreEmpresa === nombreEmpresa &&
+            await usuario.compararPassword(datos.password),
+            'IDEMPOTENCIA_CONFLICTO'
+          );
+
+          return;
+        }
+
+        const autorizada = await m.SolicitudRegistro.findOne({
+          ...filtro,
+          estado: 'correo_verificado',
+          configuracionExpiraEn: { $gt: ahora }
+        }).session(session);
+        exigir(autorizada, 'ENLACE_INVALIDO');
+        exigir(!await m.Usuario.exists({ email: autorizada.correo }).session(session), 'CUENTA_EXISTENTE');
+
+        const doc =
+          await m.SolicitudRegistro.findOneAndUpdate(
+            {
+              ...filtro,
+              estado: 'correo_verificado',
+              configuracionExpiraEn: { $gt: ahora }
+            },
+            {
+              $set: {
+                estado: 'completada'
+              }
+            },
+            { new: true, session }
+          );
+
+        exigir(doc, 'ENLACE_INVALIDO');
+
+        const entrada = registro.validar(
+          {
+            nombreEmpresa,
+            nombreAdministrador,
+            correoAutomatizaciones: doc.correo,
+            correoAdministrador: doc.correo,
+            password: datos.password
+          },
+          'autoservicio-interno-validacion'
         );
 
-        return;
+        const { empresa, usuario } =
+          await registro.crearEmpresaAdministrador(
+            m,
+            entrada,
+            session,
+            doc.verificadoEn
+          );
+
+        doc.empresa = empresa._id;
+        doc.usuario = usuario._id;
+        doc.nombreEmpresa = nombreEmpresa;
+        doc.correoEstado = 'cancelada';
+
+        await doc.save({ session });
+        await evento(m, doc._id, 'completada', session);
+      });
+    } catch (e) {
+      // El indice unico resuelve altas simultaneas y revierte toda la transaccion.
+      if (e.code === 11000 && await consultarConfiguracion({ solicitud, sesion }) === 'cuenta_existente') {
+        fallo('CUENTA_EXISTENTE');
       }
-
-      const doc =
-        await m.SolicitudRegistro.findOneAndUpdate(
-          {
-            ...filtro,
-            estado: 'correo_verificado',
-            configuracionExpiraEn: { $gt: ahora }
-          },
-          {
-            $set: {
-              estado: 'completada'
-            }
-          },
-          { new: true, session }
-        );
-
-      exigir(doc, 'ENLACE_INVALIDO');
-
-      const entrada = registro.validar(
-        {
-          nombreEmpresa,
-          nombreAdministrador,
-          correoAutomatizaciones: doc.correo,
-          correoAdministrador: doc.correo,
-          password: datos.password
-        },
-        'autoservicio-interno-validacion'
-      );
-
-      const { empresa, usuario } =
-        await registro.crearEmpresaAdministrador(
-          m,
-          entrada,
-          session,
-          doc.verificadoEn
-        );
-
-      doc.empresa = empresa._id;
-      doc.usuario = usuario._id;
-      doc.nombreEmpresa = nombreEmpresa;
-      doc.correoEstado = 'cancelada';
-
-      await doc.save({ session });
-      await evento(m, doc._id, 'completada', session);
-    });
+      throw e;
+    }
   };
 
   const limitar = async ({
