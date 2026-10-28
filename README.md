@@ -416,6 +416,7 @@ El [índice de entrega](docs/entrega/indice-entrega.md) enlaza los documentos em
 - [PRD del MVP](docs/PRD-borrador-tecnico.md) y [matriz de trazabilidad](docs/entrega/matriz-trazabilidad.md).
 - [Arquitectura / SDD](docs/SDD-borrador-tecnico.md), [propuesta técnica](docs/entrega/propuesta-tecnica.md) y [memoria técnica](docs/entrega/memoria-tecnica.md).
 - [Manual de usuario](docs/entrega/manual-usuario.md) y [manual técnico](docs/entrega/manual-tecnico.md).
+- [Manual de Usuario y Validación Funcional (PDF)](docs/entrega/Manual_Usuario_Validacion_Funcional.pdf).
 - [Reporte de QA](docs/entrega/reporte-qa.md), [evidencias de validación](docs/entrega/evidencias-validacion.md) y [alcance actual](docs/alcance-mvp-actual.md).
 - [Plan de proyecto](docs/entrega/plan-proyecto.md), [mantenimiento](docs/entrega/plan-mantenimiento.md), [capacitación](docs/entrega/capacitacion.md) e [informe final de residencias](docs/entrega/informe-final-residencias.md).
 - [Autoría y uso de IA](docs/entrega/autoria-ia.md).
