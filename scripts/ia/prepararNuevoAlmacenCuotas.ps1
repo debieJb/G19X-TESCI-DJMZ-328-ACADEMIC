@@ -1,9 +1,10 @@
 param([switch]$ConfirmarEjecucion)
 $ErrorActionPreference = 'Stop'
-$root = 'C:\Users\jocam\Documents\marketing-automation-cuota-mongo-gemini'
+. (Join-Path $PSScriptRoot '..\rutasLocales.ps1')
+$root = (Get-PluriOnePath 'geminiRoot')
 $data = Join-Path $root 'data'
 $logs = Join-Path $root 'logs'
-$mongod = 'C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe'
+$mongod = (Get-PluriOnePath 'mongod')
 $port = 27020
 $baselineCheck = Join-Path $PSScriptRoot '..\..\scripts\verificarMongoDevRs.js'
 $provision = Join-Path $PSScriptRoot 'aprovisionarCuotas.mongo.js'
@@ -24,7 +25,7 @@ function Get-PortIdentity([int[]]$Ports) {
 $protectedPorts = @(3000,5678,27017,27018,27019)
 $beforeItems = @(Get-PortIdentity $protectedPorts | Sort-Object Port,Address,Pid)
 $oldQuotaItems = @($beforeItems | Where-Object Port -eq 27019)
-$oldQuotaRoot = 'C:\Users\jocam\Documents\marketing-automation-cuota-mongo'
+$oldQuotaRoot = (Get-PluriOnePath 'quotaRoot')
 $oldQuotaData = (Join-Path $oldQuotaRoot 'data')
 if ($oldQuotaItems.Count -ne 1 -or $oldQuotaItems[0].Address -ne '127.0.0.1' -or
     $oldQuotaItems[0].Executable -ne $mongod -or $oldQuotaItems[0].CommandLine -notmatch '--port\s+27019(?:\s|$)' -or

@@ -1,7 +1,8 @@
 param([switch]$Preparar)
 $ErrorActionPreference = 'Stop'
-$rsRoot = 'C:\Users\jocam\Documents\marketing-automation-dev-mongo-rs'
-$rsBinary = 'C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe'
+. (Join-Path $PSScriptRoot 'rutasLocales.ps1')
+$rsRoot = (Get-PluriOnePath 'devRoot')
+$rsBinary = (Get-PluriOnePath 'mongod')
 $rsCheck = Join-Path $PSScriptRoot 'verificarMongoDevRs.js'
 if (!(Test-Path -LiteralPath $rsBinary -PathType Leaf)) { throw 'No se encuentra el ejecutable previsto.' }
 if ([Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners() | Where-Object Port -eq 27018) { throw 'Puerto 27018 ocupado; no se inicia otro proceso.' }

@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { MongoClient } = require('mongodb');
-const ROOT = 'C:\\Users\\jocam\\Documents\\marketing-automation-dev-mongo-rs';
+const ROOT = require('./rutasLocales').paths.devRoot;
 const DATA = path.join(ROOT, 'data');
 const SET = 'marketingDevRs';
 const URI = 'mongodb://127.0.0.1:27018/admin?directConnection=true';

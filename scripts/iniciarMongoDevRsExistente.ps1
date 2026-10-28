@@ -1,7 +1,8 @@
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'rutasLocales.ps1')
 $rsRoot = & node -e "process.stdout.write(require(process.argv[1]).ROOT)" (Join-Path $PSScriptRoot 'mongoDevRsComun.js')
 if ($LASTEXITCODE -ne 0 -or !$rsRoot) { throw 'No se pudo leer el directorio autorizado.' }
-$rsBinary = 'C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe'
+$rsBinary = (Get-PluriOnePath 'mongod')
 $rsCheck = Join-Path $PSScriptRoot 'verificarMongoDevRs.js'
 if (!(Test-Path -LiteralPath $rsBinary -PathType Leaf)) { throw 'No se encuentra el ejecutable previsto.' }
 if ([Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners() | Where-Object Port -eq 27018) { throw 'Puerto 27018 ocupado; no se inicia otro proceso.' }

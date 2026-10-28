@@ -318,7 +318,7 @@ test('el perfil Gemini solo dirige el aprovisionamiento nuevo a 127.0.0.1:27020 
   assert.equal(result.completed, true);
   assert.ok(state.connectionUris.length > 0);
   assert.ok(state.connectionUris.every(uri => uri.startsWith('mongodb://127.0.0.1:27020/')));
-  assert.equal(targetByName('gemini').root, 'C:\\Users\\jocam\\Documents\\marketing-automation-cuota-mongo-gemini');
+  assert.equal(targetByName('gemini').root, require('../scripts/rutasLocales').paths.geminiRoot);
   assert.throws(() => targetByName('27017'));
   assert.throws(() => targetByName('../legacy'));
 });

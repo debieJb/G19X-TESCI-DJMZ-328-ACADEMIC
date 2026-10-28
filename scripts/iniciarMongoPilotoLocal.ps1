@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
-$pilotRoot = 'C:\Users\jocam\Documents\marketing-automation-pilot-mongo-rs'
-$pilotBinary = 'C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe'
+. (Join-Path $PSScriptRoot 'rutasLocales.ps1')
+$pilotRoot = (Get-PluriOnePath 'pilotRoot')
+$pilotBinary = (Get-PluriOnePath 'mongod')
 foreach ($pilotPath in @($pilotRoot, (Join-Path $pilotRoot 'data'), (Join-Path $pilotRoot 'logs'))) {
   $pilotItem = Get-Item -LiteralPath $pilotPath
   if (!$pilotItem.PSIsContainer -or ($pilotItem.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'DIRECTORIO_PILOTO_INVALIDO' }

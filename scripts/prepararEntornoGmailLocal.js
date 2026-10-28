@@ -1,5 +1,7 @@
 'use strict';
 // No carga .env, no llama Google y nunca inicia trabajadores.
+const path = require('node:path');
+const { paths } = require('./rutasLocales');
 const mongoose = require('mongoose');
 const { createHash } = require('node:crypto');
 const manifiesto = require('../infra/gmail-preparacion.local.json');
@@ -10,7 +12,8 @@ const verificarInstancia = async conexion => {
   await infra.validarDestinoPiloto(conexion, manifiesto);
   const { parsed } = await conexion.db.admin().command({ getCmdLineOpts: 1 });
   exigir(parsed.net?.port === 27019 && parsed.net.bindIp === '127.0.0.1'
-    && parsed.storage?.dbPath?.replaceAll('\\', '/').toLowerCase() === 'c:/users/jocam/documents/marketing-automation-pilot-mongo-rs/data'
+    && typeof parsed.storage?.dbPath === 'string'
+    && path.resolve(parsed.storage.dbPath).toLowerCase() === path.join(paths.pilotRoot, 'data').toLowerCase()
     && parsed.replication?.replSet === manifiesto.replicaSet, 'IDENTIDAD_LOCAL_INVALIDA');
   const parametro = await conexion.db.admin().command({ getParameter: 1, ttlMonitorEnabled: 1 });
   exigir(parametro.ttlMonitorEnabled === false, 'TTL_PREEXISTENTE_NO_PAUSADO');

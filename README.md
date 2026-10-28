@@ -74,14 +74,9 @@ git --version
 mongosh --version
 ```
 
-**Importante:** `mongod --version` puede indicar «comando no reconocido» aunque MongoDB Server esté instalado. En el equipo de desarrollo el ejecutable se encuentra en `C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe`; en caso necesario, verificar sin modificar el `PATH`:
+**MongoDB:** configure `PLURIONE_MONGOD_PATH` con la ruta del ejecutable instalado o agregue `mongod` al `PATH`. Se conservan las comprobaciones de identidad y de version autorizada.
 
-```powershell
-Test-Path "C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe"
-& "C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe" --version
-```
-
-Si `Test-Path` devuelve `False`, localizar la instalación correspondiente antes de ejecutar el segundo comando. MongoDB Shell puede estar instalado en una carpeta diferente; en el equipo verificado se invoca directamente con `mongosh`.
+MongoDB Shell puede estar instalado en una carpeta diferente; configure `PLURIONE_MONGOSH_PATH` o incluya `mongosh` en el `PATH`.
 
 ### 1.2 Obtener la versión correcta del proyecto
 
@@ -97,7 +92,7 @@ git log -1 --oneline
 **Entorno de desarrollo existente:**
 
 ```powershell
-cd C:\Users\jocam\Documents\marketing-automation
+cd <directorio-del-proyecto>
 git branch --show-current
 git status --short
 git log -1 --oneline
@@ -440,3 +435,30 @@ Se conservan [documentos históricos](docs/historico/corte-previo-78c7434/README
 Durante el desarrollo se utilizaron **OpenAI Codex** para apoyo en programación, depuración, implementación, pruebas y revisión documental, y **ChatGPT** en planificación, revisión técnica y documentación. La autora mantiene la responsabilidad de revisar, comprender y validar lo producido. **Gemini** forma parte del producto como integración para sugerir contenido sujeto a aprobación humana.
 
 Consultar la [declaración de autoría y uso responsable de IA](docs/entrega/autoria-ia.md).
+
+## Rutas locales portables
+
+Los scripts comparten `scripts/rutasLocales.js` y su adaptador `scripts/rutasLocales.ps1`. No cargan .env: exportar las variables en la sesión antes de ejecutar Node o PowerShell. Las rutas relativas se resuelven desde la raíz del repositorio, independientemente del directorio actual.
+
+| Variable | Valor predeterminado relativo al repositorio |
+| --- | --- |
+| PLURIONE_MONGO_DEV_ROOT | ../marketing-automation-dev-mongo-rs |
+| PLURIONE_MONGO_PILOT_ROOT | ../marketing-automation-pilot-mongo-rs |
+| PLURIONE_MONGO_QUOTA_ROOT | ../marketing-automation-cuota-mongo |
+| PLURIONE_MONGO_GEMINI_ROOT | ../marketing-automation-cuota-mongo-gemini |
+| PLURIONE_MONGOD_PATH | Ejecutable mongod encontrado en PATH |
+| PLURIONE_MONGOSH_PATH | Ejecutable mongosh encontrado en PATH |
+
+Para reutilizar directorios existentes en otra ubicación, configurar cada ROOT con su ruta absoluta. No copiar, migrar ni recrear datos. Ejemplo de configuración (no inicia procesos):
+
+```powershell
+$env:PLURIONE_MONGO_DEV_ROOT = 'D:\PluriOne\mongo-dev'
+$env:PLURIONE_MONGOD_PATH = 'D:\MongoDB\bin\mongod.exe'
+node scripts/rutasLocales.js devRoot
+```
+
+En el entorno actual los directorios hermanos predeterminados coinciden con los existentes. Para instalaciones fuera del PATH se requiere indicar explícitamente el ejecutable ya instalado, incluyendo mongosh si se utiliza. Se conservan puertos, autenticación, controles de identidad, referencias y comprobaciones de directorios seguros. Piloto Gmail y cuotas legacy comparten históricamente el puerto 27019: siguen siendo perfiles alternativos, nunca deben iniciarse simultáneamente.
+
+Las rutas absolutas de `scripts/verificarServicioMongoOriginal.ps1` son referencias de seguridad del servicio histórico (PID, comando, hashes y rutas), no valores predeterminados para despliegues nuevos. Permanecen intencionalmente fijas: una instalación diferente requiere una nueva referencia auditada, sin alterar la evidencia original. Los reportes fechados, archivos de evidencia y copias históricas bajo docs conservan su procedencia; sus rutas no son configuración operativa. Las ubicaciones de Database Tools y DPAPI ya se derivan de LOCALAPPDATA; las versiones y ACL autorizadas se conservan.
+
+Las pruebas visuales explícitas de `tests/soporte/` admiten `PUBLIC_BROWSER_EXECUTABLE` para indicar el navegador instalado. Conservan como alternativa la ubicación habitual de Edge en Windows; no instalan ni ejecutan navegadores durante la validación de rutas.
