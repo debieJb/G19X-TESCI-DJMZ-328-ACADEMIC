@@ -28,7 +28,7 @@ test('públicas: inicio responde 200 con marca y enlaces de acceso en navbar y h
 
 test('públicas: inicio distingue funciones disponibles y pendientes sin métricas inventadas', async () => {
   const { text } = await request(app).get('/').expect(200);
-  for (const contenido of ['Gestión de campañas', 'Contactos y consentimiento', 'Automatización por correo', 'Asistencia con IA', 'Espacio por empresa', 'Roles y responsabilidades', 'Superadministrador', 'Administrador de empresa', 'Operador', 'Envío pendiente', 'Activación pendiente']) {
+  for (const contenido of ['Gestión de campañas', 'Contactos y consentimiento', 'Automatización por correo', 'Asistencia con IA', 'Espacio por empresa', 'Roles y responsabilidades', 'Superadministrador', 'Administrador de empresa', 'Operador', 'Gmail disponible', 'Gemini disponible']) {
     assert.ok(text.includes(contenido), contenido);
   }
 });
