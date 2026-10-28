@@ -8,6 +8,13 @@ Plataforma de gestión de campañas de marketing por correo electrónico con adm
 **Referencia histórica de implementación:** `78c743424b84cf7ea6d7fc63d2cbf58205727c88`
 **Rama de trabajo al efectuar esta revisión:** `respaldo-avances-18-oct`
 
+**Cierre técnico del MVP — 27 de octubre de 2026: cerrado con observaciones.**
+La revisión final ejecutó 100 archivos de pruebas generales: **972 aprobadas,
+0 fallidas, 0 canceladas y 0 omitidas**, sin operar bases de datos ni proveedores reales.
+El [informe de cierre](docs/entrega/cierre-mvp.md) registra el alcance verificado,
+el manual PDF de 59 páginas y las limitaciones pendientes. Este cierre de desarrollo
+no equivale a aceptación empresarial o académica firmada ni a certificación de producción.
+
 **Estado consolidado para presentación — 22 de octubre de 2026:** se conservan Gemini,
 Gmail OAuth/API y envío múltiple supervisado. Ambas pantallas de preparación permiten
 seleccionar todos los contactos elegibles, desmarcarlos y seleccionar individualmente,
@@ -32,7 +39,7 @@ Detalles: [recuperación de cuentas](docs/recuperacion-cuentas.md),
 [diagnóstico SMTP y comprobación controlada](docs/diagnostico-recuperacion-smtp.md)
 y [envío múltiple supervisado](docs/envio-multiple-supervisado.md).
 
-**Validación del respaldo final (22 de octubre):** `node --test` terminó con
+**Validación histórica del respaldo (22 de octubre):** `node --test` terminó con
 **917 pruebas aprobadas, 0 fallidas y 0 omitidas**. No se enviaron correos ni
 campañas reales. Las comprobaciones de seguridad preceden al commit/push; esta
 cifra no certifica recepción real de correos de recuperación.
@@ -417,6 +424,7 @@ El [índice de entrega](docs/entrega/indice-entrega.md) enlaza los documentos em
 - [Arquitectura / SDD](docs/SDD-borrador-tecnico.md), [propuesta técnica](docs/entrega/propuesta-tecnica.md) y [memoria técnica](docs/entrega/memoria-tecnica.md).
 - [Manual de usuario](docs/entrega/manual-usuario.md) y [manual técnico](docs/entrega/manual-tecnico.md).
 - [Manual de Usuario y Validación Funcional (PDF)](docs/entrega/Manual_Usuario_Validacion_Funcional.pdf).
+- [Informe de cierre técnico del MVP y observaciones finales](docs/entrega/cierre-mvp.md).
 - [Reporte de QA](docs/entrega/reporte-qa.md), [evidencias de validación](docs/entrega/evidencias-validacion.md) y [alcance actual](docs/alcance-mvp-actual.md).
 - [Plan de proyecto](docs/entrega/plan-proyecto.md), [mantenimiento](docs/entrega/plan-mantenimiento.md), [capacitación](docs/entrega/capacitacion.md) e [informe final de residencias](docs/entrega/informe-final-residencias.md).
 - [Autoría y uso de IA](docs/entrega/autoria-ia.md).
