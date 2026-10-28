@@ -11,5 +11,5 @@
 <div class="campo"><label for="<%= canal %>Habilitada">Estado</label><select id="<%= canal %>Habilitada" name="<%= canal %>Habilitada">
 <option value="true" <%= (config?.habilitada ?? (canal === 'email')) ? 'selected' : '' %>>Habilitada</option><option value="false" <%= !(config?.habilitada ?? (canal === 'email')) ? 'selected' : '' %>>Deshabilitada</option></select></div>
 <div class="campo"><label for="<%= canal %>WebhookUrl">Webhook URL (opcional)</label><input id="<%= canal %>WebhookUrl" name="<%= canal %>WebhookUrl" type="url" autocomplete="off" value="<%= config?.webhookUrl || '' %>"></div>
-</section><% } %><div class="acciones"><button type="submit">Guardar configuración</button><a href="/admin/empresas/<%= empresa._id %>">Cancelar</a></div></form>
+</section><% } %><div class="acciones"><button type="submit">Guardar configuración</button><a class="boton secundario cancelar" href="/admin/empresas/<%= empresa._id %>">Cancelar</a></div></form>
 </main><%- include('../partials/_piePublico') %></body></html>

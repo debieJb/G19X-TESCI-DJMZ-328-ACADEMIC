@@ -18,7 +18,7 @@
     <p>Al confirmar autorizas este envío. No podrás repetirlo desde esta campaña.</p>
     <form data-enviar-campana>
       <%- include('_csrfCampana') %>
-      <div class="acciones"><button type="button" data-cancelar-envio>Volver a revisar</button><button type="submit">Confirmar y enviar</button></div>
+      <div class="acciones"><button class="secundario cancelar" type="button" data-cancelar-envio>Volver a revisar</button><button type="submit">Confirmar y enviar</button></div>
     </form>
   </dialog>
   <button type="button" data-continuar-envio hidden>Continuar destinatarios pendientes</button>

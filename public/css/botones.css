@@ -1,0 +1,173 @@
+/* Botones compartidos. Cargar después de los estilos públicos e internos. */
+:root {
+  --boton-radio:12px;
+  --boton-fondo:#142c54;
+  --boton-hover:#294a7a;
+  --boton-texto:#fff;
+  --boton-borde:#142c54;
+}
+
+:is(.pagina-publica,.pagina-interna,.pagina-empresa,body) :is(.boton,button,input[type=submit],input[type=button],input[type=reset]) {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:.55rem;
+  min-height:46px;
+  min-width:44px;
+  max-width:100%;
+  padding:.7rem 1.15rem;
+  border:1px solid var(--boton-borde);
+  border-radius:var(--boton-radio);
+  background:var(--boton-fondo);
+  color:var(--boton-texto);
+  font-family:inherit;
+  font-size:.9rem;
+  font-weight:650;
+  line-height:1.4;
+  text-align:center;
+  text-decoration:none;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  vertical-align:middle;
+  box-shadow:0 2px 4px #142c540d;
+  cursor:pointer;
+  touch-action:manipulation;
+  transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+}
+
+/* Variantes: las clases existentes conservan su significado. */
+body :is(.boton,button):is(.secundario,.editar,.menu-publico) {
+  --boton-fondo:#fff;
+  --boton-hover:#eff2f9;
+  --boton-texto:#142c54;
+  --boton-borde:#8190a8;
+  box-shadow:none;
+}
+body :is(.boton,button):is(.cancelar),
+body .envio-campana [data-cancelar-envio] {
+  --boton-fondo:#f1f4fb;
+  --boton-hover:#e7ecf3;
+  --boton-texto:#41516b;
+  --boton-borde:#8190a8;
+  box-shadow:none;
+}
+body :is(.boton,button).eliminar {
+  --boton-fondo:#fff5f7;
+  --boton-hover:#fce9ef;
+  --boton-texto:#97223f;
+  --boton-borde:#b35c75;
+  box-shadow:none;
+}
+body :is(.boton,button).peligro {
+  --boton-fondo:#9f2446;
+  --boton-hover:#86203d;
+  --boton-texto:#fff;
+  --boton-borde:#9f2446;
+}
+
+@media(hover:hover) {
+  :is(.pagina-publica,.pagina-interna,.pagina-empresa,body) :is(.boton,button,input[type=submit],input[type=button],input[type=reset]):hover:not(:disabled):not([aria-disabled=true]) {
+    background:var(--boton-hover);
+    color:var(--boton-texto);
+    border-color:var(--boton-borde);
+    box-shadow:0 4px 12px #142c541a;
+  }
+}
+:is(.pagina-publica,.pagina-interna,.pagina-empresa,body) :is(.boton,button,input[type=submit],input[type=button],input[type=reset]):active:not(:disabled):not([aria-disabled=true]) {
+  transform:translateY(1px);
+  box-shadow:none;
+}
+:is(.pagina-publica,.pagina-interna,.pagina-empresa,body) :is(.boton,button,input[type=submit],input[type=button],input[type=reset]):focus-visible {
+  outline:3px solid #6740b6;
+  outline-offset:3px;
+  box-shadow:0 0 0 2px #fff;
+}
+
+/* Deshabilitado no implica carga: mantener texto legible y evitar hover activo. */
+:is(.pagina-publica,.pagina-interna,.pagina-empresa,body) :is(.boton,button,input[type=submit],input[type=button],input[type=reset]):is(:disabled,[aria-disabled=true]) {
+  background:#e7ecf3;
+  color:#526077;
+  border-color:#8190a8;
+  border-style:dashed;
+  opacity:1;
+  cursor:not-allowed;
+  box-shadow:none;
+  transform:none;
+}
+/* Reflejar únicamente estados de carga ya expuestos por la aplicación. */
+:is(.pagina-publica,.pagina-interna,.pagina-empresa,body) form[aria-busy=true] button[type=submit],
+body:is(.pagina-publica,.pagina-interna,.pagina-empresa) :is(button,.boton)[aria-busy=true] {
+  background:#eeeafa;
+  color:#51349b;
+  border:1px solid #a99acb;
+  cursor:wait;
+  box-shadow:none;
+  transform:none;
+}
+:is(.pagina-publica,.pagina-interna,.pagina-empresa,body) form[aria-busy=true] button[type=submit]::before,
+body:is(.pagina-publica,.pagina-interna,.pagina-empresa) :is(button,.boton)[aria-busy=true]::before {
+  content:"";
+  display:inline-block;
+  width:1em;
+  height:1em;
+  flex:0 0 1em;
+  border:2px solid currentColor;
+  border-right-color:transparent;
+  border-radius:50%;
+  animation:boton-girar .8s linear infinite;
+}
+@keyframes boton-girar { to { transform:rotate(360deg); } }
+
+/* Controles auxiliares compactos, con el mismo objetivo táctil mínimo. */
+body.pagina-publica button.mostrar-password {
+  --boton-fondo:transparent;
+  --boton-hover:#f6f2fc;
+  --boton-texto:#57408a;
+  --boton-borde:transparent;
+  min-height:46px;
+  min-width:76px;
+  padding:.5rem .65rem;
+  border-radius:8px;
+  font-size:.8rem;
+  flex-shrink:0;
+  box-shadow:none;
+}
+body :is(.acciones,.acciones-usuario,.tabla-acciones) {
+  gap:.65rem;
+  align-items:center;
+}
+body :is(.acciones,.acciones-usuario,.tabla-acciones)>form {
+  max-width:100%;
+}
+body .tabla-acciones :is(.boton,button),
+body .acciones-usuario :is(.boton,button),
+body .salida-admin button,
+body .barra button.menu-publico {
+  min-height:44px;
+  padding:.6rem .85rem;
+  font-size:.85rem;
+}
+@media(max-width:600px) {
+  body .acciones>:is(.boton,button),
+  body .acciones>form {
+    flex:1 1 100%;
+    width:100%;
+  }
+  body .acciones>form :is(.boton,button) { width:100%; }
+}
+@media(prefers-reduced-motion:reduce) {
+  body :is(.boton,button,input[type=submit],input[type=button],input[type=reset]),
+  body :is(.boton,button)::before {
+    animation:none !important;
+    transition:none !important;
+    transform:none !important;
+  }
+}
+@media(forced-colors:active) {
+  body :is(.boton,button,input[type=submit],input[type=button],input[type=reset]) {
+    forced-color-adjust:auto;
+    border:1px solid ButtonText;
+  }
+  body :is(.boton,button):focus-visible { outline-color:Highlight; }
+  body :is(.boton,button):is(:disabled,[aria-disabled=true]) { color:GrayText; border:1px dashed GrayText; }
+}

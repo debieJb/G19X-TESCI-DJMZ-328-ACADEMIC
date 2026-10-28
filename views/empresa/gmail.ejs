@@ -26,10 +26,10 @@
       <form action="/empresa/gmail/renovar" method="post"><input type="hidden" name="_csrf" value="<%= gmailCsrf %>"><button type="submit">Comprobar y renovar autorización</button></form>
       <% } %>
       <% if (conexion.estado !== 'desconectada') { %>
-      <form action="/empresa/gmail/desconectar" method="post"><input type="hidden" name="_csrf" value="<%= gmailCsrf %>"><button type="submit"><%= conexion.estado === 'revocacion_pendiente' ? 'Reintentar revocación' : 'Desconectar Gmail' %></button></form>
+      <form action="/empresa/gmail/desconectar" method="post"><input type="hidden" name="_csrf" value="<%= gmailCsrf %>"><button class="eliminar" type="submit"><%= conexion.estado === 'revocacion_pendiente' ? 'Reintentar revocación' : 'Desconectar Gmail' %></button></form>
       <% } %>
     </div>
   </section>
   <p>Una cuenta Google no puede conectarse simultáneamente a dos empresas. La autorización de Gmail es independiente de la habilitación de contactos y del consentimiento de marketing.</p>
-  <a href="/panel">Volver al panel</a>
+  <a class="boton secundario" href="/panel">Volver al panel</a>
 </main><%- include('../partials/_piePublico') %></body></html>

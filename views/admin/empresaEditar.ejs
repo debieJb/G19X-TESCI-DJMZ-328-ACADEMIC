@@ -7,5 +7,5 @@
 <div class="campo"><label for="nombre">Nombre</label><input id="nombre" name="nombre" required value="<%= empresa.nombre %>"></div>
 <div class="campo"><label for="estado">Estado</label><select id="estado" name="estado"><option value="activa" <%= empresa.estado === 'activa' ? 'selected' : '' %>>Activa</option><option value="inactiva" <%= empresa.estado === 'inactiva' ? 'selected' : '' %>>Inactiva</option></select></div>
 <p>La activación operativa conserva el proceso de verificación empresarial.</p>
-<div class="acciones"><button type="submit">Guardar empresa</button><a href="/admin/empresas/<%= empresa._id %>">Cancelar</a></div></form></main>
+<div class="acciones"><button type="submit">Guardar empresa</button><a class="boton secundario cancelar" href="/admin/empresas/<%= empresa._id %>">Cancelar</a></div></form></main>
 <%- include('../partials/_piePublico') %></body></html>

@@ -64,7 +64,7 @@
       <% } %>
       </section>
       <% if (datos.canal === 'email') { %><%- include('_destinatarios') %><% } %>
-      <div class="acciones"><button type="submit" name="continuar" value="revisar">Guardar y revisar campaña</button><a class="boton secundario" href="<%= cancelar %>">Cancelar</a></div>
+      <div class="acciones"><button type="submit" name="continuar" value="revisar">Guardar y revisar campaña</button><a class="boton secundario cancelar" href="<%= cancelar %>">Cancelar</a></div>
     </form>
     <script src="/js/campanaFormulario.js" defer></script>
     <script src="/js/destinatariosFormulario.js" defer></script>
