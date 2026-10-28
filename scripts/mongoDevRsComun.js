@@ -70,21 +70,19 @@ const original = async () => {
   } finally { await client.close(); }
 };
 const compararOriginal = async () => {
-  const antes = JSON.parse(fs.readFileSync(path.join(ROOT, 'original-baseline.json'), 'utf8'));
-  const referencia = JSON.parse(fs.readFileSync(path.join(__dirname, '../docs/mongodb-indices-autorizados-v2.json'), 'utf8'));
-  validarReferencia(antes, referencia);
   rutasSeguras();
+  const baselineBytes = fs.readFileSync(path.join(ROOT, 'original-baseline.json'));
+  const v2Bytes = fs.readFileSync(path.join(__dirname, '../docs/mongodb-indices-autorizados-v2.json'));
+  const antes = JSON.parse(baselineBytes);
+  const referencia = JSON.parse(v2Bytes);
+  validarReferencia(antes, referencia);
   const reconciliacion = require('./mongoDevRsReconciliacion');
   const bytesV3 = fs.readFileSync(path.join(__dirname, '../docs/mongodb-reconciliacion-pid-v3.json'));
-  exigir(createHash('sha256').update(bytesV3).digest('hex') === '9958ed6eeabf1cfd651aba11c108817b7d095510059a0da8dec7e4395b57353d', 'RECONCILIACION_NO_AUTORIZADA');
+  exigir(createHash('sha256').update(bytesV3).digest('hex') === reconciliacion.V3_SHA256, 'RECONCILIACION_NO_AUTORIZADA');
   const v3 = JSON.parse(bytesV3);
-  const servicioAntes = reconciliacion.leerServicio();
-  const actual = await original();
-  const servicioDespues = reconciliacion.leerServicio();
-  reconciliacion.validarReconciliacion({ antes, referencia, v3, actual, servicioAntes, servicioDespues,
-    baselineBytes: fs.readFileSync(path.join(ROOT, 'original-baseline.json')),
-    v2Bytes: fs.readFileSync(path.join(__dirname, '../docs/mongodb-indices-autorizados-v2.json')) });
-  console.log('STANDALONE_ORIGINAL: PID_RECONCILIADO_6160; CONFIGURACION_DATOS_E_INDICES_SIN_CAMBIOS');
+  const historia = { antes, referencia, v3, baselineBytes, v2Bytes, v3Bytes: bytesV3 };
+  const actual = await reconciliacion.comprobarArranqueOriginal(historia, { leerOriginal: original });
+  console.log(`STANDALONE_ORIGINAL: PID_VERIFICADO_${actual.pid}; CONFIGURACION_DATOS_E_INDICES_SIN_CAMBIOS`);
 };
 const validarReferencia = (antes, referencia) => {
   const indice = { v: 2, key: { empresa: 1, 'asistenciaIA.aprobacionHash': 1 },
