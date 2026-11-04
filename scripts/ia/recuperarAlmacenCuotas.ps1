@@ -1,10 +1,11 @@
 param([switch]$AlmacenGemini)
 $ErrorActionPreference = 'Stop'
-$root = if ($AlmacenGemini) { 'C:\Users\jocam\Documents\marketing-automation-cuota-mongo-gemini' } else { 'C:\Users\jocam\Documents\marketing-automation-cuota-mongo' }
+. (Join-Path $PSScriptRoot '..\rutasLocales.ps1')
+$root = if ($AlmacenGemini) { (Get-PluriOnePath 'geminiRoot') } else { (Get-PluriOnePath 'quotaRoot') }
 $port = if ($AlmacenGemini) { 27020 } else { 27019 }
 $data = Join-Path $root 'data'
 $pidFile = Join-Path $root 'mongod.pid'
-$expectedExe = 'C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe'
+$expectedExe = (Get-PluriOnePath 'mongod')
 $runner = Join-Path $PSScriptRoot 'recuperarCuentaTemporal.mongo.js'
 
 if (!(Test-Path -LiteralPath $pidFile -PathType Leaf) -or !(Test-Path -LiteralPath $data -PathType Container)) {

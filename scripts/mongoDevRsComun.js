@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { MongoClient } = require('mongodb');
-const ROOT = 'C:\\Users\\jocam\\Documents\\marketing-automation-dev-mongo-rs';
+const ROOT = require('./rutasLocales').paths.devRoot;
 const DATA = path.join(ROOT, 'data');
 const SET = 'marketingDevRs';
 const URI = 'mongodb://127.0.0.1:27018/admin?directConnection=true';
@@ -70,11 +70,19 @@ const original = async () => {
   } finally { await client.close(); }
 };
 const compararOriginal = async () => {
-  const antes = JSON.parse(fs.readFileSync(path.join(ROOT, 'original-baseline.json'), 'utf8'));
-  const referencia = JSON.parse(fs.readFileSync(path.join(__dirname, '../docs/mongodb-indices-autorizados-v2.json'), 'utf8'));
+  rutasSeguras();
+  const baselineBytes = fs.readFileSync(path.join(ROOT, 'original-baseline.json'));
+  const v2Bytes = fs.readFileSync(path.join(__dirname, '../docs/mongodb-indices-autorizados-v2.json'));
+  const antes = JSON.parse(baselineBytes);
+  const referencia = JSON.parse(v2Bytes);
   validarReferencia(antes, referencia);
-  exigir(JSON.stringify(referencia.actual) === JSON.stringify(await original()), 'ORIGINAL_CAMBIO_DETECTADO');
-  console.log('STANDALONE_ORIGINAL: SIN_CAMBIOS_DE_PROCESO_CONFIGURACION_DATOS_E_INDICES');
+  const reconciliacion = require('./mongoDevRsReconciliacion');
+  const bytesV3 = fs.readFileSync(path.join(__dirname, '../docs/mongodb-reconciliacion-pid-v3.json'));
+  exigir(createHash('sha256').update(bytesV3).digest('hex') === reconciliacion.V3_SHA256, 'RECONCILIACION_NO_AUTORIZADA');
+  const v3 = JSON.parse(bytesV3);
+  const historia = { antes, referencia, v3, baselineBytes, v2Bytes, v3Bytes: bytesV3 };
+  const actual = await reconciliacion.comprobarArranqueOriginal(historia, { leerOriginal: original });
+  console.log(`STANDALONE_ORIGINAL: PID_VERIFICADO_${actual.pid}; CONFIGURACION_DATOS_E_INDICES_SIN_CAMBIOS`);
 };
 const validarReferencia = (antes, referencia) => {
   const indice = { v: 2, key: { empresa: 1, 'asistenciaIA.aprobacionHash': 1 },

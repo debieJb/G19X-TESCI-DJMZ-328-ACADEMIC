@@ -8,5 +8,5 @@
 <div><dt>Rol</dt><dd><%= datos.rol %></dd></div>
 <div><dt>Empresa</dt><dd><%= empresa?.nombre || 'Sin empresa disponible' %></dd></div>
 <div><dt>Estado de acceso</dt><dd><%= ({activo:'Activo',bloqueado:'Bloqueado',pendiente_verificacion:datos.rol === 'operador' ? 'Pendiente de activación' : 'Pendiente de verificación'})[datos.estadoAcceso] || 'Activo (histórico)' %></dd></div>
-</dl><div class="acciones"><a class="boton" href="<%= base %>/<%= datos._id %>/editar">Editar usuario</a><a href="/panel">Volver al panel</a></div></main>
+</dl><div class="acciones"><a class="boton" href="<%= base %>/<%= datos._id %>/editar">Editar usuario</a><a class="boton secundario" href="/panel">Volver al panel</a></div></main>
 <%- include('../partials/_piePublico') %></body></html>

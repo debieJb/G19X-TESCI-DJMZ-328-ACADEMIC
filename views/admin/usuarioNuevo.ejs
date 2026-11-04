@@ -13,7 +13,7 @@
         <%- include('../partials/_camposUsuario', { passwordOpcional: false }) %>
         <div class="campo"><label for="rol">Rol</label><select id="rol" name="rol" required><option value="">Selecciona un rol</option><% for (const rol of ['admin_empresa', 'operador']) { %><option value="<%= rol %>" <%= datos.rol === rol ? 'selected' : '' %>><%= rol %></option><% } %></select></div>
         <div class="campo"><label for="empresa">Empresa</label><select id="empresa" name="empresa" required><option value="">Selecciona una empresa</option><% for (const empresa of empresas) { %><option value="<%= empresa._id %>" <%= datos.empresa === String(empresa._id) ? 'selected' : '' %>><%= empresa.nombre %> (<%= empresa.estado %>)</option><% } %></select></div>
-        <div class="acciones"><button type="submit" <% if (!empresas.length) { %>disabled<% } %>>Crear usuario</button><a href="/panel">Cancelar</a></div>
+        <div class="acciones"><button type="submit" <% if (!empresas.length) { %>disabled<% } %>>Crear usuario</button><a class="boton secundario cancelar" href="/panel">Cancelar</a></div>
       </form>
     </div>
   </main>

@@ -22,9 +22,9 @@
   </form>
   <% } %>
   <form method="post" action="/campanas/<%= campana._id %>/gmail/piloto/revocar" data-piloto-accion="revocar">
-    <%- include('_csrfCampana') %><button type="submit">Revocar autorización</button>
+    <%- include('_csrfCampana') %><button class="eliminar" type="submit">Revocar autorización</button>
   </form>
-  <button type="button" data-piloto-consultar>Consultar resultado persistido</button>
+  <button class="secundario" type="button" data-piloto-consultar>Consultar resultado persistido</button>
   <p role="status" aria-live="polite" data-piloto-estado>No se ha solicitado ninguna operación.</p>
   <pre data-piloto-resultado aria-label="Resultado del envío"></pre>
   <noscript>La operación guiada requiere JavaScript. No se ejecuta ningún envío automáticamente.</noscript>

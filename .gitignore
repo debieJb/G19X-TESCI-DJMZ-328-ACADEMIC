@@ -16,6 +16,8 @@ Thumbs.db
 *.key
 *.p12
 *.pfx
+*.dpapi
+*.cipher
 
 # Archivos locales de credenciales
 credentials.json
@@ -38,7 +40,15 @@ respaldos/
 *.tmp
 *.dump
 *.bson
+*.backup
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
 *.zip
 *.7z
 /witch -c respaldo-avances-18-oct
 /usuarios y empresas
+
+# Auditoría privada de recuperación: rutas, PIDs e inventario del equipo original.
+/docs/revision-mongodb-6160/
+/docs/mongodb-reconciliacion-pid-v3.json

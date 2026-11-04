@@ -11,6 +11,8 @@ const preparacion = require('../services/preparacionAutomatizacionService');
 const A = '507f1f77bcf86cd799439011', B = '507f1f77bcf86cd799439012', ID = '507f1f77bcf86cd799439013', C = '507f1f77bcf86cd799439014', D = '507f1f77bcf86cd799439015';
 let usuario, actor, cliente, app, cookie, csrf, doc, contactos, conexion, guardar, fetch, empresa;
 beforeEach(t => {
+  const politica = require('../config/enviosGmail').obtenerPolitica();
+  t.mock.method(require('../config/enviosGmail'), 'obtenerPolitica', () => ({ ...politica, maxDestinatarios: 2 }));
   usuario = { _id: ID, rol: 'admin_empresa', empresa: { _id: A, nombre: 'Empresa A' } }; actor = { ...usuario };
   ({ cliente, app, cookie, campanaCsrf: csrf } = crearContexto(t, usuario));
   empresa = { estado: 'activa', correoAutomatizaciones: 'gmail-a@example.test' };
@@ -270,4 +272,42 @@ test('borrador: imagen exige CSRF, pertenencia, revisión actual y PNG válido',
   await cliente.post(`/campanas/${B}/automatizacion/imagen`).send({ imagen, revisionImagen: '0' }).expect(404);
   doc.estado = 'activa'; await cliente.post(ruta).send({ imagen, revisionImagen: '0' }).expect(403);
   assert.equal(guardar.mock.callCount(), 0); assert.equal(fetch.mock.callCount(), 0);
+});
+
+test('destinatarios: límite dos se aplica en servidor sin enviar ni perder deduplicación', async t => {
+  t.mock.method(require('../config/enviosGmail'), 'obtenerPolitica', () => ({ empresas: [A], maxDestinatarios: 2 }));
+  contactos = [D, B, ID].map((id, i) => ({ ...contactos[0], _id: id, email: `autorizado${i}@example.test` }));
+  const exceso = await cliente.post(url()).send({ ...datos(), contactos: [D, B, ID] }).expect(422);
+  assert.match(exceso.text, /Has superado el límite de destinatarios permitido para esta campaña. Máximo: 2/);
+  assert.equal(guardar.mock.callCount(), 0);
+  await cliente.post(url()).send({ ...datos(), contactos: [D, B, D] }).expect(303);
+  assert.equal(doc.destinatarios.contactos.length, 2);
+  assert.equal(fetch.mock.callCount(), 0);
+});
+
+test('destinatarios: script externo único accesible y aviso sin contactos elegibles', async () => {
+  contactos = [];
+  const pagina = await cliente.get(url()).expect(200);
+  assert.match(pagina.text, /No hay destinatarios con autorización documentada/);
+  assert.equal((pagina.text.match(/src="\/js\/seleccionContactos.js"/g) || []).length, 1);
+  const script = await cliente.get('/js/seleccionContactos.js').expect(200);
+  assert.match(script.headers['content-type'], /javascript/);
+  assert.match(script.text, /seleccionarTodosContactos/);
+  const csp = pagina.headers['content-security-policy'];
+  if (csp) assert.match(csp, /script-src[^;]*'self'/);
+});
+
+test('destinatarios: activos, canal, consentimiento vigente y email único se revalidan', async () => {
+  const base = contactos[0];
+  contactos = [base,
+    { ...base, _id: B, email: base.email.toUpperCase() },
+    { ...base, _id: ID, activo: false },
+    { ...base, _id: ID, canales: { email: false } },
+    { ...base, _id: ID, consentimientoMarketing: { ...base.consentimientoMarketing, fecha: new Date(Date.now() + 86400000) } }
+  ];
+  const opciones = await preparacion.opciones(A);
+  assert.deepEqual(opciones.map(c => c._id), [D]);
+  await cliente.post(url()).send({ ...datos(), contactos: [ID] }).expect(422);
+  assert.equal(guardar.mock.callCount(), 0);
+  assert.equal(fetch.mock.callCount(), 0);
 });

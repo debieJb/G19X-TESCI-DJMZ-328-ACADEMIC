@@ -9,7 +9,7 @@
     <label><input type="checkbox" name="confirmacion" value="ENVIAR" required>Confirmo remitente, contenido, destinatarios y envío real según la modalidad guardada</label>
     <button type="submit" disabled><%= campana.automatizacion?.modo === 'programado' ? 'Programar envío' : 'Enviar ahora' %></button>
   </form>
-  <button type="button" data-historial-gmail>Actualizar historial persistente</button>
+  <button class="secundario" type="button" data-historial-gmail>Actualizar historial persistente</button>
   <p role="status" aria-live="polite" data-estado-gmail></p>
   <pre data-resultado-gmail aria-label="Historial de ejecución"></pre>
   <noscript>La confirmación guiada requiere JavaScript.</noscript>

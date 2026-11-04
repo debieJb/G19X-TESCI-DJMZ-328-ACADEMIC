@@ -111,3 +111,30 @@ test('revisión: direcciones repetidas se explican y cuentan una sola vez', () =
   assert.equal(r.validos.length, 1);
   assert.match(r.excluidos[0].motivo, /duplicado/);
 });
+
+test('supervisado: selección total visible, límite dos y CSRF al preparar la revisión real', async t => {
+  const docs = Array.from({ length: 3 }, (_, i) => {
+    const email = `persona${i}@example.test`;
+    return { ...contacto, _id: (20 + i).toString(16).padStart(24, '0'), email,
+      consentimientoMarketing: { ...contacto.consentimientoMarketing, emailHash: huellaEmail(email) } };
+  });
+  t.mock.method(require('../config/enviosGmail'), 'obtenerPolitica', () => ({ habilitado: true, empresas: [E], supervisado: true, maxDestinatarios: 2 }));
+  t.mock.method(require('../models/ControlEnvioGmail'), 'find', () => ({ lean: async () => [] }));
+  t.mock.method(Contacto, 'find', () => ({ select: () => ({ lean: async () => docs }), session: () => ({ limit: () => ({ lean: async () => docs }) }) }));
+  const pagina = await cliente.get(ruta()).expect(200);
+  assert.match(pagina.text, /Seleccionar todos los contactos/);
+  assert.equal((pagina.text.match(/id="seleccionarTodosContactos"/g) || []).length, 1);
+  assert.equal((pagina.text.match(/src="\/js\/seleccionContactos.js"/g) || []).length, 1);
+  assert.match(pagina.text, /data-max-destinatarios="2"/);
+  const body = { ...datos(), tipo: 'contactos', contactos: docs.map(c => c._id) };
+  await cliente.post(`/campanas/${C}/activar-preparar`).send({ ...body, _csrf: 'invalido' }).expect(403);
+  const exceso = await cliente.post(`/campanas/${C}/activar-preparar`).send(body).expect(422);
+  assert.match(exceso.text, /3 correos válidos.*límite configurado es 2/);
+  assert.equal(doc.estado, 'borrador');
+  for (const tipo of ['todos', 'contactos']) {
+    await cliente.post(`/campanas/${C}/activar-preparar`).send({ ...body, tipo }).expect(422);
+  }
+  await cliente.post(`/campanas/${C}/activar-preparar`).send({ ...body, contactos: docs.slice(0, 2).map(c => c._id) }).expect(303);
+  assert.equal(doc.destinatarios.contactos.length, 2);
+  assert.equal(global.fetch.mock.callCount(), 0);
+});

@@ -19,7 +19,7 @@ const localJson = (url, method = 'GET') => new Promise((resolve, reject) => {
 const puertoLibre = () => new Promise(resolve => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)); }); });
 test('navegador: envio manual simple, historial y confirmacion con transporte simulado', {timeout:120000}, async t => {
   assert.equal(process.env.NODE_ENV, 'test');
-  const browser = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
+  const browser = process.env.PUBLIC_BROWSER_EXECUTABLE || 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
   assert.ok(fs.existsSync(browser));
   const artifacts = fs.mkdtempSync(path.join(os.tmpdir(), 'ma-campana-ux-'));
   const express = require('express'), app = express();

@@ -5,8 +5,44 @@ Plataforma de gestión de campañas de marketing por correo electrónico con adm
 **Empresa:** PluriOne S.A. de C.V. (Develop Talent & Technology)
 **Institución:** Tecnológico de Estudios Superiores de Cuautitlán Izcalli (TESCI)
 **Autora y responsable académica:** Debanie Jocabed Montoya Zúñiga
-**Base funcional documentada:** `78c743424b84cf7ea6d7fc63d2cbf58205727c88`
+**Referencia histórica de implementación:** `78c743424b84cf7ea6d7fc63d2cbf58205727c88`
 **Rama de trabajo al efectuar esta revisión:** `respaldo-avances-18-oct`
+
+**Cierre técnico del MVP — 27 de octubre de 2026: cerrado con observaciones.**
+La revisión final ejecutó 100 archivos de pruebas generales: **972 aprobadas,
+0 fallidas, 0 canceladas y 0 omitidas**, sin operar bases de datos ni proveedores reales.
+El [informe de cierre](docs/entrega/cierre-mvp.md) registra el alcance verificado,
+el manual PDF de 59 páginas y las limitaciones pendientes. Este cierre de desarrollo
+no equivale a aceptación empresarial o académica firmada ni a certificación de producción.
+
+**Estado consolidado para presentación — 22 de octubre de 2026:** se conservan Gemini,
+Gmail OAuth/API y envío múltiple supervisado. Ambas pantallas de preparación permiten
+seleccionar todos los contactos elegibles, desmarcarlos y seleccionar individualmente,
+con contador y rechazo de excesos en cliente y servidor. El máximo configurable es
+1–50 destinatarios; un valor explícito de 2 sigue limitando a 2 y el piloto manual
+conserva un destinatario. Cada mensaje es individual y requiere confirmación del
+administrador, consentimiento válido, aislamiento empresarial y controles de duplicados.
+
+El login responsivo conserva CSRF, límites y errores genéricos. El registro reutiliza
+la detección existente de cuentas y solicitudes pendientes sin duplicar solicitudes
+ni verificaciones. La vinculación específica solo se muestra con titularidad verificada.
+La recuperación de contraseñas está implementada con token aleatorio de un uso,
+hash persistido, caducidad de 15 minutos, bcrypt e invalidación de sesiones anteriores.
+**Su envío real sigue pendiente: Google SMTP rechaza la autenticación con `535 / 5.7.8`.**
+La última comprobación real fue exclusivamente TLS/AUTH, sin enviar mensajes; no
+acredita recepción ni restablecimiento real. Se reutilizan el SMTP y las credenciales
+de verificación, sin crear otro Gmail. El bloqueo afecta al transporte transaccional
+de esa configuración; las evidencias históricas de verificación no acreditan su
+funcionamiento actual. El Gmail OAuth/API de campañas permanece separado.
+
+Detalles: [recuperación de cuentas](docs/recuperacion-cuentas.md),
+[diagnóstico SMTP y comprobación controlada](docs/diagnostico-recuperacion-smtp.md)
+y [envío múltiple supervisado](docs/envio-multiple-supervisado.md).
+
+**Validación histórica del respaldo (22 de octubre):** `node --test` terminó con
+**917 pruebas aprobadas, 0 fallidas y 0 omitidas**. No se enviaron correos ni
+campañas reales. Las comprobaciones de seguridad preceden al commit/push; esta
+cifra no certifica recepción real de correos de recuperación.
 
 ## Índice
 
@@ -45,14 +81,9 @@ git --version
 mongosh --version
 ```
 
-**Importante:** `mongod --version` puede indicar «comando no reconocido» aunque MongoDB Server esté instalado. En el equipo de desarrollo el ejecutable se encuentra en `C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe`; en caso necesario, verificar sin modificar el `PATH`:
+**MongoDB:** configure `PLURIONE_MONGOD_PATH` con la ruta del ejecutable instalado o agregue `mongod` al `PATH`. Se conservan las comprobaciones de identidad y de version autorizada.
 
-```powershell
-Test-Path "C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe"
-& "C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe" --version
-```
-
-Si `Test-Path` devuelve `False`, localizar la instalación correspondiente antes de ejecutar el segundo comando. MongoDB Shell puede estar instalado en una carpeta diferente; en el equipo verificado se invoca directamente con `mongosh`.
+MongoDB Shell puede estar instalado en una carpeta diferente; configure `PLURIONE_MONGOSH_PATH` o incluya `mongosh` en el `PATH`.
 
 ### 1.2 Obtener la versión correcta del proyecto
 
@@ -68,7 +99,7 @@ git log -1 --oneline
 **Entorno de desarrollo existente:**
 
 ```powershell
-cd C:\Users\jocam\Documents\marketing-automation
+cd <directorio-del-proyecto>
 git branch --show-current
 git status --short
 git log -1 --oneline
@@ -97,6 +128,7 @@ npm pkg get scripts
 | Comando | Uso |
 |---|---|
 | `npm run dev` | Servidor de desarrollo mediante `nodemon server.js` |
+| `npm run dev:piloto` | Desarrollo del MVP con cuotas `piloto_local`, restringidas a la empresa autorizada; requiere infraestructura existente |
 | `npm start` | Arranque mediante `node server.js` |
 | `npm test` | Suite habitual de `node:test` |
 | `npm run test:watch` | Pruebas en modo observación |
@@ -162,6 +194,12 @@ El autoservicio empresarial requiere una topología que permita transacciones Mo
 
 El repositorio incluye `scripts/iniciarMongoDevRs.ps1` y `scripts/verificarMongoDevRs.js`. Estos utilitarios dependen del entorno Windows original, de directorios, rutas y condiciones previamente preparadas; **no son un instalador universal**. El script `scripts/iniciarMongoPilotoLocal.ps1` corresponde a otro entorno local en el puerto `27019`, no a una instalación nueva.
 
+Para recuperar el nodo **existente** en el equipo autorizado se añadió
+`scripts/iniciarMongoDevRsExistente.ps1`, sin inicialización automática. Requiere
+el expediente privado de identidad, excluido de Git. Revisar el
+[procedimiento y sus límites](docs/recuperacion-entorno-piloto.md) antes de ejecutarlo;
+un clon nuevo no contiene esa referencia local ni aprovisiona MongoDB.
+
 En el **equipo que ya tiene MongoDB funcionando**, diagnosticar primero, sin arrancar ni reinicializar servicios:
 
 ```powershell
@@ -211,6 +249,51 @@ Esto invoca `nodemon server.js`. Dejar la terminal abierta mientras se usa el si
 npm start
 ```
 
+#### MVP con asistente IA: arranque del piloto autorizado
+
+En el entorno piloto ya preparado, con MongoDB `marketingDevRs` activo en `27018`,
+cuentas e índices existentes y configuración privada de Gemini autorizada, usar desde
+la raíz del proyecto en PowerShell:
+
+```powershell
+npm run dev:piloto
+```
+
+Equivalente manual, en la misma terminal:
+
+```powershell
+$env:AI_QUOTA_BACKEND = 'piloto_local'
+npm run dev
+```
+
+Si ya hay un servidor en `3000`, detenerlo primero con **Ctrl+C** en su terminal.
+El lanzador usa nodemon y `server.js`, selecciona `piloto_local` solo en el proceso
+hijo y establece `development` si no se había definido entorno. No modifica `.env`,
+la terminal padre, credenciales, cuotas ni datos. Rechaza otro entorno o un backend
+explícito incompatible; no reemplaza silenciosamente una selección `protected`.
+No arranca MongoDB, crea bases/índices ni activa banderas de Gemini o correo.
+El arranque habitual de `server.js` conserva su preparación de índices y las
+políticas de integraciones ya configuradas; revisar esas políticas antes de iniciar.
+
+| Backend de cuotas IA | Alcance |
+|---|---|
+| `dev_fixture` | Predeterminado en desarrollo si falta `AI_QUOTA_BACKEND`. Solo admite empresas ficticias `f17e1a…`, con base y marcador de pruebas explícitos; rechaza empresas reales. |
+| `piloto_local` | Opt-in exclusivo de desarrollo para la empresa piloto autorizada, validada por ID fijo en el código. Usa la base separada existente `plurione_ai_quota_piloto_local`, valida destino, marcador e índices y conserva límites de 3/minuto y 20/día. |
+| `protected` | Backend exigido en producción; requiere infraestructura, autenticación y privilegios propios. El piloto local no lo sustituye ni habilita otras empresas. |
+
+Sin la selección del piloto, generar para una empresa real falla con
+`CUOTAS_NO_DISPONIBLES` **antes de llamar a Gemini**. Cuando `AI_ENABLED=true` y
+las comprobaciones pasan, el log de arranque debe indicar `backend: "piloto_local"`
+y `cuotasVerificadas: true`. El PID cambia en cada ejecución. Si IA está apagada,
+no se verifican cuotas en ese arranque; este comando no la habilita.
+
+Abrir <http://localhost:3000/login> con una cuenta autorizada del piloto. El
+administrador puede consultar `/empresa/ia/diagnostico` para verificar cuotas sin
+consumirlas ni llamar a Gemini. Generar una propuesta sí consume cuotas y utiliza
+la API real. Esta receta no aprovisiona otra computadora ni es configuración general
+de producción. Véanse el [manual del MVP](docs/entrega/manual-tecnico.md#41-arranque-del-mvp-piloto-con-ia)
+y la [guía del asistente](docs/asistente-ia.md).
+
 Si el servidor informa errores de conexión, topología, índices, puerto ocupado o sesiones, **leer el mensaje antes de cambiar configuración**. No modificar contraseñas ni desactivar controles de seguridad por ensayo y error.
 
 ### 1.9 Verificar el acceso por navegador
@@ -231,7 +314,7 @@ Para revisar la interfaz, CRUD y pruebas de la aplicación no es imprescindible 
 
 | Integración | Para qué se usa | Variables/documentos que se deben revisar | Límite de validación |
 |---|---|---|---|
-| SMTP transaccional | Correos de verificación de registro | `EMAIL_USER`, `EMAIL_PASS`, `TRANSACTIONAL_PUBLIC_ORIGIN`, `TRANSACTIONAL_EMAIL_ENABLED`; trabajador independiente | La configuración no demuestra recepción real |
+| SMTP transaccional | Verificación de registro y recuperación de contraseña | `EMAIL_USER`, `EMAIL_PASS`, `TRANSACTIONAL_PUBLIC_ORIGIN`, `TRANSACTIONAL_EMAIL_ENABLED`; trabajador independiente | Recuperación implementada; envío real pendiente por rechazo AUTH `535 / 5.7.8` en la configuración diagnosticada |
 | Gmail empresarial OAuth/API | Conexión por empresa y envío de campañas | `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_OAUTH_REDIRECT_URI`, `GMAIL_TOKEN_ENCRYPTION_KEY`, `GMAIL_CAMPAIGNS_ENABLED`, `GMAIL_CAMPAIGNS_MODE`; manual y controles de envío | Envío aceptado por API no demuestra entrega, apertura ni clic |
 | Gemini | Redacción asistida sujeta a revisión humana | `AI_ENABLED`, `AI_PROVIDER`, `AI_MODEL`, `GEMINI_API_KEY`, `AI_FREE_TIER_CONFIRMED`; documentación de cuotas | Clave configurada no garantiza modelo disponible ni gratuidad |
 | n8n | Compatibilidad histórica de webhooks | `N8N_WEBHOOK_URL`, `N8N_WEBHOOK_TIMEOUT_MS` | No es el transporte activo del motor Gmail directo |
@@ -281,6 +364,7 @@ En Windows pueden aparecer avisos `LF will be replaced by CRLF`: no son por sí 
 | Superadmin nuevo no puede entrar | Versión anterior del script, estado de acceso o configuración | Confirmar commit, revisar logs y pruebas; no editar estados directamente en MongoDB |
 | Registro no envía correo | Servicio SMTP o trabajador deshabilitado/no configurado | Distinguir un arranque local sin proveedores de una validación real de correo |
 | Gmail/Gemini no responde | Proveedor deshabilitado, permisos o credenciales | Seguir guías específicas, sin habilitar servicios en masa |
+| `CUOTAS_NO_DISPONIBLES` y backend `dev_fixture` con empresa real | Falta la selección explícita del almacén piloto | En el piloto autorizado, reiniciar con `npm run dev:piloto`; no quitar cuotas ni ampliar empresas permitidas |
 
 ### 1.13 Lista de aceptación de la instalación
 
@@ -312,7 +396,7 @@ La programación automática aparece como implementada y probada con simulacione
 
 ## 3. Pruebas, evidencias y aceptación
 
-**Ejecución reciente comunicada en esta revisión:** 860/860 pruebas generales aprobadas, sin fallos ni omisiones. Incluye la prueba actualizada de creación del superadministrador activo.
+**Ejecución histórica del 21 de octubre:** 860/860 pruebas generales aprobadas, sin fallos ni omisiones. Incluye la prueba actualizada de creación del superadministrador activo. El corte del 22 de octubre se valida nuevamente antes del commit; las pruebas simuladas no acreditan envío de recuperación real.
 
 **Evidencia histórica consignada en la documentación:** 851/851 pruebas generales, 65/65 pruebas de integración y dos ensayos Edge con 58 comprobaciones en total, utilizando datos sintéticos. Son cifras de ejecuciones anteriores y no deben sumarse a las 860 como si fueran pruebas independientes de una misma corrida.
 
@@ -339,6 +423,8 @@ El [índice de entrega](docs/entrega/indice-entrega.md) enlaza los documentos em
 - [PRD del MVP](docs/PRD-borrador-tecnico.md) y [matriz de trazabilidad](docs/entrega/matriz-trazabilidad.md).
 - [Arquitectura / SDD](docs/SDD-borrador-tecnico.md), [propuesta técnica](docs/entrega/propuesta-tecnica.md) y [memoria técnica](docs/entrega/memoria-tecnica.md).
 - [Manual de usuario](docs/entrega/manual-usuario.md) y [manual técnico](docs/entrega/manual-tecnico.md).
+- [Manual de Usuario y Validación Funcional (PDF)](docs/entrega/Manual_Usuario_Validacion_Funcional.pdf).
+- [Informe de cierre técnico del MVP y observaciones finales](docs/entrega/cierre-mvp.md).
 - [Reporte de QA](docs/entrega/reporte-qa.md), [evidencias de validación](docs/entrega/evidencias-validacion.md) y [alcance actual](docs/alcance-mvp-actual.md).
 - [Plan de proyecto](docs/entrega/plan-proyecto.md), [mantenimiento](docs/entrega/plan-mantenimiento.md), [capacitación](docs/entrega/capacitacion.md) e [informe final de residencias](docs/entrega/informe-final-residencias.md).
 - [Autoría y uso de IA](docs/entrega/autoria-ia.md).
@@ -358,3 +444,32 @@ Se conservan [documentos históricos](docs/historico/corte-previo-78c7434/README
 Durante el desarrollo se utilizaron **OpenAI Codex** para apoyo en programación, depuración, implementación, pruebas y revisión documental, y **ChatGPT** en planificación, revisión técnica y documentación. La autora mantiene la responsabilidad de revisar, comprender y validar lo producido. **Gemini** forma parte del producto como integración para sugerir contenido sujeto a aprobación humana.
 
 Consultar la [declaración de autoría y uso responsable de IA](docs/entrega/autoria-ia.md).
+
+## Rutas locales portables
+
+Los scripts comparten `scripts/rutasLocales.js` y su adaptador `scripts/rutasLocales.ps1`. No cargan .env: exportar las variables en la sesión antes de ejecutar Node o PowerShell. Las rutas relativas se resuelven desde la raíz del repositorio, independientemente del directorio actual.
+
+| Variable | Valor predeterminado relativo al repositorio |
+| --- | --- |
+| PLURIONE_MONGO_DEV_ROOT | ../marketing-automation-dev-mongo-rs |
+| PLURIONE_MONGO_PILOT_ROOT | ../marketing-automation-pilot-mongo-rs |
+| PLURIONE_MONGO_QUOTA_ROOT | ../marketing-automation-cuota-mongo |
+| PLURIONE_MONGO_GEMINI_ROOT | ../marketing-automation-cuota-mongo-gemini |
+| PLURIONE_MONGOD_PATH | Ejecutable mongod encontrado en PATH |
+| PLURIONE_MONGOSH_PATH | Ejecutable mongosh encontrado en PATH |
+
+Para reutilizar directorios existentes en otra ubicación, configurar cada ROOT con su ruta absoluta. No copiar, migrar ni recrear datos. Ejemplo de configuración (no inicia procesos):
+
+```powershell
+$env:PLURIONE_MONGO_DEV_ROOT = 'D:\PluriOne\mongo-dev'
+$env:PLURIONE_MONGOD_PATH = 'D:\MongoDB\bin\mongod.exe'
+node scripts/rutasLocales.js devRoot
+```
+
+En el entorno actual los directorios hermanos predeterminados coinciden con los existentes. Para instalaciones fuera del PATH se requiere indicar explícitamente el ejecutable ya instalado, incluyendo mongosh si se utiliza. Se conservan puertos, autenticación, controles de identidad, referencias y comprobaciones de directorios seguros. Piloto Gmail y cuotas legacy comparten históricamente el puerto 27019: siguen siendo perfiles alternativos, nunca deben iniciarse simultáneamente.
+
+Las rutas absolutas de `scripts/verificarServicioMongoOriginal.ps1` son referencias de seguridad del servicio histórico (PID, comando, hashes y rutas), no valores predeterminados para despliegues nuevos. Permanecen intencionalmente fijas: una instalación diferente requiere una nueva referencia auditada, sin alterar la evidencia original. Los reportes fechados, archivos de evidencia y copias históricas bajo docs conservan su procedencia; sus rutas no son configuración operativa. Las ubicaciones de Database Tools y DPAPI ya se derivan de LOCALAPPDATA; las versiones y ACL autorizadas se conservan.
+
+Las pruebas visuales explícitas de `tests/soporte/` admiten `PUBLIC_BROWSER_EXECUTABLE` para indicar el navegador instalado. Conservan como alternativa la ubicación habitual de Edge en Windows; no instalan ni ejecutan navegadores durante la validación de rutas.
+
+El PID del servicio MongoDB original puede cambiar después de reiniciar Windows. La [validación de identidad en cada arranque](docs/mongodb-identidad-arranque.md) distingue ese dato volátil de las referencias históricas: mantiene rutas, comandos y huellas autorizadas, exige coincidencia servicio/listener/Mongo y falla si no puede leer la identidad real del proceso. No actualiza referencias ni inicia o repara instancias por sí misma.

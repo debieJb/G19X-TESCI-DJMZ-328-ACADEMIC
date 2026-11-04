@@ -10,7 +10,7 @@
       <form action="/admin/empresas" method="post" class="formulario"><%- include('../partials/_csrfSuperadmin') %>
         <div class="campo"><label for="nombre">Nombre</label><input id="nombre" name="nombre" value="<%= datos.nombre %>" required></div>
         <div class="campo"><label for="estado">Estado</label><select id="estado" name="estado" required><option value="">Selecciona un estado</option><% for (const estado of ['activa', 'inactiva']) { %><option value="<%= estado %>" <%= datos.estado === estado ? 'selected' : '' %>><%= estado %></option><% } %></select></div>
-        <div class="acciones"><button type="submit">Crear empresa</button><a href="/panel">Cancelar</a></div>
+        <div class="acciones"><button type="submit">Crear empresa</button><a class="boton secundario cancelar" href="/panel">Cancelar</a></div>
       </form>
     </div>
   </main>

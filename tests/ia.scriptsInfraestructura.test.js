@@ -18,7 +18,7 @@ test('preparación de cuotas solo reserva 27019 y comprueba identidades original
 
 test('el nuevo despliegue Gemini usa puerto y dbPath exclusivos y compara procesos 27017-27019', () => {
   const script = read('prepararNuevoAlmacenCuotas.ps1');
-  assert.match(script, /marketing-automation-cuota-mongo-gemini/);
+  assert.match(script, /Get-PluriOnePath 'geminiRoot'/);
   assert.match(script, /27020/);
   assert.match(script, /127\.0\.0\.1/);
   assert.match(script, /--auth/);
@@ -34,7 +34,7 @@ test('DPAPI, launcher, apagado ordenado y backup pueden apuntar al DPAPI Gemini 
   assert.match(read('guardarUriCuotasDpapi.ps1'), /quota-uri-gemini\.dpapi/);
   assert.match(read('guardarUriCuotasDpapi.ps1'), /if \(\$AlmacenGemini\) \{ 27020 \}/);
   assert.match(read('iniciarExpressConCuotas.ps1'), /quota-uri-gemini\.dpapi/);
-  assert.match(read('detenerAlmacenCuotas.ps1'), /marketing-automation-cuota-mongo-gemini/);
+  assert.match(read('detenerAlmacenCuotas.ps1'), /Get-PluriOnePath 'geminiRoot'/);
   assert.match(read('detenerAlmacenCuotas.ps1'), /if \(\$AlmacenGemini\) \{ 27020 \}/);
   assert.match(read('probarRespaldoCuotas.ps1'), /if \(\$AlmacenGemini\) \{ 27020 \}/);
 });
@@ -86,7 +86,7 @@ test('recuperación existente selecciona Gemini explícitamente y no reutiliza a
   const script = read('recuperarAlmacenCuotas.ps1');
   const runner = read('recuperarCuentaTemporal.mongo.js');
   assert.match(script, /param\(\[switch\]\$AlmacenGemini\)/);
-  assert.match(script, /marketing-automation-cuota-mongo-gemini/);
+  assert.match(script, /Get-PluriOnePath 'geminiRoot'/);
   assert.match(script, /if \(\$AlmacenGemini\) \{ 27020 \}/);
   assert.match(script, /runnerArguments \+= '--target=gemini'/);
   assert.match(runner, /mode: 'recovery', target/);

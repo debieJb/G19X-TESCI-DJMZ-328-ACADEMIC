@@ -1,8 +1,9 @@
 $ErrorActionPreference = 'Stop'
-$root = 'C:\Users\jocam\Documents\marketing-automation-cuota-mongo'
+. (Join-Path $PSScriptRoot '..\rutasLocales.ps1')
+$root = (Get-PluriOnePath 'quotaRoot')
 $data = Join-Path $root 'data'
 $logs = Join-Path $root 'logs'
-$mongod = 'C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe'
+$mongod = (Get-PluriOnePath 'mongod')
 $provision = Join-Path $PSScriptRoot 'aprovisionarCuotas.mongo.js'
 $baselineCheck = Join-Path $PSScriptRoot '..\..\scripts\verificarMongoDevRs.js'
 

@@ -7,6 +7,12 @@
 **Edición:** 1.0 documental, 19 de octubre de 2026<br>
 **Base funcional:** `78c743424b84cf7ea6d7fc63d2cbf58205727c88`, `respaldo-avances-18-oct`.
 
+**Actualización de cierre — 27 de octubre de 2026:** consultar el [informe de cierre técnico](cierre-mvp.md)
+y el [Manual de Usuario y Validación Funcional en PDF](Manual_Usuario_Validacion_Funcional.pdf).
+Estado: **cerrado con observaciones**. La corrida actual tiene 972 pruebas generales
+aprobadas, sin fallos ni omisiones. Los resultados de la edición del 19 de octubre
+se conservan como antecedentes; no se suman a la corrida actual.
+
 ## Índice
 
 1. Estado de la entrega

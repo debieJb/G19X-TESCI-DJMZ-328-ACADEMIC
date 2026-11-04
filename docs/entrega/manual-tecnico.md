@@ -59,6 +59,56 @@ El modo automático habilitado puede iniciar el consumidor desde `server.js` y c
 
 Para uso productivo: sesiones persistentes, HTTPS/cookies, proxy validado, privilegios mínimos, rotación, monitoreo y restauración deben verificarse por instalación. MemoryStore no acredita sesiones productivas. Véase [sesiones e infraestructura](../sesiones-produccion.md).
 
+### 4.1 Arranque del MVP piloto con IA
+
+Para evaluar el piloto existente, MongoDB `marketingDevRs` debe estar activo en
+`27018`; la empresa autorizada, su cuenta y el almacén separado de cuotas deben
+existir. Revisar además la configuración privada autorizada de Gemini y de correo.
+No ejecutar aprovisionamiento ni migraciones como parte de este arranque.
+
+Desde la raíz del repositorio, en PowerShell:
+
+```powershell
+npm run dev:piloto
+```
+
+Alternativa manual equivalente:
+
+```powershell
+$env:AI_QUOTA_BACKEND = 'piloto_local'
+npm run dev
+```
+
+Detener antes cualquier servidor anterior con Ctrl+C en su terminal. `dev:piloto`
+ejecuta nodemon con `server.js` y una copia del entorno, cargando `.env` en memoria
+y seleccionando `piloto_local` solo para el proceso hijo. Si `NODE_ENV` está ausente,
+usa `development`; rechaza `production`, `test` o un backend explícito diferente.
+No modifica archivos privados ni habilita servicios externos. `npm run dev` conserva
+exactamente su comportamiento y no selecciona el piloto automáticamente. Los
+efectos normales de `server.js`, incluida preparación de índices y políticas de
+trabajadores ya configuradas, siguen vigentes.
+
+Sin `AI_QUOTA_BACKEND`, desarrollo selecciona `dev_fixture`, reservado a dos
+empresas ficticias autorizadas con IDs `f17e1a…`, base y marcador de pruebas.
+Una empresa real se rechaza antes del proveedor con `CUOTAS_NO_DISPONIBLES`.
+`piloto_local` admite únicamente la empresa piloto definida por ID fijo en
+`services/ia/almacenCuotasPilotoLocal.js`, en desarrollo y con la topología local
+validada. Conserva marcador, índices, separación de base, cuotas y aislamiento;
+no es una opción universal para otras empresas ni para producción. En producción
+se exige el backend `protected` con su infraestructura autorizada.
+
+Con `AI_ENABLED=true`, el arranque correcto muestra `IA_WEB` con
+`backend: "piloto_local"`, `entorno: "development"` y `cuotasVerificadas: true`.
+Con IA apagada, `cuotasVerificadas` permanece en false y el script no la activa.
+Abrir `http://localhost:3000/login`; tras iniciar sesión como administrador del
+piloto, consultar `/empresa/ia/diagnostico` sin generar contenido ni consumir cuota.
+La generación auténtica requiere clave/modelo/banderas autorizados y consume las
+cuotas locales y remotas correspondientes. No enviar campañas para comprobar IA.
+
+Si el comando rechaza configuración o cuotas, revisar el diagnóstico sin editar
+marcadores, índices o empresas permitidas para forzar la ejecución. Para otra
+computadora o empresa hace falta preparar infraestructura propia autorizada.
+
 ## 5. Integraciones y modos
 
 **SMTP:** `services/smtpTransaccionalService.js` utiliza Nodemailer, `smtp.gmail.com:465` y TLS. Los scripts de despacho/verificación conservan puertas de autorización; no deben ejecutarse para comprobar documentación. El adaptador Gmail transaccional anterior se conserva como antecedente, no como camino vigente de registro.

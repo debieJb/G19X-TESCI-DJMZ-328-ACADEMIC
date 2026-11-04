@@ -64,7 +64,7 @@ const crearMotor = ({ conexion, politica = obtenerPolitica, simulador, manualSup
   const contexto = async (m, empresa, actorId, campanaId, session, preparacion = false) => {
     gate(empresa, preparacion);
     const usuario = await m.Usuario.findOne({ _id: actorId, empresa }).session(session || null).lean();
-    exigir(usuario && (politica().automatico ? ['admin_empresa', 'operador'].includes(usuario.rol) : usuario.rol === 'admin_empresa') && usuario.estadoAcceso === 'activo'
+    exigir(usuario && usuario.rol === 'admin_empresa' && usuario.estadoAcceso === 'activo'
       && usuario.emailVerificadoEn instanceof Date && +usuario.emailVerificadoEn <= +reloj()
       && puede(usuario, 'campanas.ejecutar', empresa), 'ACCESO_DENEGADO');
     const campana = await m.Campana.findOne({ _id: campanaId, empresa }).session(session || null).lean();

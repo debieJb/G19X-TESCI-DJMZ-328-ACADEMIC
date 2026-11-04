@@ -2,7 +2,18 @@
 
 **Empresa:** PluriOne S.A. de C.V. — Develop Talent & Technology<br>
 **Institución:** TESCI · **Autora:** Debanie Jocabed Montoya Zúñiga<br>
-**Edición:** 1.1 documental, 19 de octubre de 2026 · **Base:** `78c7434`.
+**Edición:** consolidación del 22 de octubre de 2026 · **Referencia histórica:** `78c7434` · **Rama:** `respaldo-avances-18-oct`.
+
+**Bloqueo operativo actual:** la recuperación de contraseñas está implementada,
+pero su envío real sigue pendiente por rechazo de autenticación de Google SMTP
+`535 / 5.7.8`. Se comprobó TLS/AUTH sin enviar mensajes. No se presenta como
+recuperación real validada. El transporte es el mismo de verificación empresarial;
+el Gmail OAuth/API de campañas está separado y no se modifica para resolverlo.
+Véase [diagnóstico reproducible y prueba única](diagnostico-recuperacion-smtp.md).
+
+**Validación de este corte:** suite completa `node --test`, 917 aprobadas,
+0 fallidas y 0 omitidas; sin correos ni campañas reales. Los resultados de
+ejecuciones anteriores se conservan como evidencia histórica y no se suman a esta corrida.
 
 ## Índice
 
@@ -33,15 +44,16 @@ y se vinculan al código en la [trazabilidad](entrega/matriz-trazabilidad.md).
 
 | Área | Estado actual | Tipo de evidencia y límite |
 |---|---|---|
-| Registro y verificación | Implementado, incluida configuración posterior del administrador y autenticación. | Pruebas automatizadas; recorrido real confirmado por la responsable. Constancia exportable completa no adjunta. |
+| Registro y verificación | Implementado; normalización y detección existente de cuentas/solicitudes previenen duplicados. Mensaje específico solo con titularidad verificada; aviso público neutral. | Pruebas automatizadas y evidencia histórica de registro; SMTP actualmente rechaza AUTH `535 / 5.7.8` en el entorno diagnosticado. |
+| Acceso y recuperación | Login responsivo, CSRF, límites, errores genéricos; token de recuperación con hash, un uso, 15 minutos, bcrypt e invalidación de sesiones. | Flujo probado con transporte y persistencia simulados. Envío y recuperación reales pendientes por rechazo SMTP `535 / 5.7.8`; no se generaron credenciales nuevas. |
 | Roles y multiempresa | Implementado con permisos y filtros por recurso/empresa. | Pruebas negativas y concurrencia; no auditoría externa. |
 | Contactos y consentimiento | CRUD y evidencia ligada al email, autor, fecha e historial. | Pruebas automatizadas; autenticidad de consentimiento externo y retención son responsabilidades de operación. |
 | Manual y Gemini | Generación, revisión, aprobación y guardado de borrador con recorrido común. | Generación auténtica documentada y pruebas simuladas de fallos/flujo. |
 | Gmail OAuth/API | Cuenta empresarial, credenciales protegidas, envío directo y resultado persistido. | Envío real aceptado documentado; no se infiere recepción o lectura universal. |
-| Envío múltiple supervisado | Específicos/todos/etiquetas fijados al preparar, mensajes individuales y resultados por destinatario. | Pruebas de dos y varios contactos; uso real confirmado por la responsable; soporte saneado adicional por incorporar. |
+| Envío múltiple supervisado | Seleccionar todos/desmarcar/individual en automatización y revisión real; contador, advertencias y límites en cliente/servidor. Específicos/todos/etiquetas fijados al preparar, mensajes individuales. | Pruebas de varios contactos, deduplicación y máximo 50; configuración explícita de 2 conserva 2. Uso real anterior confirmado por la responsable; no se enviaron campañas en esta consolidación. |
 | Cuotas e idempotencia | Límites, reservas, unicidad y manejo de inciertos. | Pruebas de concurrencia y fallos; no garantía de entrega externa exactamente una vez. |
 | Programación automática | Código y consumidor implementados, separados del modo supervisado. | Pruebas simuladas; producción programada no acreditada. |
-| Métricas | Conteos administrativos, estimación actual de destinatarios en el detalle e historial técnico individual. | No existe panel agregado de aceptaciones/fallos en `detalle.ejs`; no se acreditan aperturas/clics/rebotes ni conversiones o ROI. |
+| Métricas | Conteos administrativos, estimación e historial; detalle de campaña con intentados, aceptados, rechazados, cancelados e inciertos. | Métricas técnicas incorporadas y probadas; aceptación por Gmail no acredita recepción, aperturas/clics, conversiones ni ROI. |
 | Sesiones y seguridad | Controles implementados y revisión técnica previa. | TLS, operación, restauración y auditoría externa requieren aceptación por instalación. |
 | n8n | Referencia y contratos históricos conservados. | No requerido por Gmail directo; sin exportación ni despliegue operativo acreditado. |
 
@@ -96,15 +108,16 @@ El alcance inmediato es correo de texto, sin adjuntos ni imágenes enviadas. La 
 | Implementado | Registro, verificación, autenticación, roles, aislamiento, CRUD de contactos y campañas, selección, OAuth, IA y resultados individuales. | Infraestructura, cuentas y autorizaciones propias; la existencia de código no acredita habilitación en toda instalación. |
 | Implementado con evidencia limitada | Envío múltiple supervisado e integración Gemini. | El registro de evidencia distingue generación auténtica, simulaciones y uso real confirmado por la responsable; faltan constancias exportables completas del recorrido múltiple. |
 | Parcialmente validado | Programación y trabajador automático. | Pruebas con proveedor simulado; faltan criterios y comprobaciones de operación real programada. El trabajador puede consumir pendientes al arrancar si está habilitado: no debe iniciarse para resolver bloqueos. |
-| Parcialmente cubierto | Métricas y recursos de campaña. | Hay conteos administrativos y estados técnicos; no panel agregado de resultados en el detalle ni seguimiento comercial. Imagen y fechas almacenadas no acreditan entrega de recursos o ejecución del calendario. |
+| Parcialmente cubierto | Métricas y recursos de campaña. | Hay resumen de resultados técnicos en el detalle; falta analítica comercial instrumentada. Imagen y fechas almacenadas no acreditan entrega de recursos o ejecución del calendario. |
+| Implementado con bloqueo externo | Recuperación de contraseñas mediante el SMTP de verificación existente. | Rechazo AUTH `535 / 5.7.8`; pendiente validación real tras resolver autenticación de la cuenta actual. No reenviar tareas fallidas/inciertas automáticamente ni sustituir credenciales sin autorización. |
 | Bloqueado por control existente | Piloto único consumido sin política de campañas sucesivas, empresa fuera de lista, consentimiento inválido, cuotas, autorización vencida o resultado incierto. | Resolver la causa mediante un procedimiento autorizado; no borrar registros ni eludir controles. |
 | Bloqueado por alcance | Otros canales y transporte histórico n8n. | Requisitos y autorización de ampliación; no habilitación incidental. |
-| Limitación funcional de instalación | Alta auxiliar del superadministrador. | `scripts/crearSuperadmin.js` omite estado activo; el modelo asigna pendiente y el login lo rechaza. No se describe como acceso inicial garantizado ni se modifica en esta revisión. |
+| Corrección implementada | Alta auxiliar del superadministrador. | `scripts/crearSuperadmin.js` crea el acceso activo, con bcrypt y sin sobrescribir cuentas. Probado con simulaciones; primera instalación real en base limpia pendiente. |
 | Pendiente de validación o aceptación | Producción, auditoría externa, retención, restauración, capacitación impartida y aprobación académica/empresarial. | Evidencia y decisiones auténticas de las instancias correspondientes. |
 
 Los requisitos funcionales RF-01 a RF-14 y no funcionales RNF-01 a RNF-07 conservan su correspondencia en el [PRD](PRD-borrador-tecnico.md) y la [matriz](entrega/matriz-trazabilidad.md). Cubren acceso, aislamiento, contenido, envío, consistencia, seguridad, usabilidad, mantenimiento y operación. No se declaran disponibilidad garantizada, entrega exactamente una vez ni cumplimiento legal certificado a partir de pruebas locales.
 
-Para métricas, `services/adminService.js` y `services/empresaService.js` proporcionan conteos por rol. `models/EnvioGmail.js` conserva los resultados por destinatario. `controllers/campanaController.js` solo entrega al detalle una estimación actual de destinatarios, no sus aceptaciones y fallos históricos. Aperturas, clics, rebotes, conversiones y ROI requieren eventos, fuentes y denominadores todavía no acreditados; no deben presentarse como ceros ni inferirse del estado administrativo de campaña.
+Para métricas, `services/adminService.js` y `services/empresaService.js` proporcionan conteos por rol. `models/EnvioGmail.js` conserva los resultados por destinatario. `controllers/campanaController.js` entrega al detalle la estimación y un resumen de resultados de la ejecución, deduplicados por destinatario. Aperturas, clics, rebotes, conversiones y ROI requieren eventos, fuentes y denominadores todavía no acreditados; no deben presentarse como ceros ni inferirse del estado administrativo de campaña.
 
 ## 8. Correspondencia con el planteamiento original
 

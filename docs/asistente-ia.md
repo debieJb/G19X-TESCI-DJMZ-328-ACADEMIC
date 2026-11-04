@@ -53,6 +53,39 @@ apropiadas, más backend de cuotas autorizado. `AI_FREE_TIER_CONFIRMED` es una
 confirmación local, no un comprobante de facturación. No se publica una clave o
 modelo privado en este manual.
 
+### Ejecutar el MVP piloto en PowerShell
+
+Con MongoDB y el almacén piloto existentes ya preparados, ejecutar desde la raíz:
+
+```powershell
+npm run dev:piloto
+```
+
+Equivale a seleccionar el backend en la terminal antes del arranque:
+
+```powershell
+$env:AI_QUOTA_BACKEND = 'piloto_local'
+npm run dev
+```
+
+El nuevo comando conserva `npm run dev` sin cambios y selecciona el backend solo
+en su proceso hijo; no edita `.env`, crea bases ni modifica cuotas. Está limitado a
+development y rechaza un backend explícito incompatible. Antes de ejecutarlo,
+detener el servidor anterior con Ctrl+C y revisar las políticas externas existentes.
+
+Sin la variable, el backend predeterminado `dev_fixture` admite únicamente empresas
+ficticias de pruebas. Rechaza la empresa real con `CUOTAS_NO_DISPONIBLES`, sin
+llamar a Gemini. `piloto_local` admite exclusivamente el ID empresarial autorizado
+del piloto, usa una base separada y conserva todas las validaciones de topología,
+marcador, índices y límites. No amplía permisos a otras empresas y no se permite en
+producción, donde el selector exige `protected`.
+
+Con IA habilitada, el log esperado incluye `backend: "piloto_local"` y
+`cuotasVerificadas: true`. El administrador del piloto puede verificar
+`/empresa/ia/diagnostico` sin consumo ni generación. El comando no habilita Gemini,
+garantiza cuota remota ni acredita una llamada real; generar sí utiliza la API y
+consume cuotas. Requisitos y procedimiento: [manual del MVP](entrega/manual-tecnico.md#41-arranque-del-mvp-piloto-con-ia).
+
 [Manual técnico](entrega/manual-tecnico.md), [evidencias](entrega/evidencias-validacion.md),
 [QA](entrega/reporte-qa.md), [autoría](entrega/autoria-ia.md). La
 [versión histórica](historico/corte-previo-78c7434/asistente-ia.md) conserva los

@@ -1,18 +1,20 @@
 'use strict';
 
+const { paths } = require('../rutasLocales');
+
 // Allowlisted local deployments. The historical target remains the default so
 // existing recovery/maintenance scripts cannot silently move to another DB.
 const TARGETS = Object.freeze({
   legacy: Object.freeze({
     port: 27019,
     bindIp: '127.0.0.1',
-    root: 'C:\\Users\\jocam\\Documents\\marketing-automation-cuota-mongo',
+    root: paths.quotaRoot,
     database: 'plurione_ai_quota'
   }),
   gemini: Object.freeze({
     port: 27020,
     bindIp: '127.0.0.1',
-    root: 'C:\\Users\\jocam\\Documents\\marketing-automation-cuota-mongo-gemini',
+    root: paths.geminiRoot,
     database: 'plurione_ai_quota'
   })
 });

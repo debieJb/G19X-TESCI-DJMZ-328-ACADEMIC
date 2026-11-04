@@ -1,6 +1,7 @@
 param([switch]$AlmacenGemini)
 $ErrorActionPreference = 'Stop'
-$root = if ($AlmacenGemini) { 'C:\Users\jocam\Documents\marketing-automation-cuota-mongo-gemini' } else { 'C:\Users\jocam\Documents\marketing-automation-cuota-mongo' }
+. (Join-Path $PSScriptRoot '..\rutasLocales.ps1')
+$root = if ($AlmacenGemini) { (Get-PluriOnePath 'geminiRoot') } else { (Get-PluriOnePath 'quotaRoot') }
 $port = if ($AlmacenGemini) { 27020 } else { 27019 }
 $pidFile = Join-Path $root 'mongod.pid'
 $pidExpected = [int][IO.File]::ReadAllText($pidFile)
@@ -8,7 +9,7 @@ $proc = Get-Process -Id $pidExpected -ErrorAction Stop
 $listener = Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction Stop | Select-Object -First 1
 $procInfo = Get-CimInstance Win32_Process -Filter "ProcessId = $pidExpected" -ErrorAction Stop
 $expectedData = Join-Path $root 'data'
-if (($proc.ProcessName -ne 'mongod') -or ($proc.Path -ne 'C:\Program Files\MongoDB\Server\8.2\bin\mongod.exe') -or
+if (($proc.ProcessName -ne 'mongod') -or ($proc.Path -ne (Get-PluriOnePath 'mongod')) -or
     (!$procInfo.CommandLine.Contains('--auth')) -or (!$procInfo.CommandLine.Contains("--port $port")) -or
     (!$procInfo.CommandLine.Contains('127.0.0.1')) -or (!$procInfo.CommandLine.Contains($expectedData)) -or
     ($listener.OwningProcess -ne $pidExpected) -or ($listener.LocalAddress -ne '127.0.0.1')) { throw 'Identidad distinta; se detiene.' }
@@ -23,7 +24,7 @@ $archiveExists = Test-Path -LiteralPath $archive
 if ($archiveExists) { throw 'El archivo temporal ya existe; no se sobrescribe.' }
 if ((Get-Item -LiteralPath $root -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'El destino de respaldo está redirigido.' }
 
-$mongosh = Join-Path $env:LOCALAPPDATA 'Programs\mongosh\mongosh.exe'
+$mongosh = Get-PluriOnePath 'mongosh'
 $fixtureId = '64b000000000000000000002'
 $fixtureCompany = '64b000000000000000000001'
 $destinationCheck = "const q=db.getSiblingDB('plurione_ai_quota'); const src=q.usoias; const doc=src.findOne({_id:ObjectId('$fixtureId'),empresa:ObjectId('$fixtureCompany'),ventana:'prueba:1',_pruebaInfraestructura:true}); if(src.countDocuments({})!==1 || !doc || doc.expiraEn <= new Date()) quit(2); if(q.getCollectionInfos({name:'$restoreCollection'}).length!==0) quit(3); print('DESTINO_TEMPORAL_LIBRE_Y_FIXTURE_UNICO');"

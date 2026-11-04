@@ -62,6 +62,9 @@ const ejecutar = async ({
       bloqueo = codigo;
     }
   });
+  const recuperacion = typeof correo.enviarRecuperacion === 'function'
+    ? require('./recuperacionPasswordService').crearServicio({ conexion, correo, limitesEnvio,
+      diagnostico: codigo => { bloqueo = codigo; } }) : null;
 
   while (!signal?.aborted) {
     const recuperada = await servicio.recuperarIncierta();
@@ -73,6 +76,15 @@ const ejecutar = async ({
     }
 
     const resultado = await servicio.despachar();
+
+    if (bloqueo === 'REAUTORIZAR_TRANSACCIONAL') throw Error('REAUTORIZAR_TRANSACCIONAL');
+
+    if (recuperacion && !signal?.aborted) {
+      await recuperacion.recuperarInciertas();
+      const acceso = await recuperacion.despachar();
+      if (acceso.estado === 'enviada') informar('RECUPERACION_ACEPTADA_PROVEEDOR');
+      else if (['fallida', 'incierta'].includes(acceso.estado)) informar('RECUPERACION_ENTREGA_NO_CONFIRMADA');
+    }
 
     if (bloqueo === 'REAUTORIZAR_TRANSACCIONAL') {
       throw Error('REAUTORIZAR_TRANSACCIONAL');

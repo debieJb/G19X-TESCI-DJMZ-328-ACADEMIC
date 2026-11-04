@@ -5,7 +5,7 @@ const idsSeleccionados = (seleccion.contactos || []).map(id => String(id)); %>
   <h2>Destinatarios</h2>
   <p>Solo se incluyen contactos activos de la empresa de la campaña, con correo electrónico válido y sin email deshabilitado. La selección se recalcula al ejecutar. La habilitación técnica no acredita consentimiento de marketing; los contactos históricos sin este campo conservan su comportamiento.</p>
   <% if (accion === '/campanas' && usuarioActual.rol === 'superadmin') { %>
-    <p>Selecciona la empresa propietaria y pulsa <button type="submit" formaction="/campanas/nueva" formmethod="get" formnovalidate>Cargar contactos de la empresa</button> antes de elegir contactos o etiquetas.</p>
+    <p>Selecciona la empresa propietaria y pulsa <button class="secundario" type="submit" formaction="/campanas/nueva" formmethod="get" formnovalidate>Cargar contactos de la empresa</button> antes de elegir contactos o etiquetas.</p>
   <% } %>
   <div class="campo"><label for="destinatarios-tipo">Tipo de selección</label>
     <select id="destinatarios-tipo" name="destinatarios[tipo]" aria-invalid="<%= !!errores.destinatarios %>" aria-describedby="destinatarios-error">

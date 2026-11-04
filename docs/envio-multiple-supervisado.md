@@ -45,6 +45,33 @@ Cada mensaje tiene un único `To`, sin `Cc/Bcc` colectivo.
 
 ## 3. Límites y protección
 
+Actualización del 22 de octubre de 2026: tanto Configurar automatización como
+Revisar y enviar campaña incluyen «Seleccionar todos los contactos», selección
+individual y contador. En la revisión supervisada, todos y etiquetas sincronizan
+las casillas. Seleccionar por encima del máximo conserva la selección, muestra
+la cantidad seleccionada y el máximo, y bloquea guardar; el servidor también
+rechaza el exceso. Guardar nunca envía: es necesario revisar y confirmar.
+
+`GMAIL_CAMPAIGNS_MAX_RECIPIENTS` admite enteros de 1 a 50 en los modos
+`supervisado` y `automatico`. Si la variable está ausente, el valor predeterminado
+es 50; un valor vacío o inválido bloquea el envío. Una configuración explícita
+de 2 conserva el límite de 2. Para ampliar el despliegue existente, su responsable
+debe configurar el máximo deseado (hasta 50) y reiniciar con el modo supervisado
+y sus validaciones de infraestructura. Esta actualización no modifica `.env`,
+credenciales, conexiones ni habilita el envío en el despliegue.
+
+El máximo por campaña no equivale a envíos disponibles de inmediato: con la
+cuota local de 30/hora por empresa, una campaña de 50 puede dejar pendientes
+para continuar explícitamente en el siguiente período. Gmail puede aplicar
+cuotas adicionales según la cuenta y el proyecto; se mantienen las pausas y
+los bloqueos del motor ante esos rechazos. Referencias oficiales:
+[cuotas Gmail API](https://developers.google.com/workspace/gmail/api/reference/quota)
+y [tratamiento de errores de límites](https://developers.google.com/workspace/gmail/api/guides/handle-errors).
+
+La confirmación y la revalidación del motor requieren un administrador de
+empresa también en modo automático. Se conserva la consulta del historial
+para operadores con permiso.
+
 - Máximo configurable de 1 a 50 correos únicos por campaña; el piloto
   `manual`/`piloto` sigue forzando 1, aunque se cambie solo la variable de máximo.
 - Cuotas locales: 30/hora y 100/día por empresa, 500/día globales; separación de

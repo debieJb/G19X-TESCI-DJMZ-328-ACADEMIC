@@ -4,8 +4,21 @@
 **Empresa:** PluriOne S.A. de C.V. — Develop Talent & Technology<br>
 **Institución:** Tecnológico de Estudios Superiores de Cuautitlán Izcalli (TESCI)<br>
 **Autora y responsable académica:** Debanie Jocabed Montoya Zúñiga<br>
-**Edición:** 1.1 documental, 19 de octubre de 2026<br>
-**Base de implementación:** `78c743424b84cf7ea6d7fc63d2cbf58205727c88`, rama `respaldo-avances-18-oct`.
+**Edición:** consolidación del 22 de octubre de 2026<br>
+**Referencia histórica de implementación:** `78c743424b84cf7ea6d7fc63d2cbf58205727c88`, rama de trabajo `respaldo-avances-18-oct`.
+
+**Estado de recuperación de cuentas:** frontend, rutas, servicio, persistencia,
+token con hash, caducidad de 15 minutos, consumo atómico y revocación de sesiones
+están implementados y probados con simulaciones. **El envío real sigue pendiente
+por rechazo de autenticación de Google SMTP `535 / 5.7.8`.** Se reutiliza el SMTP
+de verificación empresarial; no se creó otra cuenta ni nuevas credenciales. La
+comprobación real solo ejecutó TLS/AUTH, sin mensajes. Las evidencias históricas
+de registro no prueban que ese transporte esté operativo hoy. El Gmail API de
+campañas y Gemini conservan sus integraciones independientes.
+
+**Validación del corte:** 917 pruebas aprobadas, 0 fallidas y 0 omitidas en
+`node --test`, antes del respaldo final; sin envíos reales. El diagnóstico SMTP
+no permite afirmar que funcione la recepción ni la recuperación real.
 
 **Estado:** descripción del producto implementado y de sus límites de validación. Existencia de código, habilitación de una instalación, evidencia de ejecución y aceptación formal son estados distintos. La aceptación empresarial permanece pendiente de evidencia documental. Se conserva el nombre histórico del archivo y la correspondencia RF/RNF de la matriz de trazabilidad.
 
@@ -68,13 +81,13 @@ Los identificadores RF son de esta edición documental, derivados del código; n
 | ID | Requisito del producto | Prioridad | Criterio observable |
 |---|---|---|---|
 | RF-01 | Registrar empresa con verificación por correo y configuración posterior del administrador. | Esencial | Un enlace válido permite completar el alta; caducado/usado no se reutiliza. |
-| RF-02 | Autenticar usuarios y aplicar estados de acceso. | Esencial | Cuentas pendientes o bloqueadas no acceden; cierre de sesión invalida el acceso correspondiente. |
+| RF-02 | Autenticar usuarios, aplicar estados y recuperar acceso. | Esencial | Login responsivo con CSRF/límites y fallo genérico. Recuperación con respuesta neutral, hash de token de un uso/15 minutos, bcrypt e invalidación de sesiones; envío real pendiente por SMTP `535 / 5.7.8`. |
 | RF-03 | Separar datos y permisos por empresa y rol. | Esencial | Se rechazan lecturas/escrituras cruzadas y campos empresariales inyectados desde HTTP. |
 | RF-04 | Gestionar contactos y consentimiento vinculado a email, autor y fecha. | Esencial | Contactos inactivos, revocados o sin evidencia no son elegibles; un cambio de dirección exige revisar consentimiento. |
 | RF-05 | Crear, consultar y editar campañas email manuales. | Esencial | Guardar un borrador o activar/preparar no envía correo. |
 | RF-06 | Generar y revisar propuestas con Gemini. | Esencial | La propuesta puede revisarse y aprobarse como borrador; la generación no selecciona ni envía a contactos. |
 | RF-07 | Conectar la cuenta Gmail de la empresa por OAuth. | Esencial | State/PKCE/nonce e identidad se validan; credenciales no se aceptan desde el formulario de campaña. |
-| RF-08 | Seleccionar contactos específicos, todos los válidos o etiquetas. | Esencial | Se muestra cantidad y direcciones elegibles; selección fijada, exclusiones y deduplicación antes de confirmar. |
+| RF-08 | Seleccionar contactos específicos, todos los válidos o etiquetas. | Esencial | Seleccionar todos, desmarcar e individual en ambas pantallas; contador, advertencia y rechazo de excesos en cliente/servidor. Máximo configurable 1–50; un valor explícito de 2 sigue siendo 2. Selección fijada y deduplicada antes de confirmar. |
 | RF-09 | Confirmar campaña supervisada con contenido y audiencia revisados. | Esencial | Cambios de contenido, destinatario o consentimiento invalidan la confirmación obsoleta. |
 | RF-10 | Enviar mensajes individuales con resultados persistentes. | Esencial | Un solo destinatario por mensaje, sin lista visible; un paso procesa como máximo un trabajo. |
 | RF-11 | Conservar idempotencia, reservas, cuotas y tratamiento de incertidumbre. | Esencial | Confirmaciones concurrentes no duplican; aceptados no se reenvían e inciertos no se reintentan automáticamente. |
@@ -138,7 +151,7 @@ El solicitante inicia un registro público. El autoservicio registra la solicitu
 
 El login comprueba contraseña y estado de acceso; una cuenta nueva pendiente o bloqueada no accede. Las sesiones y sus versiones permiten invalidar accesos. Los servicios resuelven empresa y permisos desde la identidad persistida, no desde una empresa declarada por el cliente. Los recursos empresariales se consultan mediante filtros de pertenencia; existen tratamientos explícitos para documentos históricos y administración global (`controllers/authController.js`, `middlewares/autenticacion.js`, `services/accesoCampanasService.js`).
 
-El alta auxiliar por `scripts/crearSuperadmin.js` no equivale al autoservicio empresarial: crea el rol global, pero omite `estadoAcceso`, cuyo valor predeterminado es pendiente. El login lo rechaza mientras no esté activo. La instalación inicial de ese rol tiene, por tanto, una limitación pendiente de resolución autorizada; no se prescribe editar datos ni eludir autenticación.
+El alta auxiliar por `scripts/crearSuperadmin.js` no equivale al autoservicio empresarial: crea el rol global con acceso activo y bcrypt, sin sobrescribir cuentas existentes. La corrección está probada con simulaciones; una primera instalación real en base limpia permanece pendiente. No se prescribe editar datos ni eludir autenticación.
 
 ### Contactos, consentimiento y segmentación
 
@@ -160,7 +173,7 @@ Los resultados distinguen pendiente, reservado, enviando, aceptado, rechazado, c
 
 Gemini propone asunto, mensaje, llamada a la acción y sugerencias de segmentación; estas últimas no seleccionan contactos. El servicio valida entrada/salida, permisos y cuotas y admite revisión de propuestas. El contenido necesita revisión humana antes de guardarse y de enviarse. El asistente no garantiza veracidad, calidad comercial ni ausencia de facturación. No debe recibir secretos ni datos personales de contactos; los controles de privacidad no certifican anonimización absoluta de texto libre (`services/iaService.js`, `services/ia/contratoIA.js`).
 
-Los paneles administrativos cuentan empresas, usuarios y campañas según el rol. El historial conserva resultados técnicos por destinatario. En `/campanas/:id`, `detalle.ejs` recibe `resumenDestinatarios` con una cantidad estimada actual, no `EnvioGmail` ni totales de aceptación/fallo. Por ello no existe allí un panel agregado de rendimiento por campaña; añadirlo necesitaría una intervención autorizada. Los registros existentes permiten estudiar esa evolución, pero no proporcionan aperturas, clics, rebotes, conversiones, ROI ni una tasa de entrega final acreditada (`services/adminService.js`, `services/empresaService.js`, `controllers/campanaController.js`, `models/EnvioGmail.js`).
+Los paneles administrativos cuentan empresas, usuarios y campañas según el rol. El historial conserva resultados técnicos por destinatario. En `/campanas/:id`, `detalle.ejs` recibe la estimación actual y `resultadosEnvio`, con intentados, aceptados, rechazados, cancelados e inciertos de la ejecución, deduplicados por destinatario. No proporciona aperturas, clics, rebotes, conversiones, ROI ni una tasa de entrega final acreditada (`services/adminService.js`, `services/empresaService.js`, `controllers/campanaController.js`, `models/EnvioGmail.js`).
 
 ## 13. Estado de capacidades y limitaciones
 
@@ -169,10 +182,11 @@ Los paneles administrativos cuentan empresas, usuarios y campañas según el rol
 | Implementadas | Registro/verificación y login, roles, aislamiento, contactos/consentimiento, etiquetas y selección, campañas manuales, OAuth Gmail, propuestas Gemini, historial e idempotencia. Su uso depende de infraestructura y autorizaciones propias. |
 | Implementadas con validación limitada | Envío múltiple supervisado: pruebas simuladas y confirmación de uso real por la responsable; falta incorporar constancias exportables completas. No acredita escala masiva productiva. |
 | Parcialmente validadas | Programación y consumidor automático: código y pruebas simuladas, sin ejecución programada productiva acreditada. IA: generación auténtica documentada, sin evaluación estadística de calidad. |
-| Parcialmente cubiertas | Métricas: conteos administrativos, estimación de destinatarios y estados individuales; falta panel agregado de resultados en el detalle y analítica comercial instrumentada. |
+| Parcialmente cubiertas | Métricas: conteos administrativos, estimación y resumen técnico por campaña implementados; falta analítica comercial instrumentada. |
+| Implementada con bloqueo externo | Recuperación de contraseña mediante SMTP existente, con pruebas simuladas de seguridad y concurrencia. Envío real pendiente por rechazo AUTH `535 / 5.7.8`; diagnóstico sin mensajes ni cambios a datos reales. |
 | Bloqueadas por diseño o política | Transporte histórico n8n, canales ajenos a email, envío sin consentimiento/permiso, reenvío de inciertos y piloto consumido cuando no está autorizada otra política. No se resuelven suprimiendo controles. |
 | Recursos parciales, sin entrega Gmail | El modelo admite imagen local y fechas, pero el recorrido inmediato de Gmail exige texto sin imagen. Guardar esos recursos no acredita envío de adjuntos ni programación efectiva. |
-| Pendientes | Resolución del alta inicial de superadministrador, criterios y pruebas productivas, métricas comerciales, auditoría externa, retención/restauración, aceptación empresarial y dictamen académico. |
+| Pendientes | Primera instalación real en base limpia del superadministrador, autenticación SMTP y recuperación real, criterios y pruebas productivas, métricas comerciales, auditoría externa, retención/restauración, aceptación empresarial y dictamen académico. |
 
 Esta clasificación no cambia permisos, cuotas ni banderas. La evidencia real conservada y la confirmación de la responsable se distinguen en [evidencias de validación](entrega/evidencias-validacion.md); no se ejecutan proveedores en esta edición.
 

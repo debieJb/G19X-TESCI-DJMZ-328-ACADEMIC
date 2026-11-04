@@ -10,7 +10,12 @@ const fallo = (codigo, definitivo = true, requiereAutorizacion = false) => new E
 const direccion = v => typeof v === 'string' && v.length <= 254 && /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/.test(v);
 const configuracion = (env = process.env, { verificar = false } = {}) => {
   const usuario = typeof env.EMAIL_USER === 'string' ? env.EMAIL_USER.trim().toLowerCase() : '';
-  const password = env.EMAIL_PASS;
+  const original = env.EMAIL_PASS;
+  // Gmail presenta sus 16 letras en cuatro grupos; los espacios son separadores
+  // visuales, no parte de la contraseña enviada por AUTH. No reescribir .env ni
+  // eliminar espacios de contraseñas con otro formato.
+  const password = typeof original === 'string' && /^[a-z]{4}(?: [a-z]{4}){3}$/i.test(original)
+    ? original.replace(/ /g, '') : original;
   if (!direccion(usuario) || typeof password !== 'string' || !password.trim() || /[\r\n]/.test(password) || password.length > 256) throw fallo('CONFIGURACION_SMTP');
   const origen = env.TRANSACTIONAL_PUBLIC_ORIGIN;
   if (!verificar) {
@@ -19,10 +24,23 @@ const configuracion = (env = process.env, { verificar = false } = {}) => {
   }
   return { usuario, password, origen };
 };
-const clasificar = e => e instanceof ErrorSmtp ? e : e?.code === 'EAUTH' || [530, 535].includes(e?.responseCode)
-  ? fallo('REAUTORIZAR_TRANSACCIONAL', true, true)
-  : Number.isInteger(e?.responseCode) && e.responseCode >= 400 && e.responseCode < 600
-    ? fallo('SMTP_RECHAZADO') : fallo('ENTREGA_INCIERTA', false);
+const fases = ['AUTH', 'CONN', 'EHLO', 'HELO', 'STARTTLS', 'MAIL FROM', 'RCPT TO', 'DATA'];
+const detalleSeguro = e => ({
+  ...(fases.includes(e?.faseSmtp) ? { faseSmtp: e.faseSmtp } : {}),
+  ...(Number.isInteger(e?.respuestaSmtp) && e.respuestaSmtp >= 400 && e.respuestaSmtp <= 599 ? { respuestaSmtp: e.respuestaSmtp } : {}),
+  ...(typeof e?.estadoSmtp === 'string' && /^[245]\.\d{1,3}\.\d{1,3}$/.test(e.estadoSmtp) ? { estadoSmtp: e.estadoSmtp } : {})
+});
+const clasificar = e => {
+  if (e instanceof ErrorSmtp) return e;
+  const estado = typeof e?.response === 'string' ? e.response.match(/\b([245]\.\d{1,3}\.\d{1,3})\b/)?.[1] : undefined;
+  const error = e?.code === 'EAUTH' || [530, 534, 535].includes(e?.responseCode)
+    ? fallo('REAUTORIZAR_TRANSACCIONAL', true, true)
+    : Number.isInteger(e?.responseCode) && e.responseCode >= 400 && e.responseCode < 600
+      ? fallo([421, 452, 454].includes(e.responseCode) || estado === '5.4.5' ? 'SMTP_CUOTA' : 'SMTP_RECHAZADO')
+      : fallo('ENTREGA_INCIERTA', false);
+  const fase = typeof e?.command === 'string' ? fases.find(f => e.command === f || e.command.startsWith(f + ' ')) : undefined;
+  return Object.assign(error, detalleSeguro({ faseSmtp: fase, respuestaSmtp: e?.responseCode, estadoSmtp: estado }));
+};
 const crearTransporte = config => {
   const operar = async (mensaje, signal, soloVerificar = false) => {
     if (signal?.aborted) throw fallo('ENTREGA_CANCELADA');
@@ -72,4 +90,4 @@ const crearCorreo = (env = process.env) => {
   return crearCorreoTransaccional({ autorizado: true, remitente: config.usuario, origenPublico: config.origen,
     transporte: crearTransporte(config), timeoutMs: 10000, entorno: env.NODE_ENV });
 };
-module.exports = { configuracion, crearTransporte, crearCorreo };
+module.exports = { configuracion, crearTransporte, crearCorreo, detalleSeguro };

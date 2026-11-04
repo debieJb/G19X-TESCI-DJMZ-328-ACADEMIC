@@ -5,7 +5,7 @@ const obtenerPolitica = () => {
   const preparacionPiloto = lista.length > 0 && lista.every(id => /^[a-f0-9]{24}$/.test(id));
   const automatico = process.env.GMAIL_CAMPAIGNS_MODE === 'automatico';
   const supervisado = process.env.GMAIL_CAMPAIGNS_MODE === 'supervisado';
-  const limite = process.env.GMAIL_CAMPAIGNS_MAX_RECIPIENTS || '1';
+  const limite = process.env.GMAIL_CAMPAIGNS_MAX_RECIPIENTS ?? '50';
   const limiteValido = /^(?:[1-9]|[1-4][0-9]|50)$/.test(limite);
   return Object.freeze({ habilitado: process.env.GMAIL_CAMPAIGNS_ENABLED === 'true' && preparacionPiloto,
   automatico, supervisado, campanasSucesivas: process.env.GMAIL_CAMPAIGNS_MANUAL_POLICY === 'por_campana', preparacionPiloto, empresas: lista, maxDestinatarios: automatico || supervisado ? (limiteValido ? Number(limite) : 0) : 1, cuotaDiaEmpresa: 100, cuotaHoraEmpresa: 30,
