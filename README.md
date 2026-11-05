@@ -6,7 +6,7 @@ Plataforma de gestión de campañas de marketing por correo electrónico con adm
 **Institución:** Tecnológico de Estudios Superiores de Cuautitlán Izcalli (TESCI)
 **Autora y responsable académica:** Debanie Jocabed Montoya Zúñiga
 **Referencia histórica de implementación:** `78c743424b84cf7ea6d7fc63d2cbf58205727c88`
-**Rama de trabajo al efectuar esta revisión:** `respaldo-avances-18-oct`
+**Rama vigente:** `main`. La integración de `respaldo-avances-18-oct` se realizó en el commit `0b9cbc69f3bf3591c980900c3f3954ffba1f89e6`.
 
 **Cierre técnico del MVP — 27 de octubre de 2026: cerrado con observaciones.**
 La revisión final ejecutó 100 archivos de pruebas generales: **972 aprobadas,
@@ -67,7 +67,7 @@ Este procedimiento está dirigido al evaluador técnico y al responsable de desp
 | Windows y PowerShell | Entorno documentado para los comandos locales | `Get-Host` |
 | Git | Clonar y revisar la versión del repositorio | `git --version` |
 | Node.js | Rama principal **24** | `node --version` |
-| npm | Administrador de paquetes incluido con Node.js | `npm --version` |
+| npm | Versión verificada: **11.9.0** | `npm.cmd --version` |
 | MongoDB Server | Servidor 8.2 probado localmente; topología que admita transacciones | Ver pasos 1.5 y 1.6 |
 | MongoDB Shell (`mongosh`) | Utilidad de diagnóstico, instalada por separado si es necesario | `mongosh --version` |
 | Editor de código | VS Code es opcional y se usó en el desarrollo | `code .` si está disponible |
@@ -76,12 +76,16 @@ Desde PowerShell:
 
 ```powershell
 node --version
-npm --version
+npm.cmd --version
 git --version
 mongosh --version
 ```
 
-**MongoDB:** configure `PLURIONE_MONGOD_PATH` con la ruta del ejecutable instalado o agregue `mongod` al `PATH`. Se conservan las comprobaciones de identidad y de version autorizada.
+Si PowerShell bloquea `npm.ps1` por su política de ejecución, usar `npm.cmd` como alternativa a `npm` en todos los comandos de esta guía, por ejemplo `npm.cmd ci` y `npm.cmd run dev`. No es necesario cambiar la política global del equipo.
+
+`package.json` declara Node.js `24.x` como rama objetivo y `npm@11.9.0` como gestor de referencia. En esta revisión se comprobaron Node.js `24.14.0` y npm `11.9.0`; la declaración no acredita todas las versiones de Node 24 ni una instalación limpia. `packageManager` registra la versión de referencia y no instala ni cambia npm automáticamente.
+
+**MongoDB:** configure `PLURIONE_MONGOD_PATH` con la ruta del ejecutable instalado o agregue `mongod` al `PATH`. Se conservan las comprobaciones de identidad y de versión autorizada.
 
 MongoDB Shell puede estar instalado en una carpeta diferente; configure `PLURIONE_MONGOSH_PATH` o incluya `mongosh` en el `PATH`.
 
@@ -105,12 +109,7 @@ git status --short
 git log -1 --oneline
 ```
 
-El repositorio utiliza `main` como rama pública predeterminada, pero los cambios recientes de instalación, métricas y pruebas se elaboraron en `respaldo-avances-18-oct`. **Hasta que se integren y publiquen**, una descarga de `main` puede no contener esta documentación ni la corrección del alta inicial. Para inspeccionar la rama de respaldo en un clon nuevo, sin cambios locales:
-
-```powershell
-git fetch origin
-git switch --track origin/respaldo-avances-18-oct
-```
+El repositorio utiliza `main` como rama pública predeterminada. Los cambios de `respaldo-avances-18-oct`, incluidas la documentación de instalación y la corrección del alta inicial, ya están integrados en `main` mediante el commit `0b9cbc69f3bf3591c980900c3f3954ffba1f89e6`. No es necesario cambiar a la rama de respaldo para obtener esa integración.
 
 No cambiar de rama en un directorio con trabajo sin guardar. Registrar en la evidencia de entrega el nombre de rama y el hash que realmente se evaluó; evita comparar resultados de versiones diferentes.
 
@@ -135,6 +134,20 @@ npm pkg get scripts
 | `npm run crear-superadmin` | **Crea un usuario real** en la base configurada si el correo no existe |
 
 No ejecutar `crear-superadmin` para comprobar únicamente la instalación de dependencias.
+
+#### Instalación aislada en Windows: preparación y límites
+
+Una carpeta nueva separa el código, pero **no aísla MongoDB**. Para evaluar una instalación limpia, **nunca reutilizar la URI ni los datos de MongoDB existentes**, tampoco sus respaldos reales. La URI de `.env.example` es una referencia local y no debe usarse sin sustituirla por el destino aislado.
+
+1. Obtener una copia nueva del repositorio y registrar rama y commit. No copiar `.env`, `node_modules`, archivos DPAPI, tokens ni otros secretos del equipo original.
+2. Instalar Node.js 24 y comprobar Node/npm. Desde la carpeta nueva, ejecutar `npm ci` (o `npm.cmd ci`) usando el lockfile versionado. Este paso instala dependencias; no demuestra que la aplicación funcione.
+3. Antes del primer arranque, disponer de un MongoDB independiente, preferentemente en una máquina virtual Windows. Si se usa el mismo equipo, debe tener directorio de datos, puerto, replica set y base exclusivos, sin reutilizar ni alterar el servicio existente. Cambiar solo el nombre de base o el puerto HTTP no ofrece ese aislamiento.
+4. Preparar una configuración privada nueva a partir de `.env.example`, con URI exclusiva del entorno aislado, secreto de sesión propio, puerto HTTP libre y las cuatro banderas de proveedores desactivadas indicadas en 1.4. Revisar también las variables heredadas de la terminal: pueden prevalecer sobre `.env`.
+5. Solo después de verificar el aislamiento, planificar el arranque, la creación del superadministrador y el primer login en esa base nueva. El arranque normal **crea colecciones e índices**, incluso con Gmail y Gemini apagados; no es una comprobación de solo lectura.
+
+Los scripts de recuperación, reconciliación y piloto existentes validan identidades del entorno original; no son un aprovisionador genérico para esta prueba. Tampoco ejecutar las integraciones de `pruebas-integracion/` contra servidores existentes como comprobación de aislamiento: contienen escrituras y limpieza de fixtures.
+
+**Pendiente de validación real:** aprovisionamiento aislado, instalación completa desde cero, alta inicial, primer login y persistencia tras reinicio. Esta sección define las condiciones de la futura prueba; no acredita que ya se haya realizado ni proporciona un aprovisionamiento MongoDB validado.
 
 ### 1.4 Preparar `.env` sin revelar credenciales
 
@@ -179,6 +192,10 @@ TRANSACTIONAL_WORKER_ENABLED=false
 ```
 
 Estas banderas son controles de alcance del arranque local; no constituyen una receta para activar servicios. No seleccionar el modo Gmail `automatico` solo para conseguir que el servidor abra.
+
+**Alcance del modo básico:** permite evaluar el acceso con cuentas preparadas y la administración y gestión local de contactos y campañas según los permisos de cada rol. No requiere credenciales Gmail/Gemini ni aprovisionar cuotas IA mientras esas integraciones permanezcan apagadas. Sí requiere MongoDB con replica set y PRIMARY, permisos para crear colecciones e índices y una cuenta inicial propia. Para esta evaluación se utiliza el arranque normal; `dev:piloto` selecciona un backend de cuotas ligado al piloto existente.
+
+**Limitaciones:** no se generan propuestas con Gemini ni se entregan campañas por Gmail. Con el correo transaccional apagado tampoco puede completarse la verificación de registros ni la recuperación de contraseñas por correo. El alta inicial escribe datos en la base nueva y sigue pendiente de comprobarse de extremo a extremo en una instalación limpia. El modo de desarrollo utiliza sesiones en memoria que se pierden al reiniciar; no es una configuración de producción.
 
 Comprobación **sin imprimir la URI ni valores secretos** (se ejecuta desde la raíz del proyecto):
 
