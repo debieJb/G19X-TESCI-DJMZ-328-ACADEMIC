@@ -139,3 +139,29 @@ test('regresiones sinteticas demuestran perdidas previas sin atribuirles el inte
   assert.throws(() => JSON.parse(bytes.toString('utf8')));
   assert.equal(clasificar({ status: 1, stdout: bytes, stderr: '' }).result, 'PREFLIGHT_REJECTED');
 });
+
+test('inventario clasificado conserva rechazo saneado y fallo de registro separado', () => {
+  const { resumir } = require('../scripts/mongoClean/diagnostico');
+  const { guardarCaptura } = require('../scripts/mongoClean/registro');
+  const codes = ['INVENTARIO_INFORMACION_INCOMPLETA', 'INVENTARIO_CONFIGURACION_NO_VERIFICABLE', 'INVENTARIO_CONFLICTO_CONFIRMADO', 'DIRECTORIO_HISTORICO_NO_DEMOSTRADO'];
+  for (const code of codes) {
+    const value = { result: 'PREFLIGHT_REJECTED', stage: 'PREFLIGHT', code,
+      command: 'SYNTHETIC_PRIVATE_COMMAND', dataPath: 'C:\\synthetic-private\\data',
+      config: 'SYNTHETIC_PRIVATE_CONFIG', Classification: 'SYNTHETIC_PRIVATE_CLASS' };
+    const input = capture(value);
+    const expected = { result: value.result, stage: value.stage, code };
+    assert.deepEqual(clasificar(input), expected);
+    const report = resumir(input);
+    assert.deepEqual(report.diagnostic, expected);
+    assert.equal(JSON.stringify(report).includes('SYNTHETIC_PRIVATE'), false);
+    assert.equal(JSON.stringify(report).includes('synthetic-private'), false);
+    let writes = 0;
+    // Missing configuration fails before any FS/ACL operation; no directories.
+    const saved = guardarCaptura(input, 'synthetic.log', undefined, () => { writes++; });
+    assert.deepEqual(saved, { diagnostic: expected, record: 'WRITE_FAILED' });
+    assert.equal(writes, 0);
+    assert.equal(clasificar(capture(value, 0)).code, 'INVALID_DIAGNOSTIC');
+  }
+  const unknown = capture({ result: 'PREFLIGHT_REJECTED', stage: 'PREFLIGHT', code: 'SYNTHETIC_PRIVATE_CODE' });
+  assert.equal(clasificar(unknown).code, 'INVALID_DIAGNOSTIC');
+});

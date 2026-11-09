@@ -49,6 +49,65 @@ function Test-CleanPermissionRules($Rules, $AllowSids, $DenySids) {
     return ($allow -band $required) -eq $required
 }
 
+# Internal inventory only. Never serialize these entries: DataPath is private.
+# IDENTIFIED means a declared path was resolved, not that process identity,
+# filesystem canonicality or effective server configuration was established.
+function Get-CleanHistoricalEntry([string]$Command, [string]$Source, [string]$Root) {
+    $entry = [pscustomobject]@{ Classification='INFORMATION_INCOMPLETE'; Reason='COMMAND_UNAVAILABLE'; Source=$Source; DataPath=$null }
+    if ($Source -notin @('PROCESS','SERVICE') -or [string]::IsNullOrWhiteSpace($Command)) { return $entry }
+    # Deliberately limited Windows argument grammar. Reject gaps, escaped quotes,
+    # mixed quoting and malformed arguments rather than guessing shell semantics.
+    if ($Command -match '[\x00-\x1f]' -or $Command -match '\\"') { $entry.Reason='ARGUMENTS_AMBIGUOUS'; return $entry }
+    $parts = [regex]::Matches($Command, '(?:(?:--dbpath|--config|-f)=)?"[^"\r\n]*"|[^\s"\r\n]+', [Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    $end = 0
+    $tokens = @()
+    foreach ($part in $parts) {
+        $gap = $Command.Substring($end, $part.Index - $end)
+        if (($end -gt 0 -and !$gap) -or $gap.Trim()) { $entry.Reason='ARGUMENTS_AMBIGUOUS'; return $entry }
+        $tokens += $part.Value
+        $end = $part.Index + $part.Length
+    }
+    if (!$tokens.Count -or $Command.Substring($end).Trim()) { $entry.Reason='ARGUMENTS_AMBIGUOUS'; return $entry }
+    if ([IO.Path]::GetFileName($tokens[0].Trim('"')) -ine 'mongod.exe') { $entry.Reason='EXECUTABLE_UNVERIFIED'; return $entry }
+    $data = @(); $configs = @()
+    for ($i=1; $i -lt $tokens.Count; $i++) {
+        $token = $tokens[$i].Trim('"')
+        if ($token -cmatch '^(--dbpath|--config|-f|--port|--bind_ip|--replSet|--logpath)(?:=(.*))?$') {
+            $option = $Matches[1]; $value = $Matches[2]
+            if ($token -notmatch '=') {
+                $i++
+                if ($i -ge $tokens.Count -or $tokens[$i] -match '^-') { $entry.Reason='ARGUMENT_VALUE_MISSING'; return $entry }
+                $value = $tokens[$i]
+            }
+            $value = $value.Trim('"')
+            if ([string]::IsNullOrWhiteSpace($value)) { $entry.Reason='ARGUMENT_VALUE_MISSING'; return $entry }
+            if ($option -ceq '--dbpath') { $data += $value }
+            elseif ($option -cin @('--config','-f')) { $configs += $value }
+        } elseif ($token -match '^(?i:--dbpath|--config|-f)') {
+            $entry.Reason='ARGUMENTS_AMBIGUOUS'; return $entry
+        } elseif ($token -cnotin @('--service','--auth','--noauth','--bind_ip_all','--logappend','--quiet')) {
+            $entry.Reason='UNSUPPORTED_ARGUMENT'; return $entry
+        }
+    }
+    if ($configs.Count) {
+        $entry.Classification='CONFIGURATION_UNVERIFIABLE'; $entry.Reason='CONFIG_CONTENT_NOT_VERIFIED'
+        if ($configs.Count -gt 1) { $entry.Reason='CONFIG_ARGUMENTS_AMBIGUOUS'; return $entry }
+        if ($configs[0] -notmatch '^[A-Za-z]:[\\/]') { $entry.Reason='CONFIG_PATH_UNRESOLVED'; return $entry }
+        try { $null = Resolve-CleanPath $configs[0] 'C:\' } catch { $entry.Reason='CONFIG_PATH_UNRESOLVED' }
+        # No config reads: YAML, includes, permissions, reparse points and external
+        # expansion cannot be certified by knowing the command-line filename.
+        return $entry
+    }
+    if ($data.Count -ne 1) { $entry.Reason=if ($data.Count) { 'ARGUMENTS_AMBIGUOUS' } else { 'DBPATH_MISSING' }; return $entry }
+    if ($data[0] -notmatch '^[A-Za-z]:[\\/]') { $entry.Reason='DBPATH_UNRESOLVED'; return $entry }
+    try { $resolved = Resolve-CleanPath $data[0] 'C:\' } catch { $entry.Reason='DBPATH_UNRESOLVED'; return $entry }
+    if ($Root -and (Test-CleanOverlap $Root $resolved)) {
+        $entry.Classification='CONFLICT_CONFIRMED'; $entry.Reason='DECLARED_PATH_OVERLAP'; return $entry
+    }
+    $entry.Classification='IDENTIFIED'; $entry.Reason='EXPLICIT_ABSOLUTE_DBPATH'; $entry.DataPath=$resolved
+    return $entry
+}
+
 function Invoke-CleanPreflight([object]$Profile, [string]$Repository, [hashtable]$Environment, [hashtable]$IO) {
     if (!(& $IO.Platform)) { throw 'WINDOWS_POWERSHELL_REQUERIDO' }
     if ($Profile.schemaVersion -ne 1 -or $Profile.id -cne 'plurione-clean-v1' -or
@@ -71,7 +130,7 @@ function Invoke-CleanPreflight([object]$Profile, [string]$Repository, [hashtable
         $protected += Resolve-CleanPath $pair[1] $Repository
         if ($Environment.ContainsKey($pair[0])) { $protected += Resolve-CleanPath $Environment[$pair[0]] $Repository }
     }
-    $protected += @(& $IO.Protected)
+    $protected += @(& $IO.Protected $root)
     foreach ($p in $protected) {
         if (!$p) { throw 'PROTECCION_NO_VERIFICABLE' }
         $safe = Resolve-CleanPath $p $Repository
@@ -126,22 +185,25 @@ function Get-CleanReadOnlyAdapters {
         }
         Listeners = { [Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners() | ForEach-Object { $_.Port } }
         Protected = {
+            param([string]$Root)
             foreach ($p in @($env:SystemRoot, $env:ProgramFiles, $env:ProgramData)) {
                 if (!$p) { throw 'SISTEMA_NO_VERIFICABLE' }
                 $p
             }
             if (${env:ProgramFiles(x86)}) { ${env:ProgramFiles(x86)} }
-            # Discover running mongod and registered Mongo services without DB access.
-            $commands = @(Get-CimInstance Win32_Process -Filter "Name = 'mongod.exe'" -ErrorAction Stop | ForEach-Object { $_.CommandLine })
-            $commands += @(Get-CimInstance Win32_Service -ErrorAction Stop | Where-Object { $_.Name -match 'mongo' -or $_.PathName -match 'mongod' } | ForEach-Object { $_.PathName })
-            foreach ($command in $commands) {
-                # Config-file or ambiguous invocations require a separate audit, never guessing dbPath.
-                if (!$command -or $command -match '(?i)(?:^|\s)(?:--config|-f)(?:\s|=)' -or
-                    $command -notmatch '(?i)(?:^|\s)--dbpath(?:\s+|=)(?:"([^"\r\n]+)"|([^\s"]+))(?:\s|$)') { throw 'DIRECTORIO_HISTORICO_NO_DEMOSTRADO' }
-                $data = if ($Matches[1]) { $Matches[1] } else { $Matches[2] }
-                if ($data -notmatch '^[A-Za-z]:[\\/]') { throw 'DIRECTORIO_HISTORICO_NO_DEMOSTRADO' }
-                $data
-            }
+            # Retain source distinction; never publish commands, names, PIDs or paths.
+            try {
+                $processes = @(Get-CimInstance Win32_Process -Filter "Name = 'mongod.exe'" -ErrorAction Stop)
+                $services = @(Get-CimInstance Win32_Service -ErrorAction Stop | Where-Object { $_.Name -match 'mongo' -or $_.PathName -match 'mongod' })
+            } catch { throw 'INVENTARIO_INFORMACION_INCOMPLETA' }
+            $entries = @()
+            foreach ($process in $processes) { $entries += Get-CleanHistoricalEntry $process.CommandLine 'PROCESS' $Root }
+            foreach ($service in $services) { $entries += Get-CleanHistoricalEntry $service.PathName 'SERVICE' $Root }
+            # A confirmed overlap takes precedence; no unresolved entry is ignored.
+            if (@($entries | Where-Object { $_.Classification -eq 'CONFLICT_CONFIRMED' }).Count) { throw 'INVENTARIO_CONFLICTO_CONFIRMADO' }
+            if (@($entries | Where-Object { $_.Classification -eq 'CONFIGURATION_UNVERIFIABLE' }).Count) { throw 'INVENTARIO_CONFIGURACION_NO_VERIFICABLE' }
+            if (@($entries | Where-Object { $_.Classification -ne 'IDENTIFIED' }).Count) { throw 'INVENTARIO_INFORMACION_INCOMPLETA' }
+            foreach ($entry in $entries) { $entry.DataPath }
         }
     }
 }
@@ -150,7 +212,8 @@ function Get-CleanFailure([string]$Message) {
     $guards = @('RUTA_INVALIDA','RUTA_NO_CANONICA','PADRE_NO_DIRECTORIO','CADENA_INCONSISTENTE','PADRE_NO_VERIFICABLE',
         'WINDOWS_POWERSHELL_REQUERIDO','PERFIL_INVALIDO','PROTECCION_NO_VERIFICABLE','SOLAPAMIENTO_PROTEGIDO',
         'RAIZ_PELIGROSA','RAIZ_YA_EXISTE','PERMISOS_NO_DEMOSTRADOS','BINARIO_EXPLICITO_REQUERIDO',
-        'BINARIO_INVALIDO','BINARIO_NO_LEGIBLE','PUERTO_OCUPADO','SISTEMA_NO_VERIFICABLE','DIRECTORIO_HISTORICO_NO_DEMOSTRADO')
+        'BINARIO_INVALIDO','BINARIO_NO_LEGIBLE','PUERTO_OCUPADO','SISTEMA_NO_VERIFICABLE','DIRECTORIO_HISTORICO_NO_DEMOSTRADO',
+        'INVENTARIO_INFORMACION_INCOMPLETA','INVENTARIO_CONFIGURACION_NO_VERIFICABLE','INVENTARIO_CONFLICTO_CONFIRMADO')
     if ($guards -ccontains $Message) {
         return [pscustomobject]@{ result = 'PREFLIGHT_REJECTED'; stage = 'PREFLIGHT'; code = $Message }
     }

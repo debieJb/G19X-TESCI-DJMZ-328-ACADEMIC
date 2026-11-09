@@ -220,3 +220,61 @@ de prueba se crean exclusivamente en directorios temporales eliminados al
 finalizar; los errores EACCES/EPERM/ENOSPC/EIO se inyectan en el escritor.
 Los symlinks de archivo se omiten si Windows no concede privilegios; las
 junctions se prueban por separado. Ninguna prueba ejecuta la CLI de registro con argumentos reales.
+
+## Fase 3: clasificacion conservadora del inventario historico
+
+Esta ampliacion se valida solo con CIM y filesystem sinteticos: no acredita
+el inventario del equipo ni reejecuta el preflight real. No lee configuraciones
+MongoDB, datos historicos ni archivos YAML; no ejecuta mongod/mongosh.
+
+El adaptador conserva la procedencia PROCESS (`CommandLine` de Win32_Process,
+filtrado por mongod.exe) y SERVICE (`PathName` de Win32_Service, filtrado por
+nombre Mongo o comando mongod). Incluye servicios detenidos registrados; un
+proceso y su servicio pueden aparecer por separado. No se deduplican ni se
+correlacionan como identidad probada. Un servicio con nombre Mongo puede ser
+un falso positivo: sigue requiriendo revision, no se ignora automaticamente.
+
+| Clasificacion interna | Evidencia y limites | Resultado publico |
+| --- | --- | --- |
+| IDENTIFIED | Un unico `--dbpath` absoluto, sintacticamente valido y normalizado, declarado sin `--config`/`-f`. Se agrega a rutas protegidas. No demuestra identidad del binario, ruta fisica canonica ni configuracion efectiva del servidor. | Continua las demas guardas; no implica exito global. |
+| INFORMATION_INCOMPLETE | Comando oculto/vacio, ejecutable no reconocido, dbPath ausente/relativo/invalido, argumentos incompletos, duplicados o comillas ambiguas; tambien fallo de consulta CIM. | PREFLIGHT_REJECTED / INVENTARIO_INFORMACION_INCOMPLETA |
+| CONFIGURATION_UNVERIFIABLE | `--config` o `-f` con valor: su ubicacion puede ser absoluta, relativa, invalida o duplicada. Ni una ruta absoluta ni un dbPath adicional acreditan el contenido. | PREFLIGHT_REJECTED / INVENTARIO_CONFIGURACION_NO_VERIFICABLE |
+| CONFLICT_CONFIRMED | Solapamiento bidireccional entre destino limpio y dbPath declarado, absoluto y normalizado, sin configuracion adicional. Confirma el conflicto entre rutas declaradas, no identidad ni acceso real a datos. | PREFLIGHT_REJECTED / INVENTARIO_CONFLICTO_CONFIRMADO |
+
+La gramatica admite valores separados o con `=`, rutas con espacios entre
+comillas dobles y opciones completas entre comillas. Es deliberadamente limitada:
+no pretende implementar todas las reglas de argv de Windows, escapes, wrappers o
+expansion de shell. Ademas de dbpath/config/-f reconoce argumentos con valor
+`--port`, `--bind_ip`, `--replSet`, `--logpath` y flags `--service`, `--auth`,
+`--noauth`, `--bind_ip_all`, `--logappend`, `--quiet`, con su escritura exacta.
+Argumentos adicionales desconocidos o valores ausentes tambien rechazan; no se
+pretende validar toda la semantica de esos argumentos ni certificar su efecto. Formas ambiguas (incluido `-farchivo`) se rechazan como
+informacion incompleta. Nunca se resuelve una ruta relativa historica usando el
+cwd del inspector: el directorio de trabajo del servicio/proceso es desconocido.
+
+Las razones internas son enumeraciones fijas (por ejemplo COMMAND_UNAVAILABLE,
+DBPATH_UNRESOLVED, CONFIG_PATH_UNRESOLVED y CONFIG_CONTENT_NOT_VERIFIED).
+Las entradas internas contienen rutas privadas solo en memoria: no deben
+serializarse ni incorporarse al registro. La salida publica conserva unicamente
+los codigos permitidos; no agrega comandos, rutas, nombres de servicio, PID,
+contenido de configuracion ni excepciones. El esquema saneado version 1 permanece
+igual y WRITE_FAILED conserva el diagnostico principal. El codigo anterior
+DIRECTORIO_HISTORICO_NO_DEMOSTRADO sigue admitido por compatibilidad.
+
+Si existen varias entradas, un conflicto declarado confirmado tiene prioridad,
+seguido de configuracion no verificable e informacion incompleta. No se omiten
+entradas desconocidas para obtener exito. Un fallo CIM impide afirmar que la
+consulta fue completa, incluso si antes se obtuvo una parte del inventario.
+Las clasificaciones no representan un inventario exhaustivo por instancia en la
+salida publica. Un archivo de configuracion conocido requerira una auditoria
+separada de contenido, precedencias, integridad, permisos y cadena de rutas;
+configuracion ausente, ilegible, YAML complejo, expansion externa o reparse
+points no se presumen seguros ni se certifican en esta fase.
+
+Persisten TOCTOU, alias de rutas fisicas, comandos ocultos, restricciones de
+permisos y entornos detenidos no registrados. Las nuevas pruebas usan solo
+rutas ficticias y dobles CIM, con trampas para impedir lecturas de filesystem/ACL
+desde el clasificador y adaptador de inventario. No crean directorios ni cambian
+ACL. Para validar esta ampliacion sin ejecutar las pruebas de registro que
+preparan ACL temporales, usar:
+`node --test tests/mongoClean.preflight.test.js`.
