@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "id": "plurione-clean-v1",
+  "port": 27030,
+  "bindIp": "127.0.0.1",
+  "replicaSet": "pluriOneCleanRs",
+  "member": "localhost:27030",
+  "database": "plurione_clean",
+  "rootEnvironmentVariable": "PLURIONE_MONGO_CLEAN_ROOT",
+  "defaultRoot": "../plurione-clean-mongo",
+  "directories": ["data", "logs", "config", "secrets", "state"]
+}
