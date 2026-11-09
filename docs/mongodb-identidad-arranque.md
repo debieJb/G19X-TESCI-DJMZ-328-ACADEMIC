@@ -81,3 +81,25 @@ node --test --test-reporter=tap tests/rutasLocales.test.js tests/mongoDevRs.iden
 Las nuevas pruebas cubren PID legítimos 6040/6160/9900, cambio durante la comprobación, discrepancias de PID servicio/listener/Mongo, identidad o servicio sustituidos, huellas de configuración/datos/índices, comandos e imagen reales, permisos insuficientes, rutas canónicas y referencias alteradas. Un adaptador PowerShell simulado verifica siete escenarios sin consultar procesos ni bases reales. El coordinador se prueba con dobles para garantizar historia → servicio → huellas Mongo → servicio. El fixture conserva únicamente datos sintéticos y lecturas de las referencias del repositorio.
 
 Las consultas del diagnóstico inicial fueron de solo lectura y se distinguen del arranque posterior confirmado por el responsable. Para esta publicación no se ejecutan las pruebas de integración con bases reales de `pruebas-integracion/`, las pruebas visuales ni las operaciones de preparación/restauración. No se detiene ni reinicia el proceso 6040 ni se modifican bases existentes.
+
+## Diagnóstico TCP conservador (revisión de recuperación)
+
+El listener es una condición de disponibilidad y asociación del puerto al proceso, no una huella de datos. Se exige una captura válida antes y otra después de leer las huellas de MongoDB; no hay dependencia circular con el arranque de 27018. Una captura puntual no garantiza disponibilidad futura.
+
+- LISTENER_ORIGINAL_AUSENTE: CIM terminó sin coincidencias y la API nativa tampoco enumeró un listener. Solo se reconoce como ausencia la respuesta vacía o el error conocido CmdletizationQuery_NotFound con categoría ObjectNotFound. Describe esas consultas secuenciales, no una ausencia permanente.
+- CONSULTA_TCP_ORIGINAL_FALLIDA: falló la consulta TCP o su corroboración; no demuestra ausencia ni corrupción.
+- ENUMERACION_TCP_ORIGINAL_DISCREPANTE: CIM no encontró Listen y la API nativa sí enumeró el puerto. Puede haber variación temporal entre consultas; no demuestra un defecto específico de Windows.
+- COLECTOR_SERVICIO_ORIGINAL_FALLIDO: error no clasificado, ejecución bloqueada, timeout u otro fallo del proceso recolector. No equivale a una huella discrepante.
+
+Todos bloquean el procedimiento. La corroboración nativa se usa solo tras una ausencia o fallo primario: nunca aprueba por sí sola ni sustituye la comprobación de propietario. No se incorporan sondeos continuos ni netstat al guard. La respuesta interna de PowerShell puede contener diagnosticVersion=1 y failureCode; Node la convierte en rechazo, y PowerShell mantiene la terminación con error. Node acepta únicamente códigos de una lista cerrada del stdout estructurado, sin publicar stderr. Los códigos permitidos de identidad y huellas se conservan separados de los errores de consulta. La CLI no imprime stderr ni excepciones arbitrarias.
+
+### Recuperación propuesta, pendiente de autorización real
+
+1. Disponer de una copia recuperable o respaldo verificado de los datos relevantes antes del arranque que escribirá en los archivos existentes; la comparación de huellas no es un respaldo. Acordar cualquier operación de respaldo por separado.
+2. Resolver PLURIONE_MONGOD_PATH únicamente en el entorno del proceso autorizado, apuntando al binario autenticado, sin cambiar variables persistentes. Mantener una política vigente que permita los scripts y permisos suficientes para leer la identidad efectiva del original, sin Bypass automático.
+3. Confirmar rutas independientes y canónicas de desarrollo, data y logs, archivos WiredTiger existentes y baseline original; puerto 27018 libre y ausencia de otro proceso que use esos mismos datos. No iniciar dos procesos sobre el mismo dbPath.
+4. Autorizar la comparación de solo lectura del original: historia íntegra, identidad efectiva y propietario del listener válidos, dos capturas estables y huellas de configuración, datos e índices coincidentes. Una diferencia detiene el procedimiento sin actualizar referencias.
+5. Solo tras aprobar lo anterior, autorizar iniciar la réplica existente mediante iniciarMongoDevRsExistente.ps1. Ese arranque escribe en datos/logs y puede ejecutar recuperación normal de WiredTiger. No usar -Preparar, inicialización, reparación ni limpieza. El script debe volver a validar el original antes de arrancar.
+6. Verificar la identidad de 27018, marketingDevRs, miembro localhost:27018 y PRIMARY, sin reconfigurar ni inicializar; después autorizar el arranque de PluriOne con el entorno de desarrollo correcto. Arrancar la réplica no copia empresas, contactos ni campañas del standalone.
+
+Las validaciones previas no eliminan TOCTOU, cambios concurrentes de datos ni límites de permisos efectivos. No se han repetido consultas al servicio ni conexiones reales durante esta corrección. Los fixtures de PowerShell sustituyen CIM, TCP, sistema de archivos y corroboración nativa; respetan la política vigente y se declaran omitidos si impide ejecutarlos.

@@ -98,8 +98,14 @@ const validarReferencia = (antes, referencia) => {
   const previo = inventario.map(([n, indices]) => [n, n === 'campanas' ? indices.filter(i => i.name !== indice.name) : indices]);
   exigir(digest(previo) === antes.indices, 'REFERENCIA_NO_AUTORIZADA');
 };
-const ejecutar = main => main().catch(() => {
-  console.error('ERROR: comprobacion fallida; procedimiento detenido, sin reparaciones. Revisar el entorno y el log local.');
+const ejecutar = main => main().catch(error => {
+  const codigos = [...require('./mongoDevRsReconciliacion').CODIGOS_SERVICIO,
+    'RESPUESTA_COLECTOR_ORIGINAL_INVALIDA', 'SERVICIO_CAMBIO_DURANTE_COMPROBACION',
+    'IDENTIDAD_SERVICIO_ORIGINAL_INCORRECTA', 'PID_SERVICIO_LISTENER_MONGO_NO_COINCIDE',
+    'FECHA_PROCESO_ORIGINAL_INVALIDA', 'HUELLA_ORIGINAL_DIFIERE_CONFIGURACION',
+    'HUELLA_ORIGINAL_DIFIERE_DATOS', 'HUELLA_ORIGINAL_DIFIERE_INDICES'];
+  const codigo = codigos.includes(error?.message) ? ` [${error.message}]` : '';
+  console.error(`ERROR${codigo}: comprobacion fallida; procedimiento detenido, sin reparaciones. Revisar el entorno y el log local.`);
   process.exitCode = 1;
 });
 module.exports = { ROOT, DATA, SET, URI, sleep, exigir, validarOpciones, validarReferencia, rutasSeguras, conectar, verificar, esperar, original, compararOriginal, ejecutar };

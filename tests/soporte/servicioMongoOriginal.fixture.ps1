@@ -18,6 +18,10 @@ function Get-CimInstance($ClassName, $Filter) {
 }
 function Get-NetTCPConnection($State, $LocalPort) {
     if ($State -ne 'Listen' -or $LocalPort -ne 27017) { throw 'PUERTO_NO_PREVISTO' }
+    if ($Caso -eq 'tcpError') { throw 'ERROR_SINTETICO' }
+    if ($Caso -eq 'tcpNoMatch') { Write-Error 'SIN_COINCIDENCIAS' -Category ObjectNotFound -ErrorId CmdletizationQuery_NotFound_LocalPort; return }
+    if ($Caso -eq 'tcpObjectNotFound') { Write-Error 'ERROR_PROVEEDOR' -Category ObjectNotFound -ErrorId OtroError; return }
+    if ($Caso -in @('tcpAusente','tcpDiscrepante','nativoError')) { return }
     [pscustomobject]@{ LocalAddress='127.0.0.1'; LocalPort=27017; OwningProcess=$(if($Caso -eq 'listenerAjeno'){1}else{6040}) }
 }
 function Get-Item($LiteralPath) {
@@ -38,4 +42,7 @@ function Get-FileHash($LiteralPath,$Algorithm) {
     else {throw 'ARCHIVO_NO_PREVISTO'}
     [pscustomobject]@{Hash=$value}
 }
-. (Join-Path $repo 'scripts\verificarServicioMongoOriginal.ps1')
+. (Join-Path $repo 'scripts\verificarServicioMongoOriginal.ps1') -ReadNativeListeners {
+    if ($Caso -eq 'nativoError') { throw 'ERROR_NATIVO_SINTETICO' }
+    if ($Caso -eq 'tcpDiscrepante') { [pscustomobject]@{Port=27017} }
+}

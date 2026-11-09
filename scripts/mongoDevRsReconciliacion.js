@@ -52,11 +52,34 @@ const validarArranqueOriginal = args => {
     comprobar(actual[campo] === v3.actual[campo], `HUELLA_ORIGINAL_DIFIERE_${campo.toUpperCase()}`);
   }
 };
-const leerServicio = () => {
+const CODIGOS_TCP = Object.freeze(['LISTENER_ORIGINAL_AUSENTE', 'CONSULTA_TCP_ORIGINAL_FALLIDA', 'ENUMERACION_TCP_ORIGINAL_DISCREPANTE']);
+const CODIGOS_SERVICIO = Object.freeze([...CODIGOS_TCP, 'RECONCILIACION_NO_AUTORIZADA',
+  'SERVICIO_ORIGINAL_NO_COINCIDE', 'COMANDO_SERVICIO_NO_COINCIDE', 'LISTENER_ORIGINAL_NO_COINCIDE',
+  'PROCESO_ORIGINAL_NO_COINCIDE', 'IDENTIDAD_PROCESO_NO_LEGIBLE', 'RUTA_ORIGINAL_REDIRECCIONADA',
+  'RUTA_ORIGINAL_NO_CANONICA', 'TIPO_RUTA_ORIGINAL_INCORRECTO', 'HUELLA_ARCHIVO_ORIGINAL_DIFIERE',
+  'COLECTOR_SERVICIO_ORIGINAL_FALLIDO']);
+const leerServicio = (ejecutar = execFileSync) => {
   // No shell, argumentos fijos, sin cambios de política de ejecución.
-  const output = execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-File', path.join(__dirname, 'verificarServicioMongoOriginal.ps1')],
-    { encoding: 'utf8', timeout: 20000, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
-  return JSON.parse(output.replace(/^\uFEFF/, ''));
+  let output;
+  try {
+    output = ejecutar('powershell.exe', ['-NoProfile', '-NonInteractive', '-File', path.join(__dirname, 'verificarServicioMongoOriginal.ps1')],
+      { encoding: 'utf8', timeout: 20000, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch (error) {
+    // No propagar stderr, rutas, comandos ni objetos de child_process.
+    let fallo;
+    try { fallo = JSON.parse(String(error.stdout).replace(/^\uFEFF/, '')); } catch { /* Sin respuesta fiable. */ }
+    throw Error(fallo?.diagnosticVersion === 1 && CODIGOS_SERVICIO.includes(fallo.failureCode)
+      ? fallo.failureCode : 'COLECTOR_SERVICIO_ORIGINAL_FALLIDO');
+  }
+  let captura;
+  try { captura = JSON.parse(output.replace(/^\uFEFF/, '')); }
+  catch { throw Error('RESPUESTA_COLECTOR_ORIGINAL_INVALIDA'); }
+  if (!captura || typeof captura !== 'object' || Array.isArray(captura)) throw Error('RESPUESTA_COLECTOR_ORIGINAL_INVALIDA');
+  if ('failureCode' in captura || 'diagnosticVersion' in captura) {
+    throw Error(captura.diagnosticVersion === 1 && CODIGOS_SERVICIO.includes(captura.failureCode)
+      ? captura.failureCode : 'RESPUESTA_COLECTOR_ORIGINAL_INVALIDA');
+  }
+  return captura;
 };
 const comprobarArranqueOriginal = async (historia, { leerOriginal, capturarServicio = leerServicio }) => {
   validarHistoria(historia);
@@ -66,4 +89,4 @@ const comprobarArranqueOriginal = async (historia, { leerOriginal, capturarServi
   validarArranqueOriginal({ ...historia, actual, servicioAntes, servicioDespues });
   return actual;
 };
-module.exports = { V3_SHA256, validarHistoria, validarReconciliacion, validarArranqueOriginal, comprobarArranqueOriginal, leerServicio };
+module.exports = { V3_SHA256, CODIGOS_TCP, CODIGOS_SERVICIO, validarHistoria, validarReconciliacion, validarArranqueOriginal, comprobarArranqueOriginal, leerServicio };

@@ -1,5 +1,7 @@
-﻿$ErrorActionPreference = 'Stop'
+﻿param([scriptblock]$ReadNativeListeners = { [Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners() })
+$ErrorActionPreference = 'Stop'
 # Solo lectura. La evidencia v3 fija la identidad persistente, nunca el PID actual.
+try {
 $referencePath = Join-Path $PSScriptRoot '..\docs\mongodb-reconciliacion-pid-v3.json'
 if ((Get-FileHash -LiteralPath $referencePath -Algorithm SHA256).Hash.ToLowerInvariant() -cne '9958ed6eeabf1cfd651aba11c108817b7d095510059a0da8dec7e4395b57353d') { throw 'RECONCILIACION_NO_AUTORIZADA' }
 $expected = (Get-Content -LiteralPath $referencePath -Raw | ConvertFrom-Json).servicio
@@ -10,7 +12,24 @@ $binary = $expected.binary
 $config = $expected.config
 $dbPath = $expected.dbPath
 if ($service.PathName -cne $expected.command) { throw 'COMANDO_SERVICIO_NO_COINCIDE' }
-$listeners = @(Get-NetTCPConnection -State Listen -LocalPort $expected.port)
+$tcpFailure = $null
+try {
+    $listeners = @(Get-NetTCPConnection -State Listen -LocalPort $expected.port -ErrorAction Stop)
+} catch {
+    # Solo la respuesta conocida de consulta sin coincidencias demuestra ese resultado.
+    $noMatch = $_.CategoryInfo.Category -eq 'ObjectNotFound' -and $_.FullyQualifiedErrorId -like 'CmdletizationQuery_NotFound*'
+    $tcpFailure = if ($noMatch) { 'LISTENER_ORIGINAL_AUSENTE' } else { 'CONSULTA_TCP_ORIGINAL_FALLIDA' }
+    $listeners = @()
+}
+if (!$tcpFailure -and $listeners.Count -eq 0) { $tcpFailure = 'LISTENER_ORIGINAL_AUSENTE' }
+if ($tcpFailure) {
+    # Corroboracion diagnostica solamente: nunca sustituye el guard primario.
+    try {
+        $native = @(& $ReadNativeListeners | Where-Object Port -eq $expected.port)
+        if ($tcpFailure -eq 'LISTENER_ORIGINAL_AUSENTE' -and $native.Count -gt 0) { $tcpFailure = 'ENUMERACION_TCP_ORIGINAL_DISCREPANTE' }
+    } catch { $tcpFailure = 'CONSULTA_TCP_ORIGINAL_FALLIDA' }
+    throw $tcpFailure
+}
 if ($listeners.Count -ne 1 -or $listeners[0].LocalAddress -cne $expected.address -or
     $listeners[0].OwningProcess -ne $service.ProcessId) { throw 'LISTENER_ORIGINAL_NO_COINCIDE' }
 $process = Get-CimInstance Win32_Process -Filter "ProcessId = $($service.ProcessId)"
@@ -59,3 +78,14 @@ if ($binaryHash -cne $expected.binarySha256 -or $configHash -cne $expected.confi
     configCanonical = $configCanonical
     dbPathCanonical = $dataCanonical
 } | ConvertTo-Json -Compress
+} catch {
+    $allowed = @('LISTENER_ORIGINAL_AUSENTE', 'CONSULTA_TCP_ORIGINAL_FALLIDA', 'ENUMERACION_TCP_ORIGINAL_DISCREPANTE',
+        'RECONCILIACION_NO_AUTORIZADA', 'SERVICIO_ORIGINAL_NO_COINCIDE',
+        'COMANDO_SERVICIO_NO_COINCIDE', 'LISTENER_ORIGINAL_NO_COINCIDE',
+        'PROCESO_ORIGINAL_NO_COINCIDE', 'IDENTIDAD_PROCESO_NO_LEGIBLE',
+        'RUTA_ORIGINAL_REDIRECCIONADA', 'RUTA_ORIGINAL_NO_CANONICA',
+        'TIPO_RUTA_ORIGINAL_INCORRECTO', 'HUELLA_ARCHIVO_ORIGINAL_DIFIERE')
+    $code = if ($_.Exception.Message -cin $allowed) { $_.Exception.Message } else { 'COLECTOR_SERVICIO_ORIGINAL_FALLIDO' }
+    @{ diagnosticVersion=1; failureCode=$code } | ConvertTo-Json -Compress
+    throw $code
+}
