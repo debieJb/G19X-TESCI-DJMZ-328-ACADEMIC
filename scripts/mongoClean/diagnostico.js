@@ -98,11 +98,16 @@ function resumir(capture) {
 }
 
 function ejecutarDetallado(run = spawnSync, environment = process.env) {
-  if (!environment.SystemRoot || !path.win32.isAbsolute(environment.SystemRoot)) return resumir({ error: true });
-  const executable = path.win32.join(environment.SystemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
   try {
+    if (!environment || typeof environment !== 'object' || Array.isArray(environment)) return resumir({ error: true });
+    // Read caller-owned getters once, inside the sanitized error boundary.
+    const childEnvironment = { ...environment };
+    const systemRoot = childEnvironment.SystemRoot;
+    if (typeof systemRoot !== 'string' || !/^[A-Za-z]:[\\/]/.test(systemRoot)) return resumir({ error: true });
+    const executable = path.win32.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
     return resumir(run(executable, ['-NoProfile', '-NonInteractive', '-File', path.join(__dirname, 'preflight.ps1')], {
-      encoding: 'buffer', shell: false, windowsHide: true, timeout: 30000, maxBuffer: 1024 * 1024
+      encoding: 'buffer', shell: false, windowsHide: true, timeout: 30000, maxBuffer: 1024 * 1024,
+      env: childEnvironment
     }));
   } catch (error) { return resumir({ error: error || true }); }
 }

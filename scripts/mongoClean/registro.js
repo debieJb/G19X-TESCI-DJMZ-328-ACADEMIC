@@ -26,31 +26,49 @@ function destino(name, configuration) {
   if (process.platform === 'win32') {
     // Fail closed if ACL/reparse inspection is unavailable. No policy overrides.
     const command = `$ErrorActionPreference='Stop'
-$drive=[IO.DriveInfo]::new([IO.Path]::GetPathRoot($env:MONGO_RECORD_CHECK))
-if ($drive.DriveType -ne 'Fixed' -or $drive.DriveFormat -notin @('NTFS','ReFS')) { throw 'unsupported volume' }
-$d=Get-Item -LiteralPath $env:MONGO_RECORD_CHECK -Force
-$p=$d
-while ($null -ne $p) {
- if (($p.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'reparse' }
- $p=$p.Parent
+function Assert-RecordVolume($Drive) {
+ if ($Drive.DriveType -ne 'Fixed' -or $Drive.DriveFormat -notin @('NTFS','ReFS')) { throw 'unsupported volume' }
 }
+function Assert-RecordChain($Directory) {
+ if (!$Directory.PSIsContainer) { throw 'not a directory' }
+ $p=$Directory
+ while ($null -ne $p) {
+  if (($p.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'reparse' }
+  $p=$p.Parent
+ }
+}
+function Assert-RecordPrivate($Drive, $Directory, $Acl, [string]$CurrentSid) {
+ Assert-RecordVolume $Drive
+ Assert-RecordChain $Directory
+ if ($Acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -ne $CurrentSid -or !$Acl.AreAccessRulesProtected) { throw 'owner/inheritance' }
+ $allowed=@($CurrentSid,'S-1-5-18','S-1-5-32-544')
+ $privateInheritance=$false
+ foreach ($r in $Acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])) {
+  # Conservative policy: no Deny rules, including group/inherit-only entries.
+  # This validator does not compute effective Windows token permissions.
+  if ($r.AccessControlType -ne 'Allow') { throw 'unsupported ACL rule' }
+  if ($r.IdentityReference.Value -notin $allowed) { throw 'public ACL' }
+  if ($r.IdentityReference.Value -eq $CurrentSid -and
+      ($r.FileSystemRights -band [Security.AccessControl.FileSystemRights]::FullControl) -eq [Security.AccessControl.FileSystemRights]::FullControl -and
+      ($r.InheritanceFlags -band [Security.AccessControl.InheritanceFlags]::ObjectInherit) -ne 0 -and
+      $r.PropagationFlags -eq [Security.AccessControl.PropagationFlags]::None) { $privateInheritance=$true }
+ }
+ if (!$privateInheritance) { throw 'file ACL inheritance' }
+}
+$drive=[IO.DriveInfo]::new([IO.Path]::GetPathRoot($env:MONGO_RECORD_CHECK))
+Assert-RecordVolume $drive
+$d=Get-Item -LiteralPath $env:MONGO_RECORD_CHECK -Force
+Assert-RecordChain $d
 $a=Get-Acl -LiteralPath $d.FullName
 $me=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-if ($a.GetOwner([Security.Principal.SecurityIdentifier]).Value -ne $me -or !$a.AreAccessRulesProtected) { throw 'owner/inheritance' }
-$allowed=@($me,'S-1-5-18','S-1-5-32-544')
-$privateInheritance=$false
-foreach ($r in $a.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])) {
- if ($r.AccessControlType -eq 'Allow' -and $r.IdentityReference.Value -notin $allowed) { throw 'public ACL' }
- if ($r.AccessControlType -eq 'Allow' -and $r.IdentityReference.Value -eq $me -and
-     ($r.FileSystemRights -band [Security.AccessControl.FileSystemRights]::FullControl) -eq [Security.AccessControl.FileSystemRights]::FullControl -and
-     ($r.InheritanceFlags -band [Security.AccessControl.InheritanceFlags]::ObjectInherit) -ne 0 -and
-     $r.PropagationFlags -eq [Security.AccessControl.PropagationFlags]::None) { $privateInheritance=$true }
-}
-if (!$privateInheritance) { throw 'file ACL inheritance' }
+Assert-RecordPrivate $drive $d $a $me
 'PRIVATE'`;
-    const executable = path.join(process.env.SystemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+    const childEnvironment = { ...process.env, MONGO_RECORD_CHECK: root };
+    const systemRoot = childEnvironment.SystemRoot;
+    if (typeof systemRoot !== 'string' || !/^[A-Za-z]:[\\/]/.test(systemRoot)) throw Error('INVALID_SYSTEM_ROOT');
+    const executable = path.win32.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
     const output = execFileSync(executable, ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(command, 'utf16le').toString('base64')], {
-      env: { ...process.env, MONGO_RECORD_CHECK: root }, encoding: 'utf8', windowsHide: true, timeout: 10000, stdio: ['ignore', 'pipe', 'pipe']
+      env: childEnvironment, encoding: 'utf8', windowsHide: true, timeout: 10000, stdio: ['ignore', 'pipe', 'pipe']
     });
     if (output.trim() !== 'PRIVATE') throw Error('UNVERIFIED_ACL');
   } else {

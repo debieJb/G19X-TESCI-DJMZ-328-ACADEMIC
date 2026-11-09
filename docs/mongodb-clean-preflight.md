@@ -143,7 +143,9 @@ locales fijos NTFS/ReFS. El directorio debe pertenecer al SID actual, tener
 herencia ACL deshabilitada y no conceder acceso Allow a identidades distintas
 del usuario actual, SYSTEM y Administradores. Se exige una regla Allow de
 control total para el usuario actual heredable por archivos, sin restricciones
-de propagacion. Si no se puede consultar o
+de propagacion. Se rechaza cualquier regla Deny, incluso de otro SID o solo
+heredable: es una politica conservadora, no un calculo de permisos efectivos.
+Si no se puede consultar o
 verificar esta configuracion, se rechaza. No se modifican ACL en produccion.
 En POSIX se exige propietario actual y ausencia de permisos de grupo/otros.
 El operador debe preparar previamente el directorio privado y proteger tambien
@@ -278,3 +280,78 @@ desde el clasificador y adaptador de inventario. No crean directorios ni cambian
 ACL. Para validar esta ampliacion sin ejecutar las pruebas de registro que
 preparan ACL temporales, usar:
 `node --test tests/mongoClean.preflight.test.js`.
+
+
+## Pruebas de ACL y aislamiento del escritor (sin preparar el entorno)
+
+La funcion Assert-RecordPrivate del comando PowerShell de registro.js recibe
+metadatos de volumen, directorio, ACL y SID. El adaptador real sigue consultando
+estos datos en modo de lectura. La prueba extrae el comando generado por el
+modulo real mediante un doble de execFileSync y carga solo las funciones de
+validacion desde el AST. Usa ACL, propietario, reglas, volumen y ancestros
+completamente sinteticos;
+no ejecuta las consultas nativas ni crea directorios ni modifica ACL reales.
+El AST restringe comandos y metodos; existen trampas para consultas reales.
+En el adaptador PowerShell, el AST exige validar volumen antes de Get-Item
+y verificar directorio/reparse points antes de Get-Acl. Las comprobaciones
+Node de lstat/realpath siguen siendo previas a ese adaptador; no se promete
+evitar toda lectura de metadatos en un volumen no admitido.
+
+Cubre usuario + SYSTEM + Administradores, compatibilidad con usuario solo,
+propietario incorrecto, herencia activa, ausencia de control total o de
+ObjectInherit, InheritOnly/NoPropagateInherit, Deny, acceso publico, excepciones
+al obtener propietario/reglas/volumen, volumen remoto/removible y formatos no
+admitidos, y reparse points en directorio y ancestros. Se rechaza cualquier Deny
+sin intentar resolver membresias de grupos o accesos efectivos de Windows.
+Los dobles JavaScript comprueban rechazos de consultas y lanzamiento, salida
+inesperada del verificador, conservacion del esquema y de WRITE_FAILED, y CLI
+con diagnostico sustituido: nunca invocan el preflight real.
+
+El entorno del verificador ACL es una copia del entorno del proceso escritor;
+MONGO_RECORD_CHECK se sustituye exclusivamente en esa copia. El capturador
+transmite al hijo otra copia del argumento environment de ejecutarDetallado
+(por defecto process.env). La copia se captura una sola vez dentro del bloque
+de errores saneados; SystemRoot y el ejecutable se derivan de esa misma copia.
+Si se proporciona un entorno explicito, corresponde
+al llamador incluir las variables necesarias; no se mezcla silenciosamente con
+el entorno global. Ninguna asignacion modifica process.env ni las variables de
+usuario/maquina. Ambos lanzadores exigen SystemRoot de tipo string con unidad
+Windows absoluta; no aceptan rutas relativas a la unidad, UNC ni dispositivos.
+Un entorno invalido o un getter fallido en el capturador conserva PROCESS_FAILED
+sin lanzar el hijo ni publicar la excepcion. En el escritor se conserva
+WRITE_FAILED (o INVALID_ARGUMENTS antes del diagnostico en CLI). Esta separacion
+no equivale a depurar secretos del entorno
+heredado; los valores del entorno no se incorporan al informe saneado.
+
+Una prueba acepta intencionalmente un ancestro sintetico marcado como
+reemplazable: documenta que el escritor NO valida las ACL de los padres. Otra
+simula sustitucion entre comprobacion y escritura y demuestra que puede llegar
+al escritor. Son pruebas de un limite conocido, no pruebas de proteccion contra
+TOCTOU. Sigue siendo necesaria la revision operativa de propietarios y permisos
+de los padres y un directorio previamente privado. No se promete proteccion
+absoluta frente al mismo usuario, administradores o cambios concurrentes.
+
+Validacion sin preparar ACL ni directorios:
+
+- node --test tests/mongoClean.registro.seguridad.test.js tests/mongoClean.preflight.test.js
+- node --test --test-name-pattern="salida vacia, espacios|evidencia distingue BOM|JSON Unicode conserva|fallos del hijo tienen" tests/mongoClean.registro.test.js
+
+La fixture ACL se omite fuera de Windows y no constituye validacion Windows en
+ese caso. Los demas casos del nuevo archivo usan una VM con filesystem y
+subprocesos sustituidos y semantica de rutas Windows. La suite completa anterior
+de registro prepara y elimina directorios/ACL temporales; no se necesita
+invocarla para esta validacion sin cambios de permisos. Ni estas pruebas ni su
+resultado preparan el directorio persistente de registros o autorizan ejecutar
+el preflight real.
+
+La auditoria adicional cubre entornos nulos/tipos invalidos, getters fallidos,
+lectura unica de SystemRoot, copia del process.env predeterminado y nombres de
+archivo con terminadores de linea. Los casos de getters usan solo datos
+sinteticos. Los errores se proyectan sin valores de entorno ni rutas.
+
+No ejecutar indiscriminadamente las suites relacionadas: los fixtures historicos
+PowerShell/Node de mongoDevRs.reconciliacion.test.js y rutasLocales.test.js usan
+-ExecutionPolicy Bypass en procesos hijos y quedan fuera de una validacion que
+prohiba overrides de politica. Seleccionar nombres positivos concretos y usar
+una barrera que rechace esos argumentos antes de iniciar un hijo. Las pruebas
+de registro que preparan ACL temporales tambien quedan fuera de ese alcance.
