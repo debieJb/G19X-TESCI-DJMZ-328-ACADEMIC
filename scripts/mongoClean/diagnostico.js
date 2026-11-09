@@ -63,18 +63,54 @@ const GUARDS = new Set(['RUTA_INVALIDA','RUTA_NO_CANONICA','PADRE_NO_DIRECTORIO'
   'WINDOWS_POWERSHELL_REQUERIDO','PERFIL_INVALIDO','PROTECCION_NO_VERIFICABLE','SOLAPAMIENTO_PROTEGIDO',
   'RAIZ_PELIGROSA','RAIZ_YA_EXISTE','PERMISOS_NO_DEMOSTRADOS','BINARIO_EXPLICITO_REQUERIDO',
   'BINARIO_INVALIDO','BINARIO_NO_LEGIBLE','PUERTO_OCUPADO','SISTEMA_NO_VERIFICABLE','DIRECTORIO_HISTORICO_NO_DEMOSTRADO']);
-function ejecutar(run = spawnSync, environment = process.env) {
-  if (!environment.SystemRoot || !path.win32.isAbsolute(environment.SystemRoot)) return clasificar({ error: true });
+function resumir(capture) {
+  const stream = raw => {
+    const bytes = Buffer.isBuffer(raw) ? raw : Buffer.from(typeof raw === 'string' ? raw : '');
+    const texts = decodificar(bytes);
+    let utf8 = true;
+    try { new TextDecoder('utf-8', { fatal: true }).decode(bytes); } catch { utf8 = false; }
+    let even = 0; let odd = 0;
+    for (let i = 0; i < bytes.length; i++) if (bytes[i] === 0) { if (i % 2) odd++; else even++; }
+    return {
+      size: bytes.length === 0 ? 'EMPTY' : bytes.length <= 1024 ? 'SMALL' : bytes.length <= 65536 ? 'MEDIUM' : 'LARGE',
+      bom: bytes[0] === 0xff && bytes[1] === 0xfe ? 'UTF16LE' : bytes[0] === 0xfe && bytes[1] === 0xff ? 'UTF16BE'
+        : bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf ? 'UTF8' : 'NONE',
+      validUtf8: utf8,
+      alternatingNul: bytes.length >= 4 && bytes.length % 2 === 0 && ((odd > bytes.length / 4 && even === 0) || (even > bytes.length / 4 && odd === 0)),
+      legacyCandidates: texts.length === 2,
+      blank: texts.every(text => !text.trim()),
+      json: texts.some(text => { try { JSON.parse(text); return true; } catch { return false; } }),
+      authorizationEvidence: texts.some(evidenciaPolitica)
+    };
+  };
+  const knownErrors = ['ENOENT', 'EACCES', 'EPERM', 'ETIMEDOUT', 'ENOBUFS'];
+  return {
+    schemaVersion: 1,
+    diagnostic: clasificar(capture),
+    process: {
+      exit: capture.status === 0 ? 'ZERO' : capture.status === 1 ? 'ONE' : Number.isInteger(capture.status) ? 'OTHER' : 'UNAVAILABLE',
+      error: !capture.error ? 'NONE' : knownErrors.includes(capture.error.code) ? capture.error.code : 'OTHER',
+      signaled: Boolean(capture.signal)
+    },
+    stdout: stream(capture.stdout), stderr: stream(capture.stderr)
+  };
+}
+
+function ejecutarDetallado(run = spawnSync, environment = process.env) {
+  if (!environment.SystemRoot || !path.win32.isAbsolute(environment.SystemRoot)) return resumir({ error: true });
   const executable = path.win32.join(environment.SystemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
   try {
-    return clasificar(run(executable, ['-NoProfile', '-NonInteractive', '-File', path.join(__dirname, 'preflight.ps1')], {
+    return resumir(run(executable, ['-NoProfile', '-NonInteractive', '-File', path.join(__dirname, 'preflight.ps1')], {
       encoding: 'buffer', shell: false, windowsHide: true, timeout: 30000, maxBuffer: 1024 * 1024
     }));
-  } catch { return clasificar({ error: true }); }
+  } catch (error) { return resumir({ error: error || true }); }
+}
+function ejecutar(run = spawnSync, environment = process.env) {
+  return ejecutarDetallado(run, environment).diagnostic;
 }
 if (require.main === module) {
   const result = ejecutar();
   process.stdout.write(JSON.stringify(result) + '\n');
   process.exitCode = result.result === 'PREFLIGHT_READ_ONLY_OK' ? 0 : 1;
 }
-module.exports = { clasificar, ejecutar, GUARDS };
+module.exports = { clasificar, ejecutar, ejecutarDetallado, resumir, GUARDS };

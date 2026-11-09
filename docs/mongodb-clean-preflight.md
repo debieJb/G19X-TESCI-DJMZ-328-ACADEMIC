@@ -97,3 +97,126 @@ Pendientes: integridad/versiones, inventario ampliado y pruebas de permisos real
 espacio, proteccion contra carreras, bootstrap autenticado, identidad de proceso y
 marcador persistente. No existe `preparar.ps1`; ninguna salida del preflight autoriza
 escrituras, indices o creacion de usuarios.
+
+## Fase 2: evidencia local saneada (ejecucion real pendiente)
+
+`diagnostico.js` conserva su CLI y resultado anteriores. `ejecutarDetallado`
+devuelve una proyeccion saneada de la captura; `ejecutar` sigue devolviendo solo
+el diagnostico. `registro.js` agrega una entrada optativa para escribir esa
+proyeccion. Importar ambos modulos no ejecuta procesos ni escribe archivos.
+No se ha ejecutado el preflight real para validar esta fase.
+
+El registro JSON version 1 contiene exclusivamente:
+
+- `diagnostic`: resultado, etapa y codigo permitidos, o los dos indicadores false
+  del exito. No conserva campos adicionales recibidos del hijo.
+- `process.exit`: ZERO, ONE, OTHER o UNAVAILABLE; `error`: NONE, ENOENT, EACCES,
+  EPERM, ETIMEDOUT, ENOBUFS u OTHER; `signaled`: booleano, sin nombre de senal.
+- Para stdout y stderr por separado: intervalo de tamano EMPTY (0 bytes), SMALL
+  (1-1024), MEDIUM (1025-65536), LARGE (mas de 65536); BOM NONE/UTF8/UTF16LE/UTF16BE;
+  UTF-8 valido, patron NUL alterno, candidatos legacy, contenido blanco,
+  JSON parseable y presencia de evidencia explicita de autorizacion.
+
+No hay texto libre, muestras, bytes, base64, hashes de salida, rutas, usuario,
+hostname, PID, variables de entorno, comandos, mensajes de excepcion ni stacks.
+Los bytes originales solo se procesan en memoria dentro de los limites del
+capturador (30 segundos, maxBuffer de 1 MiB); no se escriben en disco.
+Esto no garantiza borrado seguro de memoria ni impide auditoria, paginacion,
+crash dumps o transcripciones impuestas por el sistema operativo.
+
+El destino requiere configuracion explicita: la CLI lee
+`MONGO_PREFLIGHT_LOG_DIRECTORY` (ruta absoluta local ya preparada). Las API son
+`guardarCaptura(capture, nombre, { directory }, write?)` y
+`ejecutarConRegistro(nombre, { directory }, run?, environment?, write?)`.
+La configuracion pertenece al operador confiable; no debe derivarse de entradas
+no confiables ni del nombre. No existe un directorio predeterminado.
+Solo se aceptan nombres simples ASCII con extension exacta `.log`; se rechazan
+rutas absolutas, separadores de ambas plataformas, unidades, streams Windows,
+nombres de dispositivos, componentes `..` y otras extensiones. No se admiten
+subdirectorios ni se crean padres. El destino resuelto debe ser hijo directo
+del directorio autorizado.
+
+Antes de cada escritura se inspeccionan los componentes con lstat y se compara
+realpath. En Windows se revisan ademas atributos ReparsePoint de todos los
+ancestros mediante PowerShell, sin alterar politicas. Solo se aceptan volumenes
+locales fijos NTFS/ReFS. El directorio debe pertenecer al SID actual, tener
+herencia ACL deshabilitada y no conceder acceso Allow a identidades distintas
+del usuario actual, SYSTEM y Administradores. Se exige una regla Allow de
+control total para el usuario actual heredable por archivos, sin restricciones
+de propagacion. Si no se puede consultar o
+verificar esta configuracion, se rechaza. No se modifican ACL en produccion.
+En POSIX se exige propietario actual y ausencia de permisos de grupo/otros.
+El operador debe preparar previamente el directorio privado y proteger tambien
+sus ancestros contra sustitucion por usuarios no confiables.
+
+El escritor usa creacion exclusiva `wx` y modo `0600`: no sobrescribe archivos
+ni sigue un enlace final preexistente. En Windows el modo no sustituye la ACL;
+el archivo hereda la ACL del directorio preparado. Los errores devuelven solo
+WRITE_FAILED y conservan el diagnostico original, sin excepciones, rutas ni
+salidas crudas. No cambia el esquema saneado version 1. Un fallo puede dejar
+JSON parcial; no se promete atomicidad ni durabilidad. No hay reintentos.
+
+**Limite TOCTOU:** lstat, realpath y Get-Acl son comprobaciones previas, no una
+garantia contra sustitucion concurrente. Las API usadas de Node.js/Windows no
+anclan la creacion a handles de todos los padres ni impiden su reemplazo entre
+validacion y apertura. No se demuestra proteccion absoluta frente a un actor
+que pueda sustituir ancestros, cambiar ACL o actuar como el mismo usuario o
+administrador. Se requiere esa confianza externa; la comprobacion de la ACL
+del directorio no acredita las ACL de todos sus ancestros. Si esa condicion
+operativa no puede establecerse, no debe habilitarse el registro. Las pruebas
+estaticas y sinteticas no demuestran ausencia de carreras.
+
+### Procedimiento futuro, solo con autorizacion para ejecutar el preflight real
+
+1. Revisar el codigo y conservar su revision (`git rev-parse HEAD` y la revision
+   de cualquier cambio local). Anotar aparte versiones de Node y Windows
+   PowerShell, sin copiar rutas, variables ni inventarios privados al informe.
+   El registro no captura automaticamente estos datos ni prueba autenticidad.
+2. Confirmar Windows PowerShell 5.1+, politica ya autorizada, binarios explicitos
+   y raiz nueva segun el contrato. Revisar el inventario historico conocido.
+   No cambiar politicas ni protecciones para obtener un resultado favorable.
+3. Preparar un directorio privado existente con las condiciones anteriores,
+   configurar `MONGO_PREFLIGHT_LOG_DIRECTORY` y elegir un nombre `.log` nuevo. Desde el
+   repositorio, la invocacion futura es
+   `node scripts/mongoClean/registro.js <archivo-local-nuevo.log>`.
+   Este comando SI ejecuta el preflight real una vez; no usarlo como prueba
+   sintetica. No redirigir el PowerShell original ni usar transcript para guardar
+   su salida. No cargar `.env` para esta operacion.
+4. Leer el JSON saneado y comprobar `record:SAVED` en la respuesta de la CLI.
+   Codigo de salida de la CLI: 0 para preflight OK y registro guardado; 1 para
+   diagnostico fallido y registro guardado; 2 para argumento invalido o fallo
+   del registro. WRITE_FAILED no cambia ni acredita el diagnostico del hijo.
+   Con nombre o configuracion invalidos la CLI no ejecuta el preflight;
+   la validacion de ACL si puede invocar PowerShell de solo lectura.
+
+### Interpretacion y limites
+
+| Resultado/codigo | Interpretacion y siguiente revision |
+| --- | --- |
+| EMPTY_OUTPUT | Ambos flujos estan vacios o blancos tras decodificar; revisar estado del proceso. |
+| UNSTRUCTURED_OUTPUT | No se obtuvo JSON completo ni bloqueo demostrado; comparar flujos, BOM, NUL y candidatos legacy. No determina causa exacta. |
+| INVALID_DIAGNOSTIC | Hay JSON pero contrato o codigo de salida incoherente; JSON parseable no equivale a diagnostico valido. |
+| UNEXPECTED_STDERR | Hubo JSON y stderr no blanco sin bloqueo demostrado. No se conserva el mensaje. |
+| PROCESS_FAILED | Fallo al lanzar, timeout, limite de buffer, senal o estado ausente. El codigo permitido del proceso ayuda a distinguirlos; OTHER sigue siendo desconocido. |
+| PREFLIGHT_POLICY_BLOCKED | Hijo fallido y evidencia explicita reconocida. No cambiar politica ni reintentar automaticamente. |
+| PREFLIGHT_REJECTED | Guarda conservadora; revisar el codigo permitido sin relajar protecciones. |
+| PREFLIGHT_READ_ONLY_OK | Lecturas completadas; identidad e instalacion siguen sin validar. |
+
+Los indicadores de autorizacion se registran incluso cuando un fallo de proceso
+tiene prioridad; no son por si solos una conclusion de bloqueo. UTF-8 valido no
+identifica la codificacion real (ASCII y UTF-16 con NUL pueden ser UTF-8 validos).
+`legacyCandidates` significa que se consideraron Windows-1252 y CP850 sin poder
+elegir entre ellos. El patron NUL es heuristico; otras paginas de codigo,
+UTF-32, archivos truncados y mensajes de autorizacion no reconocidos pueden
+seguir siendo desconocidos. No se intenta reparar salida ni interpretar CLIXML
+como XML ejecutable. Perder el texto es intencional: si la evidencia no alcanza,
+se requiere una nueva prueba sintetica y revision del capturador, sin activar
+almacenamiento crudo. No puede recuperarse la causa del intento historico.
+
+Validacion conjunta aislada:
+`node --test tests/mongoClean.preflight.test.js tests/mongoClean.registro.test.js`.
+Las pruebas usan capturas y spawn sinteticos. Los archivos, ACL y enlaces
+de prueba se crean exclusivamente en directorios temporales eliminados al
+finalizar; los errores EACCES/EPERM/ENOSPC/EIO se inyectan en el escritor.
+Los symlinks de archivo se omiten si Windows no concede privilegios; las
+junctions se prueban por separado. Ninguna prueba ejecuta la CLI de registro con argumentos reales.
