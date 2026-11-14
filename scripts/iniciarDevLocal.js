@@ -14,10 +14,12 @@ const crearEntornoLocal = (base, root) => {
   }
   let uri;
   try { uri = new URL(env.MONGODB_URI); } catch { throw Error('MONGODB_URI_INVALIDA'); }
-  if (!['127.0.0.1', 'localhost', '[::1]'].includes(uri.hostname)
+  if (uri.protocol !== 'mongodb:' || uri.pathname !== '/marketing_automation'
+      || !['127.0.0.1', 'localhost', '[::1]'].includes(uri.hostname)
       || uri.port !== '27018' || uri.searchParams.get('replicaSet') !== 'marketingDevRs') {
     throw Error('MONGODB_URI_NO_AUTORIZADA');
   }
+  if (env.PORT && env.PORT !== '3000') throw Error('PUERTO_APP_NO_AUTORIZADO');
   return env;
 };
 
@@ -39,15 +41,47 @@ const prepararYVerificar = async ({ root = path.resolve(__dirname, '..'), baseEn
 };
 
 const iniciar = async ({ root = path.resolve(__dirname, '..'), baseEnv = process.env, spawnChild = spawn, soloVerificar = false } = {}) => {
-  const env = await prepararYVerificar({ root, baseEnv });
-  if (soloVerificar) return { verificado: true };
-  const child = spawnChild(process.execPath, [require.resolve('nodemon/bin/nodemon.js'), 'server.js'], {
-    cwd: root, env, stdio: 'inherit', shell: false
-  });
-  child.once('error', () => { console.error('DEV_LOCAL_NO_SE_PUDO_INICIAR'); process.exitCode = 1; });
-  child.once('exit', (code, signal) => { process.exitCode = code ?? (signal ? 1 : 0); });
-  for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => child.kill(signal));
-  return child;
+  if (soloVerificar) { await prepararYVerificar({ root, baseEnv }); return { verificado: true }; }
+  const env = crearEntornoLocal(baseEnv, root);
+  if (!env.SESSION_SECRET) throw Error('SESSION_SECRET_REQUERIDO');
+  for (const [key, value] of Object.entries(env)) process.env[key] = value;
+  const coord = require('./coordinarDevLocal');
+  const liberar = await coord.bloquear(root);
+  try {
+    console.log('CONFIGURACION_LOCAL: OK');
+    await coord.asegurarMongo({ comun: require('./mongoDevRsComun'), arrancar: async () => {
+      console.log('MONGODB_DEV: detenido; verificando datos existentes. Windows puede solicitar UAC para leer la identidad protegida de 27017.');
+      await coord.arrancarMongo(env);
+    } });
+    console.log('MONGODB_DEV: IDENTIDAD_VALIDADA; marketingDevRs PRIMARY en 27018');
+    const consultar = () => require('../services/estadoDevLocal').consultar(env);
+    const actual = await coord.estadoWeb({ consultar });
+    if (actual) {
+      console.log(`PLURIONE: REUTILIZADA; PID ${actual.pid}; HTTP verificado; http://localhost:3000`);
+      await diagnosticarGemini();
+      return { reutilizado: true, pid: actual.pid };
+    }
+    const child = spawnChild(process.execPath, [path.join(__dirname, 'supervisarDevLocal.js')], {
+      cwd: root, env, stdio: ['inherit', 'inherit', 'inherit', 'ipc'], shell: false
+    });
+    child.once('error', () => { console.error('DEV_LOCAL_NO_SE_PUDO_INICIAR'); process.exitCode = 1; });
+    child.once('exit', (code, signal) => { process.exitCode = code ?? (signal ? 1 : 0); });
+    for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => {
+      require('../services/estadoDevLocal').solicitarParada(env).catch(() => {
+        if (child.connected) child.send({ tipo: 'PLURIONE_DEV_CANCELAR' });
+      });
+    });
+    try { await coord.esperarWeb({ consultar, vivo: () => child.exitCode === null && !child.killed }); }
+    catch (error) { if (child.connected) child.send({ tipo: 'PLURIONE_DEV_CANCELAR' }); throw error; }
+    console.log('PLURIONE: HTTP_VERIFICADO; http://localhost:3000');
+    await diagnosticarGemini();
+    return child;
+  } finally { await liberar(); }
+};
+
+const diagnosticarGemini = async () => {
+  const resultado = await require('../services/ia/estadoGemini').comprobar();
+  console.log(`GEMINI: ${resultado.codigo}; ${resultado.mensaje}`);
 };
 
 if (require.main === module) {
@@ -58,7 +92,7 @@ if (require.main === module) {
     if (result?.verificado) console.log('MONGODB_DEV: IDENTIDAD_VALIDADA; REPLICA_SET: marketingDevRs; ESTADO: PRIMARY; PUERTO: 27018');
   }).catch(error => {
     const allowed = ['CONFIGURACION_LOCAL_NO_DISPONIBLE', 'CONFIGURACION_LOCAL_INCOMPLETA', 'MONGODB_URI_INVALIDA', 'MONGODB_URI_NO_AUTORIZADA'];
-    console.error(allowed.includes(error.message) || error.message.startsWith('MONGODB_DEV_NO_LISTO:') ? error.message : 'DEV_LOCAL_NO_SE_PUDO_INICIAR');
+    console.error(allowed.includes(error.message) || /^(MONGODB_|PUERTO_|PLURIONE_|DEV_|SESSION_SECRET_)/.test(error.message) ? error.message : 'DEV_LOCAL_NO_SE_PUDO_INICIAR');
     process.exitCode = 1;
   });
 }

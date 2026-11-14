@@ -14,7 +14,8 @@ const iniciarServidor = async () => {
     const app = require('./app');
     await conectarDatabase();
     await require('./services/ia/arranqueIA').preparar(app);
-    await require('./services/autoservicioEmpresarialService').inicializar(require('mongoose').connection);
+    const autoservicio = require('./services/autoservicioEmpresarialService');
+    await (process.env.NODE_ENV === 'development' ? autoservicio.preparar : autoservicio.inicializar)(require('mongoose').connection);
     // Validar el origen/credenciales sin conectar SMTP ni despachar la cola.
     require('./services/smtpTransaccionalService').crearCorreo();
     await require('./services/pilotoManualGmailService').prepararArranque({ app, conexion: require('mongoose').connection });
@@ -22,7 +23,11 @@ const iniciarServidor = async () => {
     const trabajador = await require('./services/trabajadorCampanasService').prepararArranque({
       app, conexion: require('mongoose').connection,
       informar: codigo => console.error('Trabajador Gmail:', /^[A-Z_]+$/.test(codigo) ? codigo : 'ERROR') });
-    const servidor = app.listen(PORT, () => {
+    const servidor = require('node:http').createServer(require('./services/estadoDevLocal').middleware(app, app, process.env, async () => {
+      await detener();
+      if (process.send) process.send({ tipo: 'PLURIONE_DEV_DETENIDO' }, () => process.exit(0));
+      else process.exit(0);
+    })).listen(PORT, () => {
       console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
       console.log('IA_WEB:', JSON.stringify(app.locals.iaArranque));
     });

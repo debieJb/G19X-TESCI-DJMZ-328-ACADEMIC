@@ -21,6 +21,8 @@ for (const rol of ['superadmin', 'admin_empresa', 'operador']) {
     t.mock.method(Campana.collection, 'find', () => ({ toArray: async () => campanas }));
     t.mock.method(Campana.collection, 'findOne', async filtro => campanas.find(doc => doc._id.equals(filtro._id)));
     t.mock.method(Contacto.collection, 'find', () => ({ toArray: async () => [contacto] }));
+    t.mock.method(Contacto.collection, 'aggregate', () => ({ toArray: async () => [{ ...contacto, puntos: 0 }] }));
+    t.mock.method(require('../models/EventoMarketing').collection, 'find', () => ({ toArray: async () => [] }));
     t.mock.method(Contacto.collection, 'findOne', async () => contacto);
     t.mock.method(Empresa.collection, 'find', () => ({ toArray: async () => [empresa] }));
     t.mock.method(Empresa.collection, 'findOne', async () => empresa);

@@ -15,7 +15,8 @@ function executable(name) {
   const keys = { mongod: 'PLURIONE_MONGOD_PATH', mongosh: 'PLURIONE_MONGOSH_PATH' };
   if (!Object.hasOwn(keys, name)) throw Error('EJECUTABLE_NO_AUTORIZADO');
   const override = process.env[keys[name]];
-  const candidate = override ? configured(keys[name], '') : execFileSync(
+  const instalado = process.platform === 'win32' && name === 'mongod' ? 'C:\\Program Files\\MongoDB\\Server\\8.2\\bin\\mongod.exe' : null;
+  const candidate = override ? configured(keys[name], '') : instalado && fs.existsSync(instalado) ? instalado : execFileSync(
     process.platform === 'win32' ? 'where.exe' : 'which', [name], { encoding: 'utf8' }
   ).trim().split(/\r?\n/)[0];
   if (!candidate || !path.isAbsolute(candidate) || !fs.statSync(candidate).isFile()) throw Error('EJECUTABLE_NO_ENCONTRADO');

@@ -25,7 +25,7 @@ const propuestaValida = async (req, res, ticket) => {
 };
 const presentar = (req, res, propuesta, mensaje = '', status = 200) => res.status(status).render('empresa/resultadoIA', {
   titulo: 'Revisar propuesta de IA', anio: new Date().getFullYear(), resultado: propuesta.resultado,
-  datos: propuesta.datos, tieneImagen: !!propuesta.imagen, ticket: propuesta.ticket, mensaje, disponible: service.disponible()
+  datos: propuesta.datos, cambios: propuesta.cambios || '', tieneImagen: !!propuesta.imagen, ticket: propuesta.ticket, mensaje, disponible: service.disponible()
 });
 const guardarPropuesta = (req, res, resultado, datos, imagenLocal) => {
   const propuesta = { ticket: randomBytes(32).toString('base64url'), empresa: resultado.empresa,
@@ -47,9 +47,9 @@ const generar = async (req, res) => {
   } catch (error) { const seguro = errorSeguro(error); render(res, datosFormulario, seguro.message, seguro.status); }
 };
 const regenerar = async (req, res) => {
-  let previa;
+  let previa, entrada;
   try {
-    const entrada = campos(req.body, camposResultado);
+    entrada = campos(req.body, camposResultado);
     previa = await propuestaValida(req, res, entrada.ticket);
     const nombreCampana = texto(entrada.nombre === undefined ? previa.datos.nombreCampana : entrada.nombre, 100);
     if (/[\r\n]/.test(nombreCampana)) throw new ErrorIA('ENTRADA');
@@ -70,7 +70,17 @@ const regenerar = async (req, res) => {
     presentar(req, res, guardarPropuesta(req, res, resultado, { ...contexto, nombreCampana }, previa.imagen));
   } catch (error) {
     const seguro = errorSeguro(error);
-    if (previa) return presentar(req, res, previa, seguro.message, seguro.status);
+    if (previa) {
+      // Conservar la edicion enviada para que un fallo remoto no borre trabajo local.
+      // Solo renderizar texto acotado y escapado; no aprobarlo ni persistirlo como campana.
+      const resultado = { ...previa.resultado };
+      for (const [campo, max] of [['nombre', 100], ['objetivo', 500], ['asunto', 220], ['mensaje', 5000], ['llamadaAccion', 300]]) {
+        if (typeof entrada?.[campo] === 'string' && entrada[campo].length <= max) resultado[campo] = entrada[campo];
+      }
+      if (typeof entrada?.segmentacion === 'string' && entrada.segmentacion.length <= 1500) resultado.segmentacion = entrada.segmentacion.split(/\r?\n/);
+      const cambios = typeof entrada?.cambios === 'string' && entrada.cambios.length <= 1500 ? entrada.cambios : '';
+      return presentar(req, res, { ...previa, resultado, cambios }, seguro.message, seguro.status);
+    }
     render(res, {}, seguro.message, seguro.status);
   }
 };

@@ -1,11 +1,34 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es"><head><%- include('../partials/_headInterno') %></head>
-<body class=" pagina-interna"><%- include('../partials/_encabezado', { seccion: 'contactos' }) %><main id="contenido" tabindex="-1">
-<div class="cabecera-pagina"><div><h1>Contactos</h1><p><%= contactos.length %> contactos en tu panel</p></div><a class="boton" href="/contactos/nuevo">Nuevo contacto</a></div>
-<% if (!contactos.length) { %><section class="vacio"><h2>Aún no hay contactos</h2><p>Crea el primer contacto de tu empresa.</p></section><% } else { %>
-<div class="tabla-contenedor" role="region" aria-label="Listado de contactos" tabindex="0"><table><caption>Contactos, del más reciente al más antiguo</caption><thead><tr><th scope="col">Nombre</th><th scope="col">Email</th><th scope="col">Teléfono</th><th scope="col">Etiquetas</th><th scope="col">Estado</th><% if (usuarioActual.rol === 'superadmin') { %><th scope="col">Empresa</th><% } %><th scope="col">Acciones</th></tr></thead><tbody>
-<% for (const contacto of contactos) { %><tr><td><%= contacto.nombre %></td><td><%= contacto.email || 'Sin definir' %></td><td><%= contacto.telefono || 'Sin definir' %></td><td><%= contacto.etiquetas.join(', ') || 'Sin etiquetas' %></td><td><%= contacto.activo ? 'Activo' : 'Inactivo' %></td><% if (usuarioActual.rol === 'superadmin') { %><td><%= contacto.empresa %></td><% } %><td><nav class="tabla-acciones" aria-label="Acciones de <%= contacto.nombre %>"><a class="boton secundario" href="/contactos/<%= contacto._id %>">Detalle</a><a class="boton editar" href="/contactos/<%= contacto._id %>/editar">Editar</a></nav></td></tr><% } %>
-</tbody></table></div>
-<section class="tarjetas" aria-label="Contactos"><% for (const contacto of contactos) { %><article class="tarjeta"><h2><%= contacto.nombre %></h2><p><%= contacto.email || contacto.telefono %></p><p><%= contacto.activo ? 'Activo' : 'Inactivo' %></p><nav class="acciones"><a class="boton secundario" href="/contactos/<%= contacto._id %>">Detalle</a><a class="boton editar" href="/contactos/<%= contacto._id %>/editar">Editar</a></nav></article><% } %></section>
+<body class="pagina-interna"><%- include('../partials/_encabezado', { seccion: 'contactos' }) %>
+<main id="contenido" tabindex="-1">
+<div class="cabecera-pagina"><div><h1>Contactos</h1><p><%= contactos.length %> contactos en esta página</p></div><a class="boton" href="/contactos/nuevo">Nuevo contacto</a></div>
+<form method="get" action="/contactos" class="formulario" aria-label="Segmentar prospectos">
+  <label>Prioridad<select name="prioridad"><option value="">Todas</option><% for (const n of ['alto','medio','bajo']) { %><option value="<%= n %>" <%= filtros.prioridad === n ? 'selected' : '' %>><%= {alto:'Alta',medio:'Media',bajo:'Baja'}[n] %></option><% } %></select></label>
+  <label>Puntuación mínima<input type="number" min="0" max="100" name="min" value="<%= filtros.min %>"></label>
+  <label>Puntuación máxima<input type="number" min="0" max="100" name="max" value="<%= filtros.max %>"></label>
+  <label>Etiqueta exacta<input name="etiqueta" maxlength="100" value="<%= filtros.etiqueta %>"></label>
+  <label>Estado<select name="activo"><option value="">Todos</option><option value="true" <%= filtros.activo === 'true' ? 'selected' : '' %>>Activo</option><option value="false" <%= filtros.activo === 'false' ? 'selected' : '' %>>Inactivo</option></select></label>
+  <div class="acciones"><button class="boton" type="submit">Filtrar</button><a href="/contactos">Limpiar filtros</a></div>
+</form>
+<p>Reglas verificables de los últimos <%= ventanaDias %> días. La puntuación no acredita consentimiento de marketing.</p>
+<% if (!contactos.length) { %>
+<section class="vacio"><h2>Aún no hay contactos en esta selección</h2><p>Revisa los filtros o crea un contacto de tu empresa.</p></section>
+<% } else { %>
+<div class="tabla-contenedor" role="region" aria-label="Listado de contactos" tabindex="0">
+<table><caption>Contactos, del más reciente al más antiguo</caption>
+<thead><tr><th scope="col">Nombre</th><th scope="col">Email</th><th scope="col">Teléfono</th><th scope="col">Etiquetas</th><th scope="col">Estado</th><th scope="col">Puntuación</th><th scope="col">Prioridad</th><% if (usuarioActual.rol === 'superadmin') { %><th scope="col">Empresa</th><% } %><th scope="col">Acciones</th></tr></thead>
+<tbody><% for (const contacto of contactos) { %>
+<tr><td><%= contacto.nombre %></td><td><%= contacto.email || 'Sin definir' %></td><td><%= contacto.telefono || 'Sin definir' %></td><td><%= (contacto.etiquetas || []).join(', ') || 'Sin etiquetas' %></td><td><%= contacto.activo ? 'Activo' : 'Inactivo' %></td><td><%= contacto.puntos %>/100</td><td><span class="insignia prioridad-<%= contacto.nivel %>"><%= {alto:'Alta',medio:'Media',bajo:'Baja'}[contacto.nivel] %></span></td><% if (usuarioActual.rol === 'superadmin') { %><td><%= contacto.empresa %></td><% } %>
+<td><nav class="tabla-acciones" aria-label="Acciones de <%= contacto.nombre %>"><a class="boton secundario" href="/contactos/<%= contacto._id %>">Detalle</a><a class="boton editar" href="/contactos/<%= contacto._id %>/editar">Editar</a></nav></td></tr>
+<% } %></tbody></table></div>
+<section class="tarjetas" aria-label="Contactos"><% for (const contacto of contactos) { %>
+<article class="tarjeta"><h2><%= contacto.nombre %></h2><p><%= contacto.email || contacto.telefono %></p><p><%= contacto.activo ? 'Activo' : 'Inactivo' %></p><p>Puntuación: <%= contacto.puntos %>/100 · Prioridad <span class="insignia prioridad-<%= contacto.nivel %>"><%= {alto:'alta',medio:'media',bajo:'baja'}[contacto.nivel] %></span></p><p>Etiquetas: <%= (contacto.etiquetas || []).join(', ') || 'Sin etiquetas' %></p><nav class="acciones"><a class="boton secundario" href="/contactos/<%= contacto._id %>">Detalle</a><a class="boton editar" href="/contactos/<%= contacto._id %>/editar">Editar</a></nav></article>
+<% } %></section>
 <% } %>
+<nav class="acciones" aria-label="Paginación">
+<% if (pagina > 1) { %><a href="/contactos?<%= new URLSearchParams({...filtros, pagina: pagina - 1}).toString() %>">Anterior</a><% } %>
+<span>Página <%= pagina %></span>
+<% if (hayMas) { %><a href="/contactos?<%= new URLSearchParams({...filtros, pagina: pagina + 1}).toString() %>">Siguiente</a><% } %>
+</nav>
 </main><%- include('../partials/_piePublico') %></body></html>

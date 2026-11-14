@@ -11,8 +11,11 @@ const mensajes = {
   PROPUESTA: [409, 'La propuesta caducó o pertenece a otra sesión. Genera una nueva propuesta.']
 };
 module.exports = class ErrorIA extends Error {
-  constructor(codigo = 'PROVEEDOR') {
+  constructor(codigo = 'PROVEEDOR', detalle) {
     const [status, mensaje] = mensajes[codigo] || mensajes.PROVEEDOR;
-    super(mensaje); this.codigo = codigo; this.status = status;
+    const mensajesDetalle = require('./estadoGemini').mensajes;
+    super(Object.hasOwn(mensajesDetalle, detalle) ? mensajesDetalle[detalle] + ' Los datos del formulario se conservan; no se guardo ninguna campana.' : mensaje);
+    this.codigo = codigo; this.status = status;
+    if (Object.hasOwn(mensajesDetalle, detalle)) this.detalle = detalle;
   }
 };

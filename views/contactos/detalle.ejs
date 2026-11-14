@@ -1,9 +1,39 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es"><head><%- include('../partials/_headInterno') %></head>
-<body class=" pagina-interna"><%- include('../partials/_encabezado', { seccion: 'contactos' }) %><main id="contenido" tabindex="-1">
-<h1><%= contacto.nombre %></h1><section class="panel"><dl><dt>Email</dt><dd><%= contacto.email || 'Sin definir' %></dd><dt>Teléfono</dt><dd><%= contacto.telefono || 'Sin definir' %></dd><dt>Etiquetas</dt><dd><%= contacto.etiquetas.join(', ') || 'Sin etiquetas' %></dd><dt>Estado</dt><dd><%= contacto.activo ? 'Activo' : 'Inactivo' %></dd><dt>Canales habilitados</dt><dd><%= contacto.canales.email ? 'Correo electrónico' : 'Ninguno' %></dd><% if (usuarioActual.rol === 'superadmin') { %><dt>Empresa</dt><dd><%= contacto.empresa %></dd><% } %></dl></section>
+<body class="pagina-interna"><%- include('../partials/_encabezado', { seccion: 'contactos' }) %>
+<% const nombresEventos = { clic_verificado: 'Clic verificado', formulario_enviado: 'Formulario enviado', solicitud_contacto: 'Solicitud de contacto', conversion_confirmada: 'Conversión confirmada' }; %>
+<main id="contenido" tabindex="-1">
+<h1><%= contacto.nombre %></h1>
+<section class="panel"><dl><dt>Email</dt><dd><%= contacto.email || 'Sin definir' %></dd><dt>Teléfono</dt><dd><%= contacto.telefono || 'Sin definir' %></dd><dt>Etiquetas</dt><dd><%= (contacto.etiquetas || []).join(', ') || 'Sin etiquetas' %></dd><dt>Estado</dt><dd><%= contacto.activo ? 'Activo' : 'Inactivo' %></dd><dt>Canales habilitados</dt><dd><%= contacto.canales?.email ? 'Correo electrónico' : 'Ninguno' %></dd><% if (usuarioActual.rol === 'superadmin') { %><dt>Empresa</dt><dd><%= contacto.empresa %></dd><% } %></dl></section>
 <div class="acciones"><a class="boton editar" href="/contactos/<%= contacto._id %>/editar">Editar</a><a class="boton secundario" href="/contactos">Volver al listado</a></div>
 <section class="panel"><h2>Consentimiento de marketing</h2><p>Estado: <%= contacto.consentimientoMarketing?.estado || 'sin registro' %></p>
 <% for (const registro of contacto.historialConsentimiento || []) { %><p><%= registro.estado %> | <%= registro.fecha.toISOString() %> | <%= registro.fuente %> | Registrado por <%= registro.registradoPor %> el <%= registro.registradoEn.toISOString() %></p><% } %></section>
-<section class="seccion-admin"><h2>Eliminar contacto</h2><p>Esta acción elimina el contacto permanentemente, incluido su historial de consentimiento.</p><form action="/contactos/<%= contacto._id %>/eliminar" method="post"><%- include('../partials/_csrfSuperadmin') %><%- include('../partials/_csrfContactos') %><button class="boton eliminar" type="submit">Eliminar contacto</button></form></section>
+<section class="panel" aria-label="Lead Scoring"><h2>Análisis del prospecto</h2>
+<p>Puntuación: <strong><%= analisis.puntos %>/100</strong> · Prioridad <span class="insignia prioridad-<%= analisis.nivel %>"><%= {alto:'alta',medio:'media',bajo:'baja'}[analisis.nivel] %></span></p>
+<meter min="0" max="100" value="<%= analisis.puntos %>" aria-label="Puntuación del prospecto"><%= analisis.puntos %>/100</meter>
+<p>Reglas iniciales, no predicción entrenada. Se suman eventos verificados de los últimos <%= analisis.ventanaDias %> días, con máximo de 100.</p>
+<p>Última interacción: <%= analisis.ultimaInteraccion ? new Date(analisis.ultimaInteraccion).toISOString() : 'Sin interacciones verificadas' %></p>
+<ul><% for (const fila of analisis.desglose) { %><li><%= nombresEventos[fila.tipo] %>: <%= fila.cantidad %> × <%= fila.puntos %> = <%= fila.cantidad * fila.puntos %> puntos antes del límite</li><% } %></ul>
+<h3>Historial de interacciones verificadas</h3>
+<p>Los eventos fuera de la ventana se conservan como historial y no suman puntos.</p>
+<% if (!analisis.eventos.length) { %><p>Sin historial verificado.</p><% } %>
+<% for (const evento of analisis.eventos) { %>
+<article class="tarjeta"><h4><%= nombresEventos[evento.tipo] %></h4><p><%= new Date(evento.ocurridoEn).toISOString() %> · <%= {registro_administrativo:'Verificación administrativa manual',integracion_verificada:'Integración verificada',formulario_propio:'Formulario propio'}[evento.origen] %></p><p>Evidencia: <%= evento.evidencia %></p><p>Referencia: <%= evento.referenciaExterna %> · Actor: <%= evento.registradoPor %></p><p>Registrado: <%= evento.createdAt ? new Date(evento.createdAt).toISOString() : 'Sin fecha de registro' %></p></article>
+<% } %>
+</section>
+<% if (['superadmin','admin_empresa'].includes(usuarioActual.rol)) { %>
+<section class="panel"><h2>Registrar interacción con evidencia</h2>
+<p>Verifica personalmente la evidencia antes de confirmar. Reutiliza la misma referencia al reintentar el mismo evento. Una aceptación de Gmail no demuestra interacción ni conversión.</p>
+<form method="post" action="/contactos/<%= contacto._id %>/eventos" class="formulario">
+<%- include('../partials/_csrfSuperadmin') %><%- include('../partials/_csrfContactos') %>
+<label>Tipo<select name="tipo" required><% for (const [tipo, puntos] of Object.entries(tiposEvento)) { %><option value="<%= tipo %>"><%= nombresEventos[tipo] %> (<%= puntos %> puntos)</option><% } %></select></label>
+<label>Fecha y hora ISO con zona horaria<input name="ocurridoEn" placeholder="2026-11-13T10:00:00-06:00" aria-describedby="ayuda-fecha" required></label>
+<p id="ayuda-fecha">Usa la fecha real del evento: año-mes-día, T, hora:minuto:segundo y zona horaria, por ejemplo -06:00.</p>
+<label>Referencia única de la evidencia en la empresa<input name="referenciaExterna" maxlength="180" required></label>
+<label>Evidencia comprobada (folio, documento o referencia verificable)<textarea name="evidencia" minlength="8" maxlength="500" required></textarea></label>
+<label class="campo-amplio"><input type="checkbox" name="confirmar" value="true" required>He comprobado la evidencia y autorizo el registro.</label>
+<button type="submit" class="boton">Registrar interacción verificada</button>
+</form></section>
+<% } else { %><p>Un administrador debe verificar y registrar las interacciones sustentadas con evidencia.</p><% } %>
+<section class="seccion-admin"><h2>Eliminar contacto</h2><p>Esta acción elimina el contacto permanentemente, incluido su historial de consentimiento. El historial de eventos de comportamiento se conserva para auditoría.</p><form action="/contactos/<%= contacto._id %>/eliminar" method="post"><%- include('../partials/_csrfSuperadmin') %><%- include('../partials/_csrfContactos') %><button class="boton eliminar" type="submit">Eliminar contacto</button></form></section>
 </main><%- include('../partials/_piePublico') %></body></html>
