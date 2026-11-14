@@ -27,7 +27,7 @@ test('launcher piloto: conserva validaciÃ³n del destino y el comportamiento genÃ
   const env = crearEntornoPiloto({ MONGODB_URI: 'mongodb://localhost:27017/marketing_automation' });
   assert.throws(() => piloto.configuracion(env), /CUOTAS_PILOTO_NO_AUTORIZADAS/);
   const scripts = require('../package.json').scripts;
-  assert.equal(scripts.dev, 'nodemon server.js');
+  assert.equal(scripts.dev, 'node scripts/iniciarDevLocal.js');
   assert.equal(scripts['dev:piloto'], 'node scripts/iniciarDevPiloto.js');
   assert.equal(limites.seleccionarAlmacen({ NODE_ENV: 'development' }), require('../services/ia/almacenCuotasDev'));
 });

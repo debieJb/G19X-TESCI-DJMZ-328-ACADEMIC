@@ -50,6 +50,7 @@ const crearFixture = async t => {
       Object.assign(fila, update.$set); return { matchedCount: 1 };
     });
   }
+  t.mock.method(Contacto.collection, 'aggregate', pipeline => ({ toArray: async () => contactos.filter(c => coincide(c, pipeline[0].$match)).map(c => ({ ...c, puntos: 0 })) }));
   const app = require('../../appFactory').crearApp({ secret: 'secreto-sintetico-sesiones-navegador', store, entorno: 'test' });
   const sesiones = () => new Promise((resolve, reject) => store.all((e, datos) => e ? reject(e) : resolve(datos)));
   const expirar = async usuario => {

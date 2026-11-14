@@ -9,5 +9,6 @@ router.post('/', controller.crearContacto);
 router.get('/:id/editar', controller.mostrarFormularioEdicion);
 router.post('/:id/editar', controller.actualizarContacto);
 router.post('/:id/eliminar', controller.eliminarContacto);
+router.post('/:id/eventos', controller.registrarInteraccion);
 router.get('/:id', controller.mostrarDetalle);
 module.exports = router;

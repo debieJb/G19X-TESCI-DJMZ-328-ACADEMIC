@@ -49,8 +49,8 @@ const crear = (config = configuracion()) => ({
       etapa = 'HTTP';
       if (!res.ok) {
         codigo = [400, 401, 403, 404, 408, 429, 500, 502, 503, 504].includes(res.status) ? `HTTP_${res.status}` : 'HTTP_OTRO';
-        if (res.body) await res.body.cancel().catch(() => {});
-        throw new ErrorIA(res.status === 429 ? 'LIMITE' : 'PROVEEDOR');
+        const detalle = await require('./estadoGemini').falloHttp(res);
+        throw new ErrorIA(res.status === 429 ? 'LIMITE' : 'PROVEEDOR', detalle);
       }
       etapa = 'LEER_RESPUESTA';
       const data = await leerLimitado(res);
@@ -63,7 +63,7 @@ const crear = (config = configuracion()) => ({
       diagnostico(etapa, codigo || (abort.signal.aborted || error?.name === 'AbortError' || error?.name === 'TimeoutError' ? 'TIMEOUT'
         : error instanceof ErrorIA ? error.codigo : error?.cause?.code || 'RED'));
       if (error instanceof ErrorIA) throw error;
-      throw new ErrorIA('PROVEEDOR');
+      throw new ErrorIA('PROVEEDOR', require('./estadoGemini').detalleRed(error));
     }
     finally { clearTimeout(timer); }
   }
@@ -76,15 +76,15 @@ const verificarModelo = async (config = configuracion()) => {
     });
     if (!res.ok) {
       codigo = [400, 401, 403, 404, 408, 429, 500, 502, 503, 504].includes(res.status) ? `HTTP_${res.status}` : 'HTTP_OTRO';
-      if (res.body) await res.body.cancel().catch(() => {});
-      throw new ErrorIA(res.status === 429 ? 'LIMITE' : 'PROVEEDOR');
+      const detalle = await require('./estadoGemini').falloHttp(res);
+      throw new ErrorIA(res.status === 429 ? 'LIMITE' : 'PROVEEDOR', detalle);
     }
     const data = await leerLimitado(res);
-    if (data?.name !== `models/${config.modelo}` || !data.supportedGenerationMethods?.includes('generateContent')) throw new ErrorIA('RESPUESTA');
+    if (data?.name !== `models/${config.modelo}` || !data.supportedGenerationMethods?.includes('generateContent')) throw new ErrorIA('RESPUESTA', 'MODELO_NO_DISPONIBLE');
     return { modelo: config.modelo, http: 200, admiteGeneracion: true };
   } catch (error) {
     diagnostico('MODELO', codigo || (error?.name === 'TimeoutError' ? 'TIMEOUT' : error instanceof ErrorIA ? error.codigo : error?.cause?.code || 'RED'));
-    throw error instanceof ErrorIA ? error : new ErrorIA('PROVEEDOR');
+    throw error instanceof ErrorIA ? error : new ErrorIA('PROVEEDOR', require('./estadoGemini').detalleRed(error));
   }
 };
-module.exports = { configuracion, crear, verificarModelo };
+module.exports = { configuracion, crear, verificarModelo, leerLimitado };

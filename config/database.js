@@ -5,7 +5,9 @@ const conectarDatabase = async () => {
     throw new Error('La variable MONGODB_URI es obligatoria.');
   }
 
-  await mongoose.connect(process.env.MONGODB_URI);
+  // El entorno existente se valida; el arranque dev no aprovisiona indices ni colecciones.
+  await mongoose.connect(process.env.MONGODB_URI, process.env.NODE_ENV === 'development'
+    ? { autoIndex: false, autoCreate: false } : {});
 };
 
 module.exports = conectarDatabase;

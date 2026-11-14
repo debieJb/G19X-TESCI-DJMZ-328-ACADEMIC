@@ -249,6 +249,22 @@ test('IA flujo: cuota o proveedor deshabilitado en regeneración conservan la pr
   assert.match(deshabilitada.text, /deshabilitada/); assert.equal(generar.mock.callCount(), cantidad);
 });
 
+test('IA: error remoto conserva entrada inicial y distingue rechazo de acceso sin guardar campanas', async () => {
+  generar.mock.mockImplementation(async () => { throw new ErrorIA('PROVEEDOR', 'ACCESO_DENEGADO'); });
+  const r = await cliente.post('/empresa/ia/generar').send({ _csrf: await token(), ...datos(), producto: 'Texto de trabajo local' }).expect(503);
+  assert.match(r.text, /HTTP 403/); assert.match(r.text, /Texto de trabajo local/);
+  assert.equal(guardar.mock.callCount(), 0);
+});
+
+test('IA: fallo remoto conserva las ediciones del borrador y el ticket sin crear otro', async () => {
+  const p = await crearPropuesta();
+  generar.mock.mockImplementation(async () => { throw new ErrorIA('PROVEEDOR', 'TIMEOUT'); });
+  const r = await cliente.post('/empresa/ia/regenerar').send({ ...borrador(p), asunto: 'Edicion que debe conservarse', mensaje: '<texto local escapado>' }).expect(503);
+  assert.match(r.text, /Edicion que debe conservarse/); assert.match(r.text, /&lt;texto local escapado&gt;/);
+  assert.ok(r.text.includes(p.ticket)); assert.match(r.text, /tiempo limite/);
+  assert.equal(guardar.mock.callCount(), 0);
+});
+
 test('IA flujo: aprobación conserva selecciones e imagen como borrador sin destinatarios ni envíos', async () => {
   const imagen = require('./soporte/imagenPNG').uri();
   const p = await crearPropuesta({ nombreCampana: 'Campaña elegida', imagen });

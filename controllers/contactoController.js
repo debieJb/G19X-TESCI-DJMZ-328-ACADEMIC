@@ -1,4 +1,5 @@
 const Contacto = require('../models/Contacto');
+const scoring = require('../services/leadScoringService');
 const Empresa = require('../models/Empresa');
 const { filtroEmpresa } = require('../services/accesoCampanasService');
 const { buscarContacto } = require('../services/accesoContactosService');
@@ -14,7 +15,7 @@ const cargarEmpresas = async res => {
 };
 const responderError = (res, next, error) => {
   if (error.name === 'DocumentNotFoundError') error = Object.assign(new Error('El contacto no existe o fue eliminado.'), { status: 404 });
-  if ([400, 403, 404].includes(error.status)) return res.status(error.status).render('error', { titulo: `Error ${error.status}`, mensaje: error.message });
+  if ([400, 403, 404, 409].includes(error.status)) return res.status(error.status).render('error', { titulo: `Error ${error.status}`, mensaje: error.message });
   if (conexion(error)) error.status = 503;
   return next(error);
 };
@@ -49,8 +50,8 @@ const validar = (entrada = {}) => {
 };
 const listarContactos = async (req, res, next) => {
   try {
-    const contactos = await Contacto.find(filtroEmpresa(res.locals.usuarioActual)).sort({ createdAt: -1, _id: -1 }).lean();
-    res.render('contactos/index', { titulo: 'Contactos', contactos });
+    const datos = await scoring.listar(res.locals.usuarioActual, req.query);
+    res.render('contactos/index', { titulo: 'Contactos', ...datos });
   } catch (error) { responderError(res, next, error); }
 };
 const mostrarFormularioCreacion = async (req, res, next) => {
@@ -58,7 +59,11 @@ const mostrarFormularioCreacion = async (req, res, next) => {
   catch (error) { responderError(res, next, error); }
 };
 const mostrarDetalle = async (req, res, next) => {
-  try { res.render('contactos/detalle', { titulo: 'Detalle de contacto', contacto: await buscarContacto(req.params.id, res.locals.usuarioActual) }); }
+  try {
+    const contacto = await buscarContacto(req.params.id, res.locals.usuarioActual);
+    const analisis = await scoring.historial(contacto);
+    res.render('contactos/detalle', { titulo: 'Detalle de contacto', contacto, analisis, tiposEvento: scoring.PUNTOS });
+  }
   catch (error) { responderError(res, next, error); }
 };
 const mostrarFormularioEdicion = async (req, res, next) => {
@@ -118,6 +123,13 @@ const guardar = editar => async (req, res, next) => {
     return responderError(res, next, error);
   }
 };
+const registrarInteraccion = async (req, res, next) => {
+  try {
+    const resultado = await scoring.registrarEvento({ usuario: res.locals.usuarioActual, contactoId: req.params.id, entrada: req.body });
+    req.session.avisoOperacion = resultado.duplicado ? 'La referencia ya estaba registrada; no se duplicaron puntos.' : 'Interacci\u00f3n registrada y puntuaci\u00f3n recalculada.';
+    res.redirect(303, `/contactos/${req.params.id}`);
+  } catch (error) { responderError(res, next, error); }
+};
 const eliminarContacto = async (req, res, next) => {
   try {
     const contacto = await buscarContacto(req.params.id, res.locals.usuarioActual, 'contactos.eliminar');
@@ -127,4 +139,4 @@ const eliminarContacto = async (req, res, next) => {
   } catch (error) { responderError(res, next, error); }
 };
 module.exports = { listarContactos, mostrarFormularioCreacion, mostrarDetalle, mostrarFormularioEdicion,
-  crearContacto: guardar(false), actualizarContacto: guardar(true), eliminarContacto };
+  registrarInteraccion, crearContacto: guardar(false), actualizarContacto: guardar(true), eliminarContacto };

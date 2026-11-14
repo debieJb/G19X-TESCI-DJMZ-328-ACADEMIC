@@ -145,3 +145,7 @@ body.pagina-interna { color-scheme:light; background:#f5f7fb; color:var(--texto)
 .seleccion-contactos .opcion-contacto { display: flex; align-items: flex-start; gap: .75rem; padding: .65rem 0; cursor: pointer; }
 .seleccion-contactos .opcion-contacto input { width: 1.2rem; height: 1.2rem; flex: 0 0 auto; margin-top: .2rem; }
 .seleccion-contactos .opcion-contacto span { min-width: 0; overflow-wrap: anywhere; }
+.pagina-interna .prioridad-alto { color:#1d694e; background:#e8f6ef; }
+.pagina-interna .prioridad-medio { color:#815013; background:#fff3df; }
+.pagina-interna .prioridad-bajo { color:#465670; background:#edf1f8; }
+.pagina-interna meter { width:min(100%,24rem); height:1.5rem; }

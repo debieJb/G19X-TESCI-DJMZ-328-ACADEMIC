@@ -126,7 +126,8 @@ npm pkg get scripts
 
 | Comando | Uso |
 |---|---|
-| `npm run dev` | Servidor de desarrollo mediante `nodemon server.js` |
+| `npm run dev` | Arranque integral: inicia o reutiliza MongoDB existente, espera PRIMARY e inicia o reutiliza PluriOne con verificación HTTP |
+| `npm run dev:stop` | Cierre autenticado de PluriOne y su supervisor; conserva MongoDB activo |
 | `npm run dev:piloto` | Desarrollo del MVP con cuotas `piloto_local`, restringidas a la empresa autorizada; requiere infraestructura existente |
 | `npm start` | Arranque mediante `node server.js` |
 | `npm test` | Suite habitual de `node:test` |
@@ -254,13 +255,17 @@ En la **corrección local realizada y cubierta por pruebas**, el registro inicia
 
 ### 1.8 Arrancar el servidor de desarrollo
 
-Con las dependencias instaladas, `.env` configurado y MongoDB accesible:
+En el equipo autorizado, con dependencias instaladas, `.env` configurado y los datos existentes de `marketingDevRs`:
 
 ```powershell
-npm run dev
+npm.cmd run dev
 ```
 
-Esto invoca `nodemon server.js`. Dejar la terminal abierta mientras se usa el sistema. Como alternativa de ejecución sin recarga automática:
+El lanzador inicia o reutiliza MongoDB en 27018, espera PRIMARY y verifica la identidad y la respuesta HTTP de PluriOne en 3000. Conserva la recarga con nodemon. Si Windows oculta la identidad del servicio original, solicita UAC exclusivamente para comprobarla y arrancar MongoDB; Express no se eleva. No se crean réplicas ni índices. Un proceso ajeno en 3000 se rechaza sin detenerlo.
+
+Dejar la primera terminal abierta. Para cerrar PluriOne desde otra terminal usar `npm.cmd run dev:stop`; para volver a arrancar, `npm.cmd run dev`. El segundo arranque reutiliza la instancia verificada. La consulta de metadatos de Gemini no genera contenido ni garantiza disponibilidad de cuota de generación. Ver [procedimiento, seguridad y evidencia](docs/arranque-local-un-comando.md).
+
+Como alternativa de ejecución sin coordinación automática de infraestructura:
 
 ```powershell
 npm start
@@ -490,3 +495,9 @@ Las rutas absolutas de `scripts/verificarServicioMongoOriginal.ps1` son referenc
 Las pruebas visuales explícitas de `tests/soporte/` admiten `PUBLIC_BROWSER_EXECUTABLE` para indicar el navegador instalado. Conservan como alternativa la ubicación habitual de Edge en Windows; no instalan ni ejecutan navegadores durante la validación de rutas.
 
 El PID del servicio MongoDB original puede cambiar después de reiniciar Windows. La [validación de identidad en cada arranque](docs/mongodb-identidad-arranque.md) distingue ese dato volátil de las referencias históricas: mantiene rutas, comandos y huellas autorizadas, exige coincidencia servicio/listener/Mongo y falla si no puede leer la identidad real del proceso. No actualiza referencias ni inicia o repara instancias por sí misma.
+
+## Lead Scoring — implementación del 13 de noviembre de 2026
+
+La rama `feat/lead-scoring-base` incorpora puntuación real en `/contactos`, filtros por prioridad y registro administrativo de interacciones con evidencia desde el detalle del contacto. Las reglas iniciales no son un modelo predictivo y no sustituyen el consentimiento de marketing.
+
+Consulta [arquitectura, permisos, endpoints, preparación de índices y pruebas de Lead Scoring](docs/lead-scoring.md). Esta implementación aún no se integra en `main`; las referencias anteriores describen cierres históricos.

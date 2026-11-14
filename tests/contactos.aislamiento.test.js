@@ -43,6 +43,10 @@ for (const rol of ['operador', 'admin_empresa']) {
     const extranjero = { _id: ajeno, empresa: B, nombre: 'PRIVADO', email: 'privado@example.test' };
     t.mock.method(Contacto.collection, 'findOne', async filtro => coincide(extranjero, filtro) ? extranjero : null);
     t.mock.method(Contacto.collection, 'find', filtro => ({ toArray: async () => coincide(extranjero, filtro) ? [extranjero] : [] }));
+    t.mock.method(Contacto.collection, 'aggregate', pipeline => {
+      assert.ok(pipeline[0].$match.empresa.equals(A));
+      return { toArray: async () => [] };
+    });
     const guardar = t.mock.method(Contacto.collection, 'updateOne', () => { throw new Error('No guardar'); });
     const borrar = t.mock.method(Contacto.collection, 'deleteOne', () => { throw new Error('No borrar'); });
     for (const ruta of [`/contactos/${ajeno}?empresa=${B}`, `/contactos/${ajeno}/editar?empresa=${B}`]) {

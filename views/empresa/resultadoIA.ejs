@@ -14,7 +14,7 @@
 <p>La llamada a la acción se añade al mensaje y las sugerencias se conservan como notas, sin seleccionar contactos. Me gusta guarda exclusivamente un borrador sin destinatarios preseleccionados. No activa envíos ni workflows.</p>
 <% if (datos.instrucciones !== undefined) { %>
 <details><summary>Instrucciones y texto intocable</summary><p><%= datos.instrucciones %></p><pre><%= datos.textoProtegido %></pre></details>
-<div class="campo campo-amplio"><label for="cambios">&#191;Qu&#233; quieres cambiar?</label><textarea id="cambios" name="cambios" rows="4" maxlength="1500"></textarea></div>
+<div class="campo campo-amplio"><label for="cambios">&#191;Qu&#233; quieres cambiar?</label><textarea id="cambios" name="cambios" rows="4" maxlength="1500"><%= typeof cambios === 'string' ? cambios : '' %></textarea></div>
 <p>Al pedir cambios o generar otra propuesta se env&#237;an a Gemini el texto editable y las instrucciones originales. Revisa y elimina datos personales o sensibles antes de confirmar. Cada solicitud consume cuota.</p>
 <label><input type="checkbox" name="confirmacionPrivacidad" value="CONFIRMO">Confirmo el env&#237;o del texto revisado a Gemini (obligatorio para revisar o regenerar).</label>
 <% } %>

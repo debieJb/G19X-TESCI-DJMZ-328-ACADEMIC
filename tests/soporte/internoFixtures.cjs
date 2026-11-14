@@ -1,7 +1,7 @@
 // Datos sinteticos de renderizado. No son rutas ni accesos del sistema operativo.
 const id = '507f1f77bcf86cd799439011';
 const empresa = { _id: id, nombre: 'Estudio Horizonte · Empresa de prueba', estado: 'activa', fechaRegistro: new Date(), automatizaciones: {}, totalUsuarios: 2, totalCampanas: 1, usuarios: [] };
-const contacto = { _id: id, nombre: 'Contacto de prueba', email: 'contacto@example.test', telefono: '', etiquetas: ['Clientes'], activo: true, canales: { email: true }, empresa: id, consentimientoMarketing: { estado: 'otorgado' }, historialConsentimiento: [] };
+const contacto = { puntos: 0, nivel: 'bajo', _id: id, nombre: 'Contacto de prueba', email: 'contacto@example.test', telefono: '', etiquetas: ['Clientes'], activo: true, canales: { email: true }, empresa: id, consentimientoMarketing: { estado: 'otorgado' }, historialConsentimiento: [] };
 const campana = { _id: id, nombre: 'Novedades de temporada', objetivo: 'Presentar las novedades a un contacto con consentimiento.', canal: 'email', estado: 'borrador', asunto: 'Una nueva temporada para tus ideas', cuerpoTexto: 'Hola, descubre nuestra nueva propuesta. Un mensaje claro, revisado y preparado para tu audiencia.', empresa: id, createdAt: new Date(), updatedAt: new Date(), destinatarios: { tipo: 'contactos', contactos: [id] }, automatizacion: { modo: 'inmediato', revision: 1 } };
 const fixture = (vista, vacia = false) => {
   const rol = vista.startsWith('admin/') ? 'superadmin' : vista === 'empresa/panelOperador' ? 'operador' : 'admin_empresa';
@@ -11,7 +11,10 @@ const fixture = (vista, vacia = false) => {
     { _id: '507f1f77bcf86cd799439013', nombre: 'Operador bloqueado', email: 'bloqueado@example.test', rol: 'operador', empresa: id, estadoAcceso: 'bloqueado' }
   ];
   const administradorEmpresa = { ...usuarioActual, rol: 'admin_empresa', empresa: id };
-  return { titulo: 'Espacio de trabajo · PluriOne', anio: 2026, usuarioActual,
+  return { filtros: { prioridad: '', min: '', max: '', etiqueta: '', activo: '' }, pagina: 1, hayMas: false, ventanaDias: 90,
+    analisis: { puntos: 0, nivel: 'bajo', ventanaDias: 90, desglose: [], eventos: [], ultimaInteraccion: null },
+    tiposEvento: require('../../services/leadScoringService').PUNTOS,
+    titulo: 'Espacio de trabajo · PluriOne', anio: 2026, usuarioActual,
     adminCsrf: 'a'.repeat(43), campanaCsrf: 'b'.repeat(43), contactoCsrf: 'c'.repeat(43), gmailCsrf: 'd'.repeat(43), iaCsrf: 'e'.repeat(43),
     empresa, empresas: vacia ? [] : [{ ...empresa, usuarios: usuariosEmpresa }], usuarios: vacia ? [] : [administradorEmpresa, ...usuariosEmpresa], operadores: usuariosEmpresa, totalUsuarios: 3, totalCampanas: 1,
     base: '/empresa/usuarios',

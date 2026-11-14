@@ -31,10 +31,12 @@ beforeEach(t => {
   };
   guardar = t.mock.method(documentos[0], 'save', async function () { await this.validate(); duplicado(this); return this; });
   buscar = t.mock.method(Contacto, 'findOne', async filtro => documentos.find(doc => coincide(doc, filtro)) || null);
-  t.mock.method(Contacto, 'find', filtro => ({ sort: orden => {
-    assert.deepEqual(orden, { createdAt: -1, _id: -1 });
-    return { lean: async () => documentos.filter(doc => coincide(doc, filtro)).map(doc => doc.toObject()) };
-  } }));
+  t.mock.method(require('../models/EventoMarketing'), 'find', () => ({ sort: () => ({ lean: async () => [] }) }));
+  t.mock.method(Contacto, 'aggregate', async pipeline => {
+    const filtro = pipeline[0].$match;
+    assert.deepEqual(pipeline.find(p => p.$sort).$sort, { createdAt: -1, _id: -1 });
+    return documentos.filter(doc => coincide(doc, filtro)).map(doc => ({ ...doc.toObject(), puntos: 0 }));
+  });
   crear = t.mock.method(Contacto, 'create', async valores => {
     const doc = new Contacto(valores); await doc.validate(); duplicado(doc); documentos.push(doc); return doc;
   });
